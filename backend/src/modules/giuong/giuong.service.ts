@@ -68,9 +68,18 @@ if (!Number.isInteger(giuongSo) || giuongSo < 1) {
 
 const maGiuong = `${phong.maPhong}_G${giuongSo}`
 
+const giaGiuong = Number(payload.giaGiuong ?? 0)
+
+if (!Number.isInteger(giaGiuong) || giaGiuong < 0) {
+  throw new BadRequestException(
+    'Giá giường phải là số nguyên lớn hơn hoặc bằng 0.',
+  )
+}
+
 const giuong = this.repository.create({
   maGiuong,
   giuongSo,
+  giaGiuong,
   trangThai: payload.trangThai ?? 'trong',
   phong,
 })
@@ -111,7 +120,17 @@ return this.repository.save(giuong)
     if (payload.trangThai !== undefined) {
       item.trangThai = payload.trangThai
     }
+    if (payload.giaGiuong !== undefined) {
+  const giaGiuong = Number(payload.giaGiuong)
 
+  if (!Number.isInteger(giaGiuong) || giaGiuong < 0) {
+    throw new BadRequestException(
+      'Giá giường phải là số nguyên lớn hơn hoặc bằng 0.',
+    )
+  }
+
+  item.giaGiuong = giaGiuong
+}
     if (payload.phong?.id) {
       const phong = await this.phongRepository.findOne({
         where: {

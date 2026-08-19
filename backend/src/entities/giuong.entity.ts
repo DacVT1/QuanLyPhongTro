@@ -22,6 +22,9 @@ export class Giuong {
   @Column({ default: 1 })
   giuongSo: number;
 
+  @Column({ type: 'integer', default: 0 })
+  giaGiuong: number;
+
   @Column({ default: 'Trống' })
   trangThai: string;
 

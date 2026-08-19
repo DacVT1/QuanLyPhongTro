@@ -121,6 +121,7 @@ const giuongForm = ref({
   nhaTroId: '',
   phongId: '',
   giuongSo: '',
+  giaGiuong: 0,
   trangThai: 'trong',
 })
 
@@ -167,6 +168,7 @@ const cccdMatTruocInput = ref<HTMLInputElement | null>(null)
 const cccdMatSauInput = ref<HTMLInputElement | null>(null)
 const cccdMatTruocUrl = ref('')
 const cccdMatSauUrl = ref('')
+const giaGiuongDisplay = ref('')
 const editingHopDongId = ref<string | null>(null)
 const editingHoaDonId = ref<string | null>(null)
 
@@ -279,8 +281,29 @@ function handleNhaTroChange() {
 }
 
 function resetGiuongForm() {
-  giuongForm.value = { nhaTroId: '', phongId: '', giuongSo: '', trangThai: 'trong' }
+  giuongForm.value = {
+    nhaTroId: '',
+    phongId: '',
+    giuongSo: '',
+    giaGiuong: 0,
+    trangThai: 'trong',
+  }
+
+  giaGiuongDisplay.value = ''
+
   editingGiuongId.value = null
+}
+
+function handleGiaGiuongInput(event: Event) {
+  const input = event.target as HTMLInputElement
+
+  const rawValue = input.value.replace(/\D/g, '')
+
+  giuongForm.value.giaGiuong = Number(rawValue || 0)
+
+  giaGiuongDisplay.value = rawValue
+    ? Number(rawValue).toLocaleString('en-US')
+    : ''
 }
 
 function resetNguoiThueForm() {
@@ -487,6 +510,7 @@ async function confirmDeleteNguoiThue() {
 async function saveGiuong() {
   const payload = {
   giuongSo: Number(giuongForm.value.giuongSo),
+  giaGiuong: Number(giuongForm.value.giaGiuong || 0),
   trangThai: giuongForm.value.trangThai,
   phong: {
     id: giuongForm.value.phongId,
@@ -911,14 +935,21 @@ function updateMaPhongByTang() {
 function editGiuong(item: any) {
   editingGiuongId.value = item.id
 
+  const giaGiuong = Number(item.giaGiuong ?? 0)
+
   giuongForm.value = {
-  nhaTroId: item.phong?.nhaTro?.id ?? '',
-  phongId: item.phong?.id ?? '',
-  giuongSo: item.giuongSo != null
-    ? String(item.giuongSo)
-    : '',
-  trangThai: item.trangThai ?? 'trong',
-}
+    nhaTroId: item.phong?.nhaTro?.id ?? '',
+    phongId: item.phong?.id ?? '',
+    giuongSo: item.giuongSo != null
+      ? String(item.giuongSo)
+      : '',
+    giaGiuong,
+    trangThai: item.trangThai ?? 'trong',
+  }
+
+  giaGiuongDisplay.value = giaGiuong
+    ? giaGiuong.toLocaleString('en-US')
+    : ''
 
   currentTab.value = 'giuong'
 }
@@ -1366,6 +1397,22 @@ onMounted(() => {
 </select>
             </label>
             <label>
+  {{ requiredLabel('Giá giường:') }}
+
+  <div class="money-input">
+    <input
+      :value="giaGiuongDisplay"
+      type="text"
+      inputmode="numeric"
+      placeholder="1,000,000"
+      @input="handleGiaGiuongInput"
+      required
+    />
+
+    <span>VND</span>
+  </div>
+</label>
+            <label>
               {{ requiredLabel('Trạng thái') }}
               <select v-model="giuongForm.trangThai">
                 <option value="trong">Trống</option>
@@ -1389,6 +1436,7 @@ onMounted(() => {
                 <th>Phòng số</th>
                 <th>Mã giường</th>
                 <th>Giường số</th>
+                <th>Giá giường</th>
                 <th>Trạng thái</th>
                 <th>Hành động</th>
               </tr>
@@ -1398,6 +1446,7 @@ onMounted(() => {
                 <td>{{ item.phong?.tangSo }}</td>
                 <td>{{ item.maGiuong }}</td>
                 <td>{{ item.giuongSo }}</td>
+                <td>{{ formatCurrency(item.giaGiuong) }}</td>
                 <td>{{ getStatusText(item.trangThai) }}</td>
                 <td class="row-actions">
                   <button class="table-btn edit" @click="editGiuong(item)">Sửa</button>
@@ -1642,7 +1691,7 @@ onMounted(() => {
   <select v-model="hopDongForm.trangThai">
     <option value="active">Có hiệu lực</option>
     <option value="expired">Hết hiệu lực</option>
-    <option value="expired">Sắp hết hợp đồng</option>
+    <option value="expired">Sắp hết hiệu lực</option>
   </select>
 </label>
 
@@ -2731,6 +2780,21 @@ td {
   width: 100%;
   resize: vertical;
   min-height: 90px;
+}
+
+.money-input {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.money-input input {
+  flex: 1;
+}
+
+.money-input span {
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 @media (max-width: 600px) {
