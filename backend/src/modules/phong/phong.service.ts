@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common'
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 
@@ -34,10 +34,53 @@ export class PhongService {
     })
   }
 
-  async create(payload: Partial<Phong>) {
-    return this.repository.save(
-      this.repository.create(payload),
-    )
+  private normalizeFloor(value: unknown): string {
+    const floor = String(value ?? '').trim()
+    if (!/^\d+$/.test(floor) || Number(floor) < 1) {
+      throw new ConflictException('Tầng số phải là số nguyên lớn hơn hoặc bằng 1')
+    }
+    return floor
+  }
+
+  private buildRoomCode(maNhaTro: string, floor: unknown): string {
+    return `${maNhaTro.trim()}_T${this.normalizeFloor(floor)}`
+  }
+
+  async create(payload: Partial<Phong> & { nhaTro?: { id: string }; nhaTroId?: string; tangSo?: string | number }) {
+    const nhaTroId = payload.nhaTro?.id ?? payload.nhaTroId
+
+    if (!nhaTroId) {
+      throw new NotFoundException('Vui lòng chọn nhà trọ')
+    }
+
+    const nhaTro = await this.nhaTroRepository.findOne({
+      where: { id: nhaTroId },
+    })
+
+    if (!nhaTro) {
+      throw new NotFoundException('Không tìm thấy nhà trọ')
+    }
+
+    const floor = payload.tangSo ?? payload.maPhong
+    const maPhong = this.buildRoomCode(nhaTro.maNhaTro, floor)
+
+    const existing = await this.repository.findOne({
+      where: { maPhong },
+    })
+
+    if (existing) {
+      throw new ConflictException(`Phòng ${maPhong} đã tồn tại`)
+    }
+
+    const phong = this.repository.create({
+      maPhong,
+      soGiuongToiDa: payload.soGiuongToiDa,
+      loaiPhong: payload.loaiPhong,
+      dienTich: payload.dienTich,
+      nhaTro,
+    })
+
+    return this.repository.save(phong)
   }
 
   async update(
@@ -45,18 +88,17 @@ export class PhongService {
     payload: Partial<Phong> & {
       nhaTro?: { id: string }
       nhaTroId?: string
+      tangSo?: string | number
     },
   ) {
     const phong = await this.repository.findOne({
       where: { id },
+      relations: { nhaTro: true },
     })
 
     if (!phong) {
       throw new NotFoundException('Không tìm thấy phòng')
     }
-
-    phong.maPhong =
-      payload.maPhong ?? phong.maPhong
 
     phong.soGiuongToiDa =
       payload.soGiuongToiDa ?? phong.soGiuongToiDa
@@ -67,25 +109,31 @@ export class PhongService {
     phong.dienTich =
       payload.dienTich ?? phong.dienTich
 
-    const nhaTroId =
-      payload.nhaTro?.id ??
-      payload.nhaTroId
+    const nhaTroId = payload.nhaTro?.id ?? payload.nhaTroId
 
     if (nhaTroId) {
-      const nhaTro =
-        await this.nhaTroRepository.findOne({
-          where: {
-            id: nhaTroId,
-          },
-        })
+      const nhaTro = await this.nhaTroRepository.findOne({
+        where: { id: nhaTroId },
+      })
 
       if (!nhaTro) {
-        throw new NotFoundException(
-          'Không tìm thấy nhà trọ',
-        )
+        throw new NotFoundException('Không tìm thấy nhà trọ')
       }
 
       phong.nhaTro = nhaTro
+    }
+
+    const floor = payload.tangSo ?? payload.maPhong
+    if (floor !== undefined && floor !== null && String(floor).trim() !== '') {
+      phong.maPhong = this.buildRoomCode(phong.nhaTro.maNhaTro, floor)
+    }
+
+    const duplicate = await this.repository.findOne({
+      where: { maPhong: phong.maPhong },
+    })
+
+    if (duplicate && duplicate.id !== id) {
+      throw new ConflictException(`Phòng ${phong.maPhong} đã tồn tại`)
     }
 
     await this.repository.save(phong)
