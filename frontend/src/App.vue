@@ -66,6 +66,9 @@ const nguoiThueForm = ref({
   email: '',
   diaChi: '',
   ngaySinh: '',
+  bienSoXe: '',
+  cccdMatTruoc: null as File | null,
+  cccdMatSau: null as File | null,
 })
 
 const hopDongForm = ref({
@@ -203,7 +206,11 @@ function resetNguoiThueForm() {
     email: '',
     diaChi: '',
     ngaySinh: '',
+    bienSoXe: '',
+    cccdMatTruoc: null,
+    cccdMatSau: null,
   }
+
   editingNguoiThueId.value = null
 }
 
@@ -371,14 +378,86 @@ async function confirmDeleteGiuong() {
   }
 }
 
+function handleCccdMatTruocChange(event: Event) {
+  const target = event.target as HTMLInputElement
+
+  nguoiThueForm.value.cccdMatTruoc =
+    target.files?.[0] ?? null
+}
+
+function handleCccdMatSauChange(event: Event) {
+  const target = event.target as HTMLInputElement
+
+  nguoiThueForm.value.cccdMatSau =
+    target.files?.[0] ?? null
+}
+
 async function saveNguoiThue() {
-  const payload = { ...nguoiThueForm.value }
-  if (editingNguoiThueId.value) {
-    await api.patch(`/nguoi-thue/${editingNguoiThueId.value}`, payload)
-  } else {
-    await api.post('/nguoi-thue', payload)
+  const formData = new FormData()
+
+  formData.append(
+    'hoTen',
+    nguoiThueForm.value.hoTen,
+  )
+
+  formData.append(
+    'cccd',
+    nguoiThueForm.value.cccd,
+  )
+
+  formData.append(
+    'sdt',
+    nguoiThueForm.value.sdt,
+  )
+
+  formData.append(
+    'email',
+    nguoiThueForm.value.email,
+  )
+
+  formData.append(
+    'diaChi',
+    nguoiThueForm.value.diaChi,
+  )
+
+  formData.append(
+    'ngaySinh',
+    nguoiThueForm.value.ngaySinh,
+  )
+
+  formData.append(
+    'bienSoXe',
+    nguoiThueForm.value.bienSoXe,
+  )
+
+  if (nguoiThueForm.value.cccdMatTruoc) {
+    formData.append(
+      'cccdMatTruoc',
+      nguoiThueForm.value.cccdMatTruoc,
+    )
   }
+
+  if (nguoiThueForm.value.cccdMatSau) {
+    formData.append(
+      'cccdMatSau',
+      nguoiThueForm.value.cccdMatSau,
+    )
+  }
+
+  if (editingNguoiThueId.value) {
+    await api.patch(
+      `/nguoi-thue/${editingNguoiThueId.value}`,
+      formData,
+    )
+  } else {
+    await api.post(
+      '/nguoi-thue',
+      formData,
+    )
+  }
+
   resetNguoiThueForm()
+
   await loadData()
 }
 
@@ -583,14 +662,23 @@ function editGiuong(item: any) {
 
 function editNguoiThue(item: any) {
   editingNguoiThueId.value = item.id
+
   nguoiThueForm.value = {
     hoTen: item.hoTen ?? '',
     cccd: item.cccd ?? '',
     sdt: item.sdt ?? '',
     email: item.email ?? '',
     diaChi: item.diaChi ?? '',
-    ngaySinh: item.ngaySinh ? new Date(item.ngaySinh).toISOString().slice(0, 10) : '',
+    ngaySinh: item.ngaySinh
+      ? new Date(item.ngaySinh)
+          .toISOString()
+          .slice(0, 10)
+      : '',
+    bienSoXe: item.bienSoXe ?? '',
+    cccdMatTruoc: null,
+    cccdMatSau: null,
   }
+
   currentTab.value = 'nguoiThue'
 }
 
@@ -1018,6 +1106,44 @@ onMounted(() => {
               {{ requiredLabel('Ngày sinh') }}
               <input v-model="nguoiThueForm.ngaySinh" type="date" required />
             </label>
+            <label>
+  Biển số xe
+  <input
+    v-model="nguoiThueForm.bienSoXe"
+    type="text"
+    placeholder="Ví dụ: 29A-123.45"
+  />
+</label>
+
+<label>
+  CCCD mặt trước
+  <input
+    type="file"
+    accept="image/*"
+    @change="handleCccdMatTruocChange"
+  />
+
+  <small
+    v-if="nguoiThueForm.cccdMatTruoc"
+  >
+    {{ nguoiThueForm.cccdMatTruoc.name }}
+  </small>
+</label>
+
+<label>
+  CCCD mặt sau
+  <input
+    type="file"
+    accept="image/*"
+    @change="handleCccdMatSauChange"
+  />
+
+  <small
+    v-if="nguoiThueForm.cccdMatSau"
+  >
+    {{ nguoiThueForm.cccdMatSau.name }}
+  </small>
+</label>
             <div class="actions">
               <button class="primary" type="submit">{{ editingNguoiThueId ? 'Cập nhật' : 'Lưu' }}</button>
               <button class="secondary" type="button" @click="resetNguoiThueForm">Hủy</button>
