@@ -92,6 +92,8 @@ const editingNhaTroId = ref<string | null>(null)
 const editingPhongId = ref<string | null>(null)
 const editingGiuongId = ref<string | null>(null)
 const editingNguoiThueId = ref<string | null>(null)
+const cccdMatTruocInput = ref<HTMLInputElement | null>(null)
+const cccdMatSauInput = ref<HTMLInputElement | null>(null)
 const editingHopDongId = ref<string | null>(null)
 const editingHoaDonId = ref<string | null>(null)
 
@@ -211,6 +213,15 @@ function resetNguoiThueForm() {
     cccdMatSau: null,
   }
 
+  // Clear giá trị thực tế của input type="file"
+  if (cccdMatTruocInput.value) {
+    cccdMatTruocInput.value.value = ''
+  }
+
+  if (cccdMatSauInput.value) {
+    cccdMatSauInput.value.value = ''
+  }
+
   editingNguoiThueId.value = null
 }
 
@@ -276,6 +287,23 @@ function requestDeletePhong(item: any) {
 function closeDeletePhongModal() {
   showDeletePhongModal.value = false
   deletePhongErrorMessage.value = ''
+}
+
+function requestDeleteNguoiThue(item: any) {
+  deleteNguoiThueInfo.value = {
+    id: item.id,
+    hoTen: item.hoTen ?? 'Người thuê',
+    cccd: item.cccd ?? '',
+  }
+
+  deleteNguoiThueErrorMessage.value = ''
+
+  showDeleteNguoiThueModal.value = true
+}
+
+function closeDeleteNguoiThueModal() {
+  showDeleteNguoiThueModal.value = false
+  deleteNguoiThueErrorMessage.value = ''
 }
 
 async function confirmDeletePhong() {
@@ -379,17 +407,17 @@ async function confirmDeleteGiuong() {
 }
 
 function handleCccdMatTruocChange(event: Event) {
-  const target = event.target as HTMLInputElement
+  const input = event.target as HTMLInputElement
 
   nguoiThueForm.value.cccdMatTruoc =
-    target.files?.[0] ?? null
+    input.files?.[0] ?? null
 }
 
 function handleCccdMatSauChange(event: Event) {
-  const target = event.target as HTMLInputElement
+  const input = event.target as HTMLInputElement
 
   nguoiThueForm.value.cccdMatSau =
-    target.files?.[0] ?? null
+    input.files?.[0] ?? null
 }
 
 async function saveNguoiThue() {
@@ -444,21 +472,35 @@ async function saveNguoiThue() {
     )
   }
 
-  if (editingNguoiThueId.value) {
-    await api.patch(
-      `/nguoi-thue/${editingNguoiThueId.value}`,
-      formData,
+  try {
+    if (editingNguoiThueId.value) {
+      await api.patch(
+        `/nguoi-thue/${editingNguoiThueId.value}`,
+        formData,
+      )
+    } else {
+      await api.post(
+        '/nguoi-thue',
+        formData,
+      )
+    }
+
+    // Lưu thành công -> clear toàn bộ form,
+    // bao gồm cả 2 input file
+    resetNguoiThueForm()
+
+    await loadData()
+  } catch (error: any) {
+    console.error(
+      'Không thể lưu người thuê:',
+      error,
     )
-  } else {
-    await api.post(
-      '/nguoi-thue',
-      formData,
+
+    alert(
+      error?.response?.data?.message ??
+      'Không thể lưu thông tin người thuê. Vui lòng thử lại.',
     )
   }
-
-  resetNguoiThueForm()
-
-  await loadData()
 }
 
 async function saveHopDong() {
@@ -504,13 +546,22 @@ async function saveHoaDon() {
 
 const showDeleteNhaTroModal = ref(false)
 const showDeleteGiuongModal = ref(false)
+const showDeletePhongModal = ref(false)
 
 const deleteGiuongInfo = ref({
   id: '',
   maGiuong: '',
   maPhong: '',
 })
+const showDeleteNguoiThueModal = ref(false)
 
+const deleteNguoiThueInfo = ref({
+  id: '',
+  hoTen: '',
+  cccd: '',
+})
+
+const deleteNguoiThueErrorMessage = ref('')
 const deleteGiuongErrorMessage = ref('')
 
 const deletePhongInfo = ref({
@@ -675,8 +726,19 @@ function editNguoiThue(item: any) {
           .slice(0, 10)
       : '',
     bienSoXe: item.bienSoXe ?? '',
+
+    // Không load ảnh cũ vào input file
     cccdMatTruoc: null,
     cccdMatSau: null,
+  }
+
+  // Đảm bảo input file luôn trống khi mở form sửa
+  if (cccdMatTruocInput.value) {
+    cccdMatTruocInput.value.value = ''
+  }
+
+  if (cccdMatSauInput.value) {
+    cccdMatSauInput.value.value = ''
   }
 
   currentTab.value = 'nguoiThue'
@@ -1117,30 +1179,30 @@ onMounted(() => {
 
 <label>
   CCCD mặt trước
+
   <input
+    ref="cccdMatTruocInput"
     type="file"
     accept="image/*"
     @change="handleCccdMatTruocChange"
   />
 
-  <small
-    v-if="nguoiThueForm.cccdMatTruoc"
-  >
+  <small v-if="nguoiThueForm.cccdMatTruoc">
     {{ nguoiThueForm.cccdMatTruoc.name }}
   </small>
 </label>
 
 <label>
   CCCD mặt sau
+
   <input
+    ref="cccdMatSauInput"
     type="file"
     accept="image/*"
     @change="handleCccdMatSauChange"
   />
 
-  <small
-    v-if="nguoiThueForm.cccdMatSau"
-  >
+  <small v-if="nguoiThueForm.cccdMatSau">
     {{ nguoiThueForm.cccdMatSau.name }}
   </small>
 </label>
@@ -1169,7 +1231,7 @@ onMounted(() => {
                 <td>{{ item.sdt }}</td>
                 <td class="row-actions">
                   <button class="table-btn edit" @click="editNguoiThue(item)">Sửa</button>
-                  <button class="table-btn delete" @click="deleteItem('nguoi-thue', item.id)">Xóa</button>
+                  <button class="table-btn delete" @click="requestDeleteNguoiThue(item)">Xóa</button>
                 </td>
               </tr>
             </tbody>
