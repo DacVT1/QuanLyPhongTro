@@ -2,6 +2,8 @@
 import { computed, onMounted, ref } from 'vue'
 import api from './services/api'
 import { getImageUrl } from './utils/image';
+const cccdMatTruocPreviewUrl = ref('')
+const cccdMatSauPreviewUrl = ref('')
 const tabs = ['dashboard', 'nhaTro', 'phong', 'giuong', 'nguoiThue', 'hopDong', 'hoaDon']
 const currentTab = ref('dashboard')
 
@@ -76,7 +78,11 @@ const nguoiThueForm = ref({
 const hopDongForm = ref({
   maHopDong: '',
   ngayBatDau: '',
+  ngayKetThuc: '',
   tienThue: 0,
+  chuKyThanhToan: 1,
+  tienDatCoc: 0,
+  ghiChu: '',
   giuongId: '',
   nguoiThueId: '',
   trangThai: 'active',
@@ -215,9 +221,12 @@ function resetNguoiThueForm() {
     bienSoXe: '',
     cccdMatTruoc: null,
     cccdMatSau: null,
+
     cccdMatTruocUrl: '',
     cccdMatSauUrl: '',
   }
+
+  editingNguoiThueId.value = null
 
   if (cccdMatTruocInput.value) {
     cccdMatTruocInput.value.value = ''
@@ -227,18 +236,31 @@ function resetNguoiThueForm() {
     cccdMatSauInput.value.value = ''
   }
 
-  editingNguoiThueId.value = null
+  if (cccdMatTruocPreviewUrl.value) {
+  URL.revokeObjectURL(cccdMatTruocPreviewUrl.value)
+  cccdMatTruocPreviewUrl.value = ''
+}
+
+if (cccdMatSauPreviewUrl.value) {
+  URL.revokeObjectURL(cccdMatSauPreviewUrl.value)
+  cccdMatSauPreviewUrl.value = ''
+}
 }
 
 function resetHopDongForm() {
   hopDongForm.value = {
     maHopDong: '',
     ngayBatDau: '',
+    ngayKetThuc: '',
     tienThue: 0,
+    chuKyThanhToan: 1,
+    tienDatCoc: 0,
+    ghiChu: '',
     giuongId: '',
     nguoiThueId: '',
     trangThai: 'active',
   }
+
   editingHopDongId.value = null
 }
 
@@ -339,6 +361,34 @@ async function confirmDeletePhong() {
   }
 }
 
+async function confirmDeleteNguoiThue() {
+  const id = deleteNguoiThueInfo.value.id
+
+  if (!id) {
+    return
+  }
+
+  try {
+    deleteNguoiThueErrorMessage.value = ''
+
+    await api.delete(`/nguoi-thue/${id}`)
+
+    closeDeleteNguoiThueModal()
+
+    if (editingNguoiThueId.value === id) {
+      resetNguoiThueForm()
+    }
+
+    await loadData()
+  } catch (error: any) {
+    console.error('Không thể xóa người thuê:', error)
+
+    deleteNguoiThueErrorMessage.value =
+      error?.response?.data?.message ??
+      'Không thể xóa người thuê. Vui lòng thử lại.'
+  }
+}
+
 async function saveGiuong() {
   const payload = {
     maGiuong: giuongForm.value.maGiuong,
@@ -412,17 +462,37 @@ async function confirmDeleteGiuong() {
 }
 
 function handleCccdMatTruocChange(event: Event) {
-  const input = event.target as HTMLInputElement
+  const target = event.target as HTMLInputElement
+  const file = target.files?.[0] ?? null
 
-  nguoiThueForm.value.cccdMatTruoc =
-    input.files?.[0] ?? null
+  if (cccdMatTruocPreviewUrl.value) {
+    URL.revokeObjectURL(cccdMatTruocPreviewUrl.value)
+  }
+
+  nguoiThueForm.value.cccdMatTruoc = file
+
+  if (file) {
+    cccdMatTruocPreviewUrl.value = URL.createObjectURL(file)
+  } else {
+    cccdMatTruocPreviewUrl.value = ''
+  }
 }
 
 function handleCccdMatSauChange(event: Event) {
-  const input = event.target as HTMLInputElement
+  const target = event.target as HTMLInputElement
+  const file = target.files?.[0] ?? null
 
-  nguoiThueForm.value.cccdMatSau =
-    input.files?.[0] ?? null
+  if (cccdMatSauPreviewUrl.value) {
+    URL.revokeObjectURL(cccdMatSauPreviewUrl.value)
+  }
+
+  nguoiThueForm.value.cccdMatSau = file
+
+  if (file) {
+    cccdMatSauPreviewUrl.value = URL.createObjectURL(file)
+  } else {
+    cccdMatSauPreviewUrl.value = ''
+  }
 }
 
 async function saveNguoiThue() {
@@ -514,17 +584,38 @@ async function saveHopDong() {
   }
 
   const payload = {
-    ...hopDongForm.value,
-    ngayBatDau: hopDongForm.value.ngayBatDau || new Date().toISOString().slice(0, 10),
-    giuong: { id: hopDongForm.value.giuongId },
-    nguoiThue: { id: hopDongForm.value.nguoiThueId },
+    maHopDong: hopDongForm.value.maHopDong,
+    ngayBatDau:
+      hopDongForm.value.ngayBatDau ||
+      new Date().toISOString().slice(0, 10),
+    ngayKetThuc:
+      hopDongForm.value.ngayKetThuc || null,
+    tienThue: Number(hopDongForm.value.tienThue || 0),
+    chuKyThanhToan: Number(
+      hopDongForm.value.chuKyThanhToan || 1,
+    ),
+    tienDatCoc: Number(
+      hopDongForm.value.tienDatCoc || 0,
+    ),
+    ghiChu: hopDongForm.value.ghiChu || null,
+    trangThai: hopDongForm.value.trangThai,
+    giuong: {
+      id: hopDongForm.value.giuongId,
+    },
+    nguoiThue: {
+      id: hopDongForm.value.nguoiThueId,
+    },
   }
 
   if (editingHopDongId.value) {
-    await api.patch(`/hop-dong/${editingHopDongId.value}`, payload)
+    await api.patch(
+      `/hop-dong/${editingHopDongId.value}`,
+      payload,
+    )
   } else {
     await api.post('/hop-dong', payload)
   }
+
   resetHopDongForm()
   await loadData()
 }
@@ -752,14 +843,41 @@ function editNguoiThue(item: any) {
 
 function editHopDong(item: any) {
   editingHopDongId.value = item.id
+
   hopDongForm.value = {
     maHopDong: item.maHopDong ?? '',
-    ngayBatDau: item.ngayBatDau ? new Date(item.ngayBatDau).toISOString().slice(0, 10) : '',
-    tienThue: item.tienThue ?? 0,
+
+    ngayBatDau: item.ngayBatDau
+      ? new Date(item.ngayBatDau)
+          .toISOString()
+          .slice(0, 10)
+      : '',
+
+    ngayKetThuc: item.ngayKetThuc
+      ? new Date(item.ngayKetThuc)
+          .toISOString()
+          .slice(0, 10)
+      : '',
+
+    tienThue: Number(item.tienThue ?? 0),
+
+    chuKyThanhToan: Number(
+      item.chuKyThanhToan ?? 1,
+    ),
+
+    tienDatCoc: Number(
+      item.tienDatCoc ?? 0,
+    ),
+
+    ghiChu: item.ghiChu ?? '',
+
     giuongId: item.giuong?.id ?? '',
+
     nguoiThueId: item.nguoiThue?.id ?? '',
+
     trangThai: item.trangThai ?? 'active',
   }
+
   currentTab.value = 'hopDong'
 }
 
@@ -1193,21 +1311,32 @@ onMounted(() => {
     @change="handleCccdMatTruocChange"
   />
 
-  <div v-if="nguoiThueForm.cccdMatTruocUrl" class="cccd-current">
-    <span>Ảnh hiện tại:</span>
+<div
+  v-if="editingNguoiThueId && nguoiThueForm.cccdMatTruocUrl"
+  class="cccd-current"
+>
+  <span>Ảnh hiện tại:</span>
 
-    <a
-      :href="nguoiThueForm.cccdMatTruocUrl"
-      target="_blank"
-      rel="noopener noreferrer"
-    >
-      Xem CCCD mặt trước
-    </a>
-  </div>
+  <a
+    :href="nguoiThueForm.cccdMatTruocUrl"
+    target="_blank"
+    rel="noopener noreferrer"
+  >
+    Xem CCCD mặt trước
+  </a>
+</div>
 
-  <small v-if="nguoiThueForm.cccdMatTruoc">
-    Ảnh mới: {{ nguoiThueForm.cccdMatTruoc.name }}
-  </small>
+<div v-if="cccdMatTruocPreviewUrl" class="cccd-current">
+  <span>Ảnh mới:</span>
+
+  <a
+    :href="cccdMatTruocPreviewUrl"
+    target="_blank"
+    rel="noopener noreferrer"
+  >
+    Xem CCCD mặt trước
+  </a>
+</div>
 </label>
 
 <label>
@@ -1220,21 +1349,32 @@ onMounted(() => {
     @change="handleCccdMatSauChange"
   />
 
-  <div v-if="nguoiThueForm.cccdMatSauUrl" class="cccd-current">
-    <span>Ảnh hiện tại:</span>
+<div
+  v-if="editingNguoiThueId && nguoiThueForm.cccdMatSauUrl"
+  class="cccd-current"
+>
+  <span>Ảnh hiện tại:</span>
 
-    <a
-      :href="nguoiThueForm.cccdMatSauUrl"
-      target="_blank"
-      rel="noopener noreferrer"
-    >
-      Xem CCCD mặt sau
-    </a>
-  </div>
+  <a
+    :href="nguoiThueForm.cccdMatSauUrl"
+    target="_blank"
+    rel="noopener noreferrer"
+  >
+    Xem CCCD mặt sau
+  </a>
+</div>
 
-  <small v-if="nguoiThueForm.cccdMatSau">
-    Ảnh mới: {{ nguoiThueForm.cccdMatSau.name }}
-  </small>
+<div v-if="cccdMatSauPreviewUrl" class="cccd-current">
+  <span>Ảnh mới:</span>
+
+  <a
+    :href="cccdMatSauPreviewUrl"
+    target="_blank"
+    rel="noopener noreferrer"
+  >
+    Xem CCCD mặt sau
+  </a>
+</div>
 </label>
             <div class="actions">
               <button class="primary" type="submit">{{ editingNguoiThueId ? 'Cập nhật' : 'Lưu' }}</button>
@@ -1288,20 +1428,81 @@ onMounted(() => {
               </select>
             </label>
             <label>
-              {{ requiredLabel('Ngày bắt đầu') }}
-              <input v-model="hopDongForm.ngayBatDau" type="date" required />
-            </label>
-            <label>
-              {{ requiredLabel('Giá thuê trọn gói') }}
-              <input v-model.number="hopDongForm.tienThue" type="number" min="0" placeholder="Giá thuê trọn gói" required />
-            </label>
-            <label>
-              {{ requiredLabel('Trạng thái') }}
-              <select v-model="hopDongForm.trangThai">
-                <option value="active">Có hiệu lực</option>
-                <option value="expired">Hết hiệu lực</option>
-              </select>
-            </label>
+  {{ requiredLabel('Ngày bắt đầu') }}
+  <input
+    v-model="hopDongForm.ngayBatDau"
+    type="date"
+    required
+  />
+</label>
+
+<label>
+  Ngày kết thúc
+  <input
+    v-model="hopDongForm.ngayKetThuc"
+    type="date"
+  />
+</label>
+
+<label>
+  {{ requiredLabel('Giá thuê trọn gói') }}
+  <div class="currency-input">
+    <input
+      v-model.number="hopDongForm.tienThue"
+      type="number"
+      min="0"
+      step="1000"
+      placeholder="Giá thuê trọn gói"
+      required
+    />
+    <span>VND</span>
+  </div>
+</label>
+
+<label>
+  {{ requiredLabel('Chu kỳ thanh toán') }}
+  <select
+    v-model.number="hopDongForm.chuKyThanhToan"
+    required
+  >
+    <option :value="1">Hàng tháng</option>
+    <option :value="3">3 tháng</option>
+    <option :value="6">6 tháng</option>
+    <option :value="12">12 tháng</option>
+  </select>
+</label>
+
+<label>
+  Đặt cọc
+  <div class="currency-input">
+    <input
+      v-model.number="hopDongForm.tienDatCoc"
+      type="number"
+      min="0"
+      step="1000"
+      placeholder="Số tiền đặt cọc"
+    />
+    <span>VND</span>
+  </div>
+</label>
+
+<label>
+  {{ requiredLabel('Trạng thái') }}
+  <select v-model="hopDongForm.trangThai">
+    <option value="active">Có hiệu lực</option>
+    <option value="expired">Hết hiệu lực</option>
+    <option value="expired">Sắp hết hợp đồng</option>
+  </select>
+</label>
+
+<label class="full-width">
+  Ghi chú
+  <textarea
+    v-model="hopDongForm.ghiChu"
+    rows="3"
+    placeholder="Nhập ghi chú cho hợp đồng..."
+  ></textarea>
+</label>
             <div class="actions">
               <button class="primary" type="submit">{{ editingHopDongId ? 'Cập nhật' : 'Lưu' }}</button>
               <button class="secondary" type="button" @click="resetHopDongForm">Hủy</button>
@@ -1317,6 +1518,8 @@ onMounted(() => {
                 <th>Mã hợp đồng</th>
                 <th>Người thuê</th>
                 <th>Giường</th>
+                <th>Ngày bắt đầu</th>
+                <th>Ngày kết thúc</th>
                 <th>Giá thuê</th>
                 <th>Hành động</th>
               </tr>
@@ -1326,6 +1529,18 @@ onMounted(() => {
                 <td>{{ item.maHopDong }}</td>
                 <td>{{ item.nguoiThue?.hoTen }}</td>
                 <td>{{ item.giuong?.maGiuong }}</td>
+                <td>
+  {{ item.ngayBatDau
+    ? new Date(item.ngayBatDau).toLocaleDateString('vi-VN')
+    : ''
+  }}
+                </td>
+                <td>
+  {{ item.ngayKetThuc
+    ? new Date(item.ngayKetThuc).toLocaleDateString('vi-VN')
+    : 'Không xác định'
+  }}
+                </td>
                 <td>{{ formatCurrency(item.tienThue) }}</td>
                 <td class="row-actions">
                   <button class="table-btn edit" @click="editHopDong(item)">Sửa</button>
@@ -1695,6 +1910,78 @@ onMounted(() => {
         class="danger-button"
         type="button"
         @click="confirmDeleteGiuong"
+      >
+        Xác nhận xóa
+      </button>
+
+    </div>
+
+  </div>
+</div>
+<!-- Modal xóa người thuê -->
+<div
+  v-if="showDeleteNguoiThueModal"
+  class="modal-overlay"
+  @click.self="closeDeleteNguoiThueModal"
+>
+  <div class="delete-modal">
+
+    <div class="delete-modal-header">
+      <div class="warning-icon">
+        ⚠
+      </div>
+
+      <div>
+        <h3>
+          Xác nhận xóa người thuê
+        </h3>
+
+        <p>
+          {{ deleteNguoiThueInfo.hoTen }}
+          <span v-if="deleteNguoiThueInfo.cccd">
+            - CCCD: {{ deleteNguoiThueInfo.cccd }}
+          </span>
+        </p>
+      </div>
+    </div>
+
+    <div class="delete-modal-body">
+
+      <p class="confirm-message">
+        Bạn có chắc chắn muốn xóa người thuê
+        <strong>
+          {{ deleteNguoiThueInfo.hoTen }}
+        </strong>
+        không?
+      </p>
+
+      <p class="delete-modal-note">
+        Thao tác này không thể hoàn tác.
+      </p>
+
+      <p
+        v-if="deleteNguoiThueErrorMessage"
+        class="error-message"
+      >
+        {{ deleteNguoiThueErrorMessage }}
+      </p>
+
+    </div>
+
+    <div class="delete-modal-actions">
+
+      <button
+        class="secondary"
+        type="button"
+        @click="closeDeleteNguoiThueModal"
+      >
+        Đóng
+      </button>
+
+      <button
+        class="danger-button"
+        type="button"
+        @click="confirmDeleteNguoiThue"
       >
         Xác nhận xóa
       </button>
@@ -2263,6 +2550,36 @@ td {
 
 .danger-button:hover {
   background: #b91c1c;
+}
+
+.currency-input {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.currency-input input {
+  width: 100%;
+  padding-right: 55px;
+}
+
+.currency-input span {
+  position: absolute;
+  right: 12px;
+  color: #64748b;
+  font-size: 0.9rem;
+  font-weight: 600;
+  pointer-events: none;
+}
+
+.full-width {
+  grid-column: 1 / -1;
+}
+
+.full-width textarea {
+  width: 100%;
+  resize: vertical;
+  min-height: 90px;
 }
 
 @media (max-width: 600px) {
