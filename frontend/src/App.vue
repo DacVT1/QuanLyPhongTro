@@ -1178,8 +1178,9 @@ onMounted(() => {
     </td>
 
     <td>
-      {{ item.nhaTro?.tenNhaTro }}
+      {{ item.nhaTro?.tenNhaTro || item.nhaTro?.maNhaTro}}
     </td>
+                <td>{{ item.sotang }}</td>
                 <td>{{ item.loaiPhong }}</td>
                 <td>{{ item.soGiuongToiDa }}</td>
                 <td class="row-actions">
