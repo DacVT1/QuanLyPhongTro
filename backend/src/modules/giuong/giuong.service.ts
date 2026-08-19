@@ -58,13 +58,24 @@ export class GiuongService {
       throw new NotFoundException('Không tìm thấy phòng.')
     }
 
-    const giuong = this.repository.create({
-      maGiuong: payload.maGiuong,
-      trangThai: payload.trangThai ?? 'trong',
-      phong,
-    })
+const giuongSo = Number(payload.giuongSo)
 
-    return this.repository.save(giuong)
+if (!Number.isInteger(giuongSo) || giuongSo < 1) {
+  throw new BadRequestException(
+    'Giường số phải là số nguyên lớn hơn hoặc bằng 1.',
+  )
+}
+
+const maGiuong = `${phong.maPhong}_G${giuongSo}`
+
+const giuong = this.repository.create({
+  maGiuong,
+  giuongSo,
+  trangThai: payload.trangThai ?? 'trong',
+  phong,
+})
+
+return this.repository.save(giuong)
   }
 
   async update(id: string, payload: Partial<Giuong>) {
@@ -80,7 +91,21 @@ export class GiuongService {
     }
 
     if (payload.maGiuong !== undefined) {
-      item.maGiuong = payload.maGiuong
+      if (payload.giuongSo !== undefined) {
+  const giuongSo = Number(payload.giuongSo)
+
+  if (!Number.isInteger(giuongSo) || giuongSo < 1) {
+    throw new BadRequestException(
+      'Giường số phải là số nguyên lớn hơn hoặc bằng 1.',
+    )
+  }
+
+  item.giuongSo = giuongSo
+
+  if (item.phong) {
+    item.maGiuong = `${item.phong.maPhong}_G${giuongSo}`
+  }
+}
     }
 
     if (payload.trangThai !== undefined) {
@@ -98,7 +123,22 @@ export class GiuongService {
         throw new NotFoundException('Không tìm thấy phòng.')
       }
 
-      item.phong = phong
+      if (payload.phong?.id) {
+  const phong = await this.phongRepository.findOne({
+    where: {
+      id: payload.phong.id,
+    },
+  })
+
+  if (!phong) {
+    throw new NotFoundException('Không tìm thấy phòng.')
+  }
+
+  item.phong = phong
+
+  item.maGiuong =
+    `${phong.maPhong}_G${item.giuongSo}`
+}
     }
 
     return this.repository.save(item)

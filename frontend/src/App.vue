@@ -120,7 +120,7 @@ const tangSoOptions = computed(() => {
 const giuongForm = ref({
   nhaTroId: '',
   phongId: '',
-  maGiuong: '',
+  giuongSo: '',
   trangThai: 'trong',
 })
 
@@ -482,12 +482,12 @@ async function confirmDeleteNguoiThue() {
 
 async function saveGiuong() {
   const payload = {
-    maGiuong: giuongForm.value.maGiuong,
-    trangThai: giuongForm.value.trangThai,
-    phong: {
-      id: giuongForm.value.phongId,
-    },
-  }
+  giuongSo: Number(giuongForm.value.giuongSo),
+  trangThai: giuongForm.value.trangThai,
+  phong: {
+    id: giuongForm.value.phongId,
+  },
+}
 
   try {
     if (editingGiuongId.value) {
@@ -1345,7 +1345,7 @@ onMounted(() => {
             <label>
               {{ requiredLabel('Giường số:') }}
               <select
-  v-model="giuongForm.maGiuong"
+  v-model="giuongForm.giuongSo"
   :disabled="editingGiuongId !== null"
   required
 >
@@ -1356,7 +1356,7 @@ onMounted(() => {
     :key="item"
     :value="item"
   >
-    {{ item }}
+    Giường {{ item }}
   </option>
 </select>
             </label>
