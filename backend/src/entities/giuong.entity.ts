@@ -19,7 +19,7 @@ export class Giuong {
   @Column()
   maGiuong: string;
 
-  @Column()
+  @Column({ default: 1 })
   giuongSo: number;
 
   @Column({ default: 'Trống' })

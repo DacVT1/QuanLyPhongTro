@@ -1336,9 +1336,9 @@ onMounted(() => {
               </select>
             </label>
             <label>
-              {{ requiredLabel('Phòng:') }}
-              <select v-model="giuongForm.phongId" :disabled="!giuongForm.nhaTroId" @change="giuongForm.maGiuong = ''" required>
-                <option value="">Chọn phòng</option>
+              {{ requiredLabel('Chọn tầng:') }}
+              <select v-model="giuongForm.phongId" :disabled="!giuongForm.nhaTroId" @change="giuongForm.giuongSo = ''" required>
+                <option value="">Chọn tầng số</option>
                 <option v-for="item in filteredPhongsByNhaTro" :key="item.id" :value="item.id">{{ item.maPhong }}</option>
               </select>
             </label>
