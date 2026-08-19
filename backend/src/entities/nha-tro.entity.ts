@@ -16,6 +16,9 @@ export class NhaTro {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  @Column({ unique: true })
+  maNhaTro: string;
+
   @Column()
   tenNhaTro: string;
 
