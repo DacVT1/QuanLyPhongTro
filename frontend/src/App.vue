@@ -40,6 +40,7 @@ const hopDongs = ref<any[]>([])
 const hoaDons = ref<any[]>([])
 
 const nhaTroForm = ref({
+  maNhaTro: '',
   tenNhaTro: '',
   diaChi: '',
   soTang: 1,
@@ -190,7 +191,7 @@ async function loadData() {
 }
 
 function resetNhaTroForm() {
-  nhaTroForm.value = { tenNhaTro: '', diaChi: '', soTang: 1, moTa: '' }
+  nhaTroForm.value = { maNhaTro: '',tenNhaTro: '', diaChi: '', soTang: 1, moTa: '' }
   editingNhaTroId.value = null
 }
 
@@ -772,6 +773,7 @@ async function confirmDeleteNhaTro() {
 function editNhaTro(item: any) {
   editingNhaTroId.value = item.id
   nhaTroForm.value = {
+    maNhaTro: item.maNhaTro ?? '',
     tenNhaTro: item.tenNhaTro ?? '',
     diaChi: item.diaChi ?? '',
     soTang: item.soTang ?? 1,
@@ -1045,6 +1047,14 @@ onMounted(() => {
           <h3>{{ editingNhaTroId ? 'Sửa nhà trọ' : 'Thêm nhà trọ' }}</h3>
           <form @submit.prevent="saveNhaTro" class="form-grid">
             <label>
+  {{ requiredLabel('Mã nhà trọ') }}
+  <input
+    v-model="nhaTroForm.maNhaTro"
+    placeholder="Ví dụ: CG"
+    required
+  />
+</label>
+            <label>
               {{ requiredLabel('Tên nhà trọ') }}
               <input v-model="nhaTroForm.tenNhaTro" placeholder="Tên nhà trọ" required />
             </label>
@@ -1058,7 +1068,7 @@ onMounted(() => {
             </label>
             <label>
               {{ requiredLabel('Mô tả') }}
-              <textarea v-model="nhaTroForm.moTa" placeholder="Mô tả" rows="3" required></textarea>
+              <textarea v-model="nhaTroForm.moTa" placeholder="Mô tả" rows="3"></textarea>
             </label>
             <div class="actions">
               <button class="primary" type="submit">{{ editingNhaTroId ? 'Cập nhật' : 'Lưu' }}</button>
@@ -1072,6 +1082,7 @@ onMounted(() => {
           <table>
             <thead>
               <tr>
+                <th>Mã</th>
                 <th>Tên</th>
                 <th>Địa chỉ</th>
                 <th>Số tầng</th>
@@ -1080,6 +1091,7 @@ onMounted(() => {
             </thead>
             <tbody>
               <tr v-for="item in nhaTros" :key="item.id">
+                <td>{{ item.maNhaTro }}</td>
                 <td>{{ item.tenNhaTro }}</td>
                 <td>{{ item.diaChi }}</td>
                 <td>{{ item.soTang }}</td>
@@ -1151,6 +1163,7 @@ onMounted(() => {
           <table>
             <thead>
               <tr>
+                <th>Mã phòng</th>
                 <th>Nhà trọ</th>
                 <th>Tầng số</th>
                 <th>Loại</th>
@@ -1160,8 +1173,13 @@ onMounted(() => {
             </thead>
             <tbody>
               <tr v-for="item in phongs" :key="item.id">
-                <td>{{ item.nhaTro?.tenNhaTro }}</td>
-                <td>{{ item.maPhong }}</td>
+                    <td>
+      {{ item.maPhong }}
+    </td>
+
+    <td>
+      {{ item.nhaTro?.tenNhaTro }}
+    </td>
                 <td>{{ item.loaiPhong }}</td>
                 <td>{{ item.soGiuongToiDa }}</td>
                 <td class="row-actions">

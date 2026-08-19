@@ -17,7 +17,7 @@ export class NhaTro {
   id: string;
 
   @Column({ unique: true, nullable: true })
-  maNhaTro?: string;
+  maNhaTro: string;
 
   @Column()
   tenNhaTro: string;
