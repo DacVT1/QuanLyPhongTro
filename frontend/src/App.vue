@@ -171,42 +171,46 @@ const editingHopDongId = ref<string | null>(null)
 const editingHoaDonId = ref<string | null>(null)
 
 const giuongOptions = computed(() => {
+  // Danh sách tối đa 8 giường
   const allOptions = Array.from(
     { length: 8 },
     (_, index) => String(index + 1)
   )
 
-  // Chưa chọn phòng
+  // Chưa chọn tầng
   if (!giuongForm.value.phongId) {
     return allOptions
   }
 
-  const existingCodes = giuongs.value
+  // Lấy các giường đã được sử dụng trong phòng đang chọn
+  const existingGiuongSo = giuongs.value
     .filter(
       (item) =>
         item.phong?.id === giuongForm.value.phongId &&
         item.id !== editingGiuongId.value
     )
-    .map((item) => String(item.maGiuong))
+    .map((item) => String(item.giuongSo))
 
-  const currentCode = String(
-    giuongForm.value.maGiuong ?? ''
+  // Chỉ hiển thị những giường chưa được sử dụng
+  const availableGiuongSo = allOptions.filter(
+    (so) => !existingGiuongSo.includes(so)
   )
 
-  // Khi sửa, luôn giữ lại mã giường hiện tại
-  const availableCodes = allOptions.filter(
-    (code) => !existingCodes.includes(code)
+  // Khi sửa giường:
+  // giữ lại Giường số hiện tại của bản ghi đang sửa
+  const currentGiuongSo = String(
+    giuongForm.value.giuongSo ?? ''
   )
 
   if (
     editingGiuongId.value &&
-    currentCode &&
-    !availableCodes.includes(currentCode)
+    currentGiuongSo &&
+    !availableGiuongSo.includes(currentGiuongSo)
   ) {
-    availableCodes.push(currentCode)
+    availableGiuongSo.push(currentGiuongSo)
   }
 
-  return availableCodes.sort(
+  return availableGiuongSo.sort(
     (a, b) => Number(a) - Number(b)
   )
 })
@@ -275,7 +279,7 @@ function handleNhaTroChange() {
 }
 
 function resetGiuongForm() {
-  giuongForm.value = { nhaTroId: '', phongId: '', maGiuong: '', trangThai: 'trong' }
+  giuongForm.value = { nhaTroId: '', phongId: '', giuongSo: '', trangThai: 'trong' }
   editingGiuongId.value = null
 }
 
@@ -908,13 +912,13 @@ function editGiuong(item: any) {
   editingGiuongId.value = item.id
 
   giuongForm.value = {
-    nhaTroId: item.phong?.nhaTro?.id ?? '',
-    phongId: item.phong?.id ?? '',
-    maGiuong: item.maGiuong != null
-      ? String(item.maGiuong)
-      : '',
-    trangThai: item.trangThai ?? 'trong',
-  }
+  nhaTroId: item.phong?.nhaTro?.id ?? '',
+  phongId: item.phong?.id ?? '',
+  giuongSo: item.giuongSo != null
+    ? String(item.giuongSo)
+    : '',
+  trangThai: item.trangThai ?? 'trong',
+}
 
   currentTab.value = 'giuong'
 }
@@ -1020,16 +1024,8 @@ const filteredPhongsByNhaTro = computed(() => {
 })
 
 function handleNhaTroChangeForGiuong() {
-  const selectedPhongStillValid = filteredPhongsByNhaTro.value.some(
-    (item) => item.id === giuongForm.value.phongId
-  )
-
-  if (!selectedPhongStillValid) {
-    giuongForm.value.phongId = ''
-  }
-
-  // Khi đổi nhà trọ thì reset mã giường
-  giuongForm.value.maGiuong = ''
+  giuongForm.value.phongId = ''
+  giuongForm.value.giuongSo = ''
 }
 
 function normalizeCodePart(value: string) {
@@ -1337,9 +1333,18 @@ onMounted(() => {
             </label>
             <label>
               {{ requiredLabel('Chọn tầng:') }}
-              <select v-model="giuongForm.phongId" :disabled="!giuongForm.nhaTroId" @change="giuongForm.giuongSo = ''" required>
+              <select v-model="giuongForm.phongId" 
+              :disabled="!giuongForm.nhaTroId" 
+              @change="giuongForm.giuongSo = ''" 
+              required>
                 <option value="">Chọn tầng số</option>
-                <option v-for="item in filteredPhongsByNhaTro" :key="item.id" :value="item.id">{{ item.maPhong }}</option>
+                <option
+  v-for="item in filteredPhongsByNhaTro"
+  :key="item.id"
+  :value="item.id"
+>
+  Tầng {{ item.tangSo }}
+</option>
               </select>
             </label>
             <label>
@@ -1381,7 +1386,8 @@ onMounted(() => {
           <table>
             <thead>
               <tr>
-                <th>Phòng</th>
+                <th>Phòng số</th>
+                <th>Mã giường</th>
                 <th>Giường số</th>
                 <th>Trạng thái</th>
                 <th>Hành động</th>
@@ -1389,8 +1395,9 @@ onMounted(() => {
             </thead>
             <tbody>
               <tr v-for="item in giuongs" :key="item.id">
-                <td>{{ item.phong?.maPhong }}</td>
+                <td>{{ item.phong?.tangSo }}</td>
                 <td>{{ item.maGiuong }}</td>
+                <td>{{ item.giuongSo }}</td>
                 <td>{{ getStatusText(item.trangThai) }}</td>
                 <td class="row-actions">
                   <button class="table-btn edit" @click="editGiuong(item)">Sửa</button>
