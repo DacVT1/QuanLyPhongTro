@@ -92,7 +92,36 @@ const editingNguoiThueId = ref<string | null>(null)
 const editingHopDongId = ref<string | null>(null)
 const editingHoaDonId = ref<string | null>(null)
 
-const giuongOptions = Array.from({ length: 8 }, (_, index) => String(index + 1))
+const giuongOptions = computed(() => {
+  const allOptions = Array.from(
+    { length: 8 },
+    (_, index) => String(index + 1)
+  )
+
+  // Chưa chọn phòng thì hiển thị tất cả
+  if (!giuongForm.value.phongId) {
+    return allOptions
+  }
+
+  // Lấy các mã giường đã tồn tại trong phòng đang chọn
+  const existingCodes = giuongs.value
+    .filter((item) => item.phong?.id === giuongForm.value.phongId)
+    .map((item) => String(item.maGiuong))
+
+  // Nếu đang sửa, giữ lại mã giường hiện tại
+  if (
+    editingGiuongId.value &&
+    giuongForm.value.maGiuong &&
+    !existingCodes.includes(String(giuongForm.value.maGiuong))
+  ) {
+    existingCodes.push(String(giuongForm.value.maGiuong))
+  }
+
+  // Chỉ trả về những mã chưa tồn tại
+  return allOptions.filter(
+    (code) => !existingCodes.includes(code)
+  )
+})
 
 const requiredLabel = (label: string) => `${label} *`
 
@@ -213,33 +242,50 @@ async function savePhong() {
   await loadData()
 }
 
-async function handleDeletePhong(item: any) {
-  console.log('Click xóa phòng:', item)
+function requestDeletePhong(item: any) {
+  deletePhongInfo.value = {
+    id: item.id,
+    maPhong: item.maPhong ?? 'Phòng',
+    tenNhaTro: item.nhaTro?.tenNhaTro ?? '',
+    soGiuong: Array.isArray(item.giuongs)
+      ? item.giuongs.length
+      : 0,
+  }
 
-  const confirmed = window.confirm(
-    `Bạn có chắc chắn muốn xóa phòng "${item.maPhong}" không?`
-  )
+  deletePhongErrorMessage.value = ''
+  showDeletePhongModal.value = true
+}
 
-  if (!confirmed) {
+function closeDeletePhongModal() {
+  showDeletePhongModal.value = false
+  deletePhongErrorMessage.value = ''
+}
+
+async function confirmDeletePhong() {
+  const id = deletePhongInfo.value.id
+
+  if (!id) {
     return
   }
 
   try {
-    console.log('Đang xóa phòng:', item.id)
+    deletePhongErrorMessage.value = ''
 
-    await api.delete(`/phong/${item.id}`)
+    await api.delete(`/phong/${id}`)
 
-    alert('Xóa phòng thành công!')
+    closeDeletePhongModal()
+
+    if (editingPhongId.value === id) {
+      resetPhongForm()
+    }
 
     await loadData()
   } catch (error: any) {
     console.error('Không thể xóa phòng:', error)
 
-    const message =
+    deletePhongErrorMessage.value =
       error?.response?.data?.message ??
       'Không thể xóa phòng. Vui lòng thử lại.'
-
-    alert(message)
   }
 }
 
@@ -307,7 +353,16 @@ async function saveHoaDon() {
 }
 
 const showDeleteNhaTroModal = ref(false)
+const showDeletePhongModal = ref(false)
 
+const deletePhongInfo = ref({
+  id: '',
+  maPhong: '',
+  tenNhaTro: '',
+  soGiuong: 0,
+})
+
+const deletePhongErrorMessage = ref('')
 const deleteNhaTroInfo = ref({
   id: '',
   tenNhaTro: '',
@@ -496,10 +551,16 @@ const filteredPhongsByNhaTro = computed(() => {
 })
 
 function handleNhaTroChangeForGiuong() {
-  const selectedPhongStillValid = filteredPhongsByNhaTro.value.some((item) => item.id === giuongForm.value.phongId)
+  const selectedPhongStillValid = filteredPhongsByNhaTro.value.some(
+    (item) => item.id === giuongForm.value.phongId
+  )
+
   if (!selectedPhongStillValid) {
     giuongForm.value.phongId = ''
   }
+
+  // Khi đổi nhà trọ thì reset mã giường
+  giuongForm.value.maGiuong = ''
 }
 
 function normalizeCodePart(value: string) {
@@ -751,7 +812,7 @@ onMounted(() => {
                   <button
   type="button"
   class="table-btn delete"
-  @click.stop="handleDeletePhong(item)"
+  @click.stop="requestDeletePhong(item)"
 >
   Xóa
 </button>
@@ -775,17 +836,28 @@ onMounted(() => {
             </label>
             <label>
               {{ requiredLabel('Phòng') }}
-              <select v-model="giuongForm.phongId" :disabled="!giuongForm.nhaTroId" required>
+              <select v-model="giuongForm.phongId" :disabled="!giuongForm.nhaTroId" @change="giuongForm.maGiuong = ''" required>
                 <option value="">Chọn phòng</option>
                 <option v-for="item in filteredPhongsByNhaTro" :key="item.id" :value="item.id">{{ item.maPhong }}</option>
               </select>
             </label>
             <label>
               {{ requiredLabel('Mã giường') }}
-              <select v-model="giuongForm.maGiuong" :disabled="editingGiuongId !== null" required>
-                <option value="">Chọn mã giường</option>
-                <option v-for="item in giuongOptions" :key="item" :value="item">{{ item }}</option>
-              </select>
+              <select
+  v-model="giuongForm.maGiuong"
+  :disabled="editingGiuongId !== null"
+  required
+>
+  <option value="">Chọn mã giường</option>
+
+  <option
+    v-for="item in giuongOptions"
+    :key="item"
+    :value="item"
+  >
+    {{ item }}
+  </option>
+</select>
             </label>
             <label>
               {{ requiredLabel('Trạng thái') }}
@@ -818,7 +890,7 @@ onMounted(() => {
               <tr v-for="item in giuongs" :key="item.id">
                 <td>{{ item.phong?.maPhong }}</td>
                 <td>{{ item.maGiuong }}</td>
-                <td>{{ item.trangThai }}</td>
+                <td>{{ getStatusText(item.trangThai) }}</td>
                 <td class="row-actions">
                   <button class="table-btn edit" @click="editGiuong(item)">Sửa</button>
                   <button class="table-btn delete" @click="deleteItem('giuong', item.id)">Xóa</button>
@@ -1133,6 +1205,114 @@ onMounted(() => {
         </div>
       </div>
     </div>
+    <!-- Modal xóa phòng -->
+<div
+  v-if="showDeletePhongModal"
+  class="modal-overlay"
+  @click.self="closeDeletePhongModal"
+>
+  <div class="delete-modal">
+    <!-- Header -->
+    <div class="delete-modal-header">
+      <div class="warning-icon">
+        ⚠
+      </div>
+
+      <div>
+        <h3>
+          Xác nhận xóa phòng
+        </h3>
+
+        <p>
+          {{ deletePhongInfo.maPhong }}
+          <span v-if="deletePhongInfo.tenNhaTro">
+            - {{ deletePhongInfo.tenNhaTro }}
+          </span>
+        </p>
+      </div>
+    </div>
+
+    <!-- Body -->
+    <div class="delete-modal-body">
+
+      <template v-if="deletePhongInfo.soGiuong > 0">
+
+        <div class="warning-message">
+          <strong>Không thể xóa phòng này!</strong>
+
+          <p>
+            Phòng đang có dữ liệu giường liên quan.
+            Bạn cần xử lý các dữ liệu này trước khi xóa.
+          </p>
+        </div>
+
+        <div class="related-data">
+
+          <div class="related-item">
+            <span>Giường</span>
+
+            <strong>
+              {{ deletePhongInfo.soGiuong }}
+            </strong>
+          </div>
+
+        </div>
+
+        <p class="delete-modal-note">
+          Hãy xóa hoặc xử lý các giường thuộc phòng
+          trước khi thực hiện thao tác này.
+        </p>
+
+      </template>
+
+      <template v-else>
+
+        <p class="confirm-message">
+          Bạn có chắc chắn muốn xóa phòng
+          <strong>
+            {{ deletePhongInfo.maPhong }}
+          </strong>
+          không?
+        </p>
+
+        <p class="delete-modal-note">
+          Thao tác này không thể hoàn tác.
+        </p>
+
+      </template>
+
+      <p
+        v-if="deletePhongErrorMessage"
+        class="error-message"
+      >
+        {{ deletePhongErrorMessage }}
+      </p>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="delete-modal-actions">
+
+      <button
+        class="secondary"
+        type="button"
+        @click="closeDeletePhongModal"
+      >
+        Đóng
+      </button>
+
+      <button
+        v-if="deletePhongInfo.soGiuong === 0"
+        class="danger-button"
+        type="button"
+        @click="confirmDeletePhong"
+      >
+        Xác nhận xóa
+      </button>
+
+    </div>
+  </div>
+</div>
   </div>
 </template>
 
