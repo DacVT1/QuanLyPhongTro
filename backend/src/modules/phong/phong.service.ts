@@ -124,7 +124,26 @@ export class PhongService {
       phong.nhaTro = nhaTro
     }
 
-    const floor = payload.tangSo ?? payload.maPhong
+    const floor = payload.tangSo
+
+if (
+  floor === undefined ||
+  floor === null ||
+  String(floor).trim() === ''
+) {
+  throw new ConflictException(
+    'Tầng số là bắt buộc',
+  )
+}
+
+const normalizedFloor = this.normalizeFloor(floor)
+
+phong.tangSo = Number(normalizedFloor)
+
+phong.maPhong = this.buildRoomCode(
+  phong.nhaTro.maNhaTro,
+  normalizedFloor,
+)
 
 if (
   floor !== undefined &&

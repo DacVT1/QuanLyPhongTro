@@ -356,14 +356,36 @@ async function saveNhaTro() {
 }
 
 async function savePhong() {
-  const payload = { ...phongForm.value, nhaTro: { id: phongForm.value.nhaTroId } }
-  if (editingPhongId.value) {
-    await api.patch(`/phong/${editingPhongId.value}`, payload)
-  } else {
-    await api.post('/phong', payload)
+  const payload = {
+    tangSo: Number(phongForm.value.tangSo),
+    soGiuongToiDa: Number(phongForm.value.soGiuongToiDa),
+    loaiPhong: phongForm.value.loaiPhong,
+    dienTich: Number(phongForm.value.dienTich),
+    nhaTro: {
+      id: phongForm.value.nhaTroId,
+    },
   }
-  resetPhongForm()
-  await loadData()
+
+  try {
+    if (editingPhongId.value) {
+      await api.patch(
+        `/phong/${editingPhongId.value}`,
+        payload,
+      )
+    } else {
+      await api.post('/phong', payload)
+    }
+
+    resetPhongForm()
+    await loadData()
+  } catch (error: any) {
+    console.error('Không thể lưu phòng:', error)
+
+    alert(
+      error?.response?.data?.message ??
+      'Không thể lưu phòng. Vui lòng thử lại.',
+    )
+  }
 }
 
 function requestDeletePhong(item: any) {
@@ -1307,27 +1329,27 @@ onMounted(() => {
           <h3>{{ editingGiuongId ? 'Sửa giường' : 'Thêm giường' }}</h3>
           <form @submit.prevent="saveGiuong" class="form-grid">
             <label>
-              {{ requiredLabel('Nhà trọ') }}
+              {{ requiredLabel('Nhà trọ:') }}
               <select v-model="giuongForm.nhaTroId" @change="handleNhaTroChangeForGiuong" required>
                 <option value="">Chọn nhà trọ</option>
                 <option v-for="item in nhaTros" :key="item.id" :value="item.id">{{ item.tenNhaTro }}</option>
               </select>
             </label>
             <label>
-              {{ requiredLabel('Phòng') }}
+              {{ requiredLabel('Phòng:') }}
               <select v-model="giuongForm.phongId" :disabled="!giuongForm.nhaTroId" @change="giuongForm.maGiuong = ''" required>
                 <option value="">Chọn phòng</option>
                 <option v-for="item in filteredPhongsByNhaTro" :key="item.id" :value="item.id">{{ item.maPhong }}</option>
               </select>
             </label>
             <label>
-              {{ requiredLabel('Mã giường') }}
+              {{ requiredLabel('Giường số:') }}
               <select
   v-model="giuongForm.maGiuong"
   :disabled="editingGiuongId !== null"
   required
 >
-  <option value="">Chọn mã giường</option>
+  <option value="">Chọn giường</option>
 
   <option
     v-for="item in giuongOptions"
@@ -1360,7 +1382,7 @@ onMounted(() => {
             <thead>
               <tr>
                 <th>Phòng</th>
-                <th>Mã giường</th>
+                <th>Giường số</th>
                 <th>Trạng thái</th>
                 <th>Hành động</th>
               </tr>
