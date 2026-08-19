@@ -685,16 +685,30 @@ onMounted(() => {
           <h3>{{ editingPhongId ? 'Sửa phòng' : 'Thêm phòng' }}</h3>
           <form @submit.prevent="savePhong" class="form-grid">
             <label>
-              {{ requiredLabel('Nhà trọ') }}
-              <select v-model="phongForm.nhaTroId" :disabled="editingPhongId !== null" required>
-                <option value="">Chọn nhà trọ</option>
-                <option v-for="item in nhaTros" :key="item.id" :value="item.id">{{ item.tenNhaTro }}</option>
-              </select>
-            </label>
-            <label>
-              {{ requiredLabel('Tầng số') }}
-              <input v-model="phongForm.maPhong" placeholder="Tầng số" :disabled="editingPhongId !== null" required />
-            </label>
+  {{ requiredLabel('Nhà trọ') }}
+  <select
+    v-model="phongForm.nhaTroId"
+    required
+  >
+    <option value="">Chọn nhà trọ</option>
+    <option
+      v-for="item in nhaTros"
+      :key="item.id"
+      :value="item.id"
+    >
+      {{ item.tenNhaTro }}
+    </option>
+  </select>
+</label>
+
+<label>
+  {{ requiredLabel('Tầng số') }}
+  <input
+    v-model="phongForm.maPhong"
+    placeholder="Tầng số"
+    required
+  />
+</label>
             <label>
               {{ requiredLabel('Số giường tối đa') }}
               <input v-model.number="phongForm.soGiuongToiDa" type="number" min="1" max="8" placeholder="Số giường tối đa" required />
