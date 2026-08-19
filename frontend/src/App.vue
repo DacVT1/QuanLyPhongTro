@@ -49,10 +49,72 @@ const nhaTroForm = ref({
 
 const phongForm = ref({
   maPhong: '',
+  tangSo: '',
   soGiuongToiDa: 8,
   loaiPhong: 'phong_tieu_chuan',
   dienTich: 25,
   nhaTroId: '',
+})
+
+const tangSoOptions = computed(() => {
+  if (!phongForm.value.nhaTroId) {
+    return []
+  }
+
+  const nhaTro = nhaTros.value.find(
+    item => item.id === phongForm.value.nhaTroId
+  )
+
+  if (!nhaTro) {
+    return []
+  }
+
+  const soTang = Number(nhaTro.soTang ?? 0)
+
+  if (soTang <= 0) {
+    return []
+  }
+
+  // Các tầng đã được sử dụng bởi phòng khác
+  const usedFloors = phongs.value
+    .filter(item => {
+      if (item.nhaTro?.id !== phongForm.value.nhaTroId) {
+        return false
+      }
+
+      // Khi sửa phòng thì không loại tầng hiện tại của chính phòng đó
+      if (item.id === editingPhongId.value) {
+        return false
+      }
+
+      return true
+    })
+    .map(item => {
+      // Ưu tiên tangSo nếu backend đã lưu
+      if (
+        item.tangSo !== undefined &&
+        item.tangSo !== null
+      ) {
+        return Number(item.tangSo)
+      }
+
+      // Hỗ trợ dữ liệu cũ: lấy từ CG_T1, CG_T2...
+      const match = String(item.maPhong ?? '')
+        .match(/_T(\d+)$/)
+
+      return match ? Number(match[1]) : null
+    })
+    .filter(
+      (floor): floor is number =>
+        floor !== null && Number.isInteger(floor)
+    )
+
+  return Array.from(
+    { length: soTang },
+    (_, index) => index + 1
+  ).filter(
+    floor => !usedFloors.includes(floor)
+  )
 })
 
 const giuongForm = ref({
@@ -198,12 +260,17 @@ function resetNhaTroForm() {
 function resetPhongForm() {
   phongForm.value = {
     maPhong: '',
+    tangSo: "1",
     soGiuongToiDa: 8,
     loaiPhong: 'phong_tieu_chuan',
     dienTich: 25,
     nhaTroId: '',
   }
   editingPhongId.value = null
+}
+
+function handleNhaTroChange() {
+  phongForm.value.tangSo = ''
 }
 
 function resetGiuongForm() {
@@ -1118,6 +1185,7 @@ onMounted(() => {
   {{ requiredLabel('Nhà trọ') }}
   <select
     v-model="phongForm.nhaTroId"
+    @change="handleNhaTroChange"
     required
   >
     <option value="">Chọn nhà trọ</option>
@@ -1133,11 +1201,24 @@ onMounted(() => {
 
 <label>
   {{ requiredLabel('Tầng số') }}
-  <input
-    v-model="phongForm.maPhong"
-    placeholder="Tầng số"
+
+  <select
+    v-model="phongForm.tangSo"
     required
-  />
+    :disabled="!phongForm.nhaTroId"
+  >
+    <option value="" disabled>
+      -- Chọn tầng --
+    </option>
+
+    <option
+      v-for="floor in tangSoOptions"
+      :key="floor"
+      :value="floor"
+    >
+      Tầng {{ floor }}
+    </option>
+  </select>
 </label>
             <label>
               {{ requiredLabel('Số giường tối đa') }}
@@ -1180,7 +1261,7 @@ onMounted(() => {
     <td>
       {{ item.nhaTro?.tenNhaTro || item.nhaTro?.maNhaTro}}
     </td>
-                <td>{{ item.sotang }}</td>
+                <td>{{ item.soTang }}</td>
                 <td>{{ item.loaiPhong }}</td>
                 <td>{{ item.soGiuongToiDa }}</td>
                 <td class="row-actions">
