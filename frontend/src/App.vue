@@ -327,33 +327,47 @@ async function saveGiuong() {
   }
 }
 
-async function handleDeleteGiuong(item: any) {
-  console.log('Click xóa giường:', item)
+function requestDeleteGiuong(item: any) {
+  deleteGiuongInfo.value = {
+    id: item.id,
+    maGiuong: String(item.maGiuong ?? ''),
+    maPhong: item.phong?.maPhong ?? '',
+  }
 
-  const confirmed = window.confirm(
-    `Bạn có chắc chắn muốn xóa giường "${item.maGiuong}" của phòng "${item.phong?.maPhong}" không?`
-  )
+  deleteGiuongErrorMessage.value = ''
+  showDeleteGiuongModal.value = true
+}
 
-  if (!confirmed) {
+function closeDeleteGiuongModal() {
+  showDeleteGiuongModal.value = false
+  deleteGiuongErrorMessage.value = ''
+}
+
+async function confirmDeleteGiuong() {
+  const id = deleteGiuongInfo.value.id
+
+  if (!id) {
     return
   }
 
   try {
-    console.log('Đang xóa giường:', item.id)
+    deleteGiuongErrorMessage.value = ''
 
-    await api.delete(`/giuong/${item.id}`)
+    await api.delete(`/giuong/${id}`)
 
-    alert('Xóa giường thành công!')
+    closeDeleteGiuongModal()
+
+    if (editingGiuongId.value === id) {
+      resetGiuongForm()
+    }
 
     await loadData()
   } catch (error: any) {
     console.error('Không thể xóa giường:', error)
 
-    const message =
+    deleteGiuongErrorMessage.value =
       error?.response?.data?.message ??
       'Không thể xóa giường. Vui lòng thử lại.'
-
-    alert(message)
   }
 }
 
@@ -410,7 +424,15 @@ async function saveHoaDon() {
 }
 
 const showDeleteNhaTroModal = ref(false)
-const showDeletePhongModal = ref(false)
+const showDeleteGiuongModal = ref(false)
+
+const deleteGiuongInfo = ref({
+  id: '',
+  maGiuong: '',
+  maPhong: '',
+})
+
+const deleteGiuongErrorMessage = ref('')
 
 const deletePhongInfo = ref({
   id: '',
@@ -957,7 +979,7 @@ onMounted(() => {
                   <button
   type="button"
   class="table-btn delete"
-  @click.stop="handleDeleteGiuong(item)"
+  @click.stop="requestDeleteGiuong(item)"
 >
   Xóa
 </button>
@@ -1378,6 +1400,89 @@ onMounted(() => {
       </button>
 
     </div>
+  </div>
+</div>
+<!-- Modal xóa giường -->
+<div
+  v-if="showDeleteGiuongModal"
+  class="modal-overlay"
+  @click.self="closeDeleteGiuongModal"
+>
+  <div class="delete-modal">
+
+    <!-- Header -->
+    <div class="delete-modal-header">
+      <div class="warning-icon">
+        ⚠
+      </div>
+
+      <div>
+        <h3>
+          Xác nhận xóa giường
+        </h3>
+
+        <p>
+          {{ deleteGiuongInfo.maGiuong }}
+          <span v-if="deleteGiuongInfo.maPhong">
+            - Phòng {{ deleteGiuongInfo.maPhong }}
+          </span>
+        </p>
+      </div>
+    </div>
+
+    <!-- Body -->
+    <div class="delete-modal-body">
+
+      <p class="confirm-message">
+        Bạn có chắc chắn muốn xóa giường
+        <strong>
+          {{ deleteGiuongInfo.maGiuong }}
+        </strong>
+
+        <span v-if="deleteGiuongInfo.maPhong">
+          của phòng
+          <strong>
+            {{ deleteGiuongInfo.maPhong }}
+          </strong>
+        </span>
+
+        không?
+      </p>
+
+      <p class="delete-modal-note">
+        Thao tác này không thể hoàn tác.
+      </p>
+
+      <p
+        v-if="deleteGiuongErrorMessage"
+        class="error-message"
+      >
+        {{ deleteGiuongErrorMessage }}
+      </p>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="delete-modal-actions">
+
+      <button
+        class="secondary"
+        type="button"
+        @click="closeDeleteGiuongModal"
+      >
+        Đóng
+      </button>
+
+      <button
+        class="danger-button"
+        type="button"
+        @click="confirmDeleteGiuong"
+      >
+        Xác nhận xóa
+      </button>
+
+    </div>
+
   </div>
 </div>
   </div>
