@@ -213,6 +213,36 @@ async function savePhong() {
   await loadData()
 }
 
+async function handleDeletePhong(item: any) {
+  console.log('Click xóa phòng:', item)
+
+  const confirmed = window.confirm(
+    `Bạn có chắc chắn muốn xóa phòng "${item.maPhong}" không?`
+  )
+
+  if (!confirmed) {
+    return
+  }
+
+  try {
+    console.log('Đang xóa phòng:', item.id)
+
+    await api.delete(`/phong/${item.id}`)
+
+    alert('Xóa phòng thành công!')
+
+    await loadData()
+  } catch (error: any) {
+    console.error('Không thể xóa phòng:', error)
+
+    const message =
+      error?.response?.data?.message ??
+      'Không thể xóa phòng. Vui lòng thử lại.'
+
+    alert(message)
+  }
+}
+
 async function saveGiuong() {
   const payload = { ...giuongForm.value, phong: { id: giuongForm.value.phongId } }
   if (editingGiuongId.value) {
@@ -655,16 +685,30 @@ onMounted(() => {
           <h3>{{ editingPhongId ? 'Sửa phòng' : 'Thêm phòng' }}</h3>
           <form @submit.prevent="savePhong" class="form-grid">
             <label>
-              {{ requiredLabel('Nhà trọ') }}
-              <select v-model="phongForm.nhaTroId" :disabled="editingPhongId !== null" required>
-                <option value="">Chọn nhà trọ</option>
-                <option v-for="item in nhaTros" :key="item.id" :value="item.id">{{ item.tenNhaTro }}</option>
-              </select>
-            </label>
-            <label>
-              {{ requiredLabel('Tầng số') }}
-              <input v-model="phongForm.maPhong" placeholder="Tầng số" :disabled="editingPhongId !== null" required />
-            </label>
+  {{ requiredLabel('Nhà trọ') }}
+  <select
+    v-model="phongForm.nhaTroId"
+    required
+  >
+    <option value="">Chọn nhà trọ</option>
+    <option
+      v-for="item in nhaTros"
+      :key="item.id"
+      :value="item.id"
+    >
+      {{ item.tenNhaTro }}
+    </option>
+  </select>
+</label>
+
+<label>
+  {{ requiredLabel('Tầng số') }}
+  <input
+    v-model="phongForm.maPhong"
+    placeholder="Tầng số"
+    required
+  />
+</label>
             <label>
               {{ requiredLabel('Số giường tối đa') }}
               <input v-model.number="phongForm.soGiuongToiDa" type="number" min="1" max="8" placeholder="Số giường tối đa" required />
@@ -704,7 +748,13 @@ onMounted(() => {
                 <td>{{ item.soGiuongToiDa }}</td>
                 <td class="row-actions">
                   <button class="table-btn edit" @click="editPhong(item)">Sửa</button>
-                  <button class="table-btn delete" @click="deleteItem('phong', item.id)">Xóa</button>
+                  <button
+  type="button"
+  class="table-btn delete"
+  @click.stop="handleDeletePhong(item)"
+>
+  Xóa
+</button>
                 </td>
               </tr>
             </tbody>
