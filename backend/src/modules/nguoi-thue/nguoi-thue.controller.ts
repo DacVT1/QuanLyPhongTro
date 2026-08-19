@@ -17,6 +17,7 @@ import {
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 import { randomUUID } from 'crypto';
+
 import { NguoiThueService } from './nguoi-thue.service';
 
 @Controller('nguoi-thue')
@@ -33,15 +34,122 @@ export class NguoiThueController {
     return this.nguoiThueService.findOne(id);
   }
 
-  @Post()
-  create(@Body() payload: any) {
-    return this.nguoiThueService.create(payload);
+@Post()
+@UseInterceptors(
+  FileFieldsInterceptor(
+    [
+      { name: 'cccdMatTruoc', maxCount: 1 },
+      { name: 'cccdMatSau', maxCount: 1 },
+    ],
+    {
+      storage: diskStorage({
+        destination: './uploads/nguoi-thue',
+        filename: (_req, file, cb) => {
+          const extension = extname(file.originalname);
+
+          cb(
+            null,
+            `${randomUUID()}${extension}`,
+          );
+        },
+      }),
+
+      fileFilter: (_req, file, cb) => {
+        if (!file.mimetype.startsWith('image/')) {
+          return cb(
+            new Error('Chi cho phep upload file anh'),
+            false,
+          );
+        }
+
+        cb(null, true);
+      },
+
+      limits: {
+        fileSize: 5 * 1024 * 1024,
+      },
+    },
+  ),
+)
+create(
+  @Body() payload: any,
+  @UploadedFiles()
+  files: {
+    cccdMatTruoc?: Express.Multer.File[];
+    cccdMatSau?: Express.Multer.File[];
+  },
+) {
+  if (files.cccdMatTruoc?.[0]) {
+    payload.cccdMatTruoc =
+      `/uploads/nguoi-thue/${files.cccdMatTruoc[0].filename}`;
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() payload: any) {
-    return this.nguoiThueService.update(id, payload);
+  if (files.cccdMatSau?.[0]) {
+    payload.cccdMatSau =
+      `/uploads/nguoi-thue/${files.cccdMatSau[0].filename}`;
   }
+
+  return this.nguoiThueService.create(payload);
+}
+
+@Patch(':id')
+@UseInterceptors(
+  FileFieldsInterceptor(
+    [
+      { name: 'cccdMatTruoc', maxCount: 1 },
+      { name: 'cccdMatSau', maxCount: 1 },
+    ],
+    {
+      storage: diskStorage({
+        destination: './uploads/nguoi-thue',
+        filename: (_req, file, cb) => {
+          const extension = extname(file.originalname);
+
+          cb(
+            null,
+            `${randomUUID()}${extension}`,
+          );
+        },
+      }),
+
+      fileFilter: (_req, file, cb) => {
+        if (!file.mimetype.startsWith('image/')) {
+          return cb(
+            new Error('Chi cho phep upload file anh'),
+            false,
+          );
+        }
+
+        cb(null, true);
+      },
+
+      limits: {
+        fileSize: 5 * 1024 * 1024,
+      },
+    },
+  ),
+)
+update(
+  @Param('id') id: string,
+  @Body() payload: any,
+  @UploadedFiles()
+  files: {
+    cccdMatTruoc?: Express.Multer.File[];
+    cccdMatSau?: Express.Multer.File[];
+  },
+) {
+  if (files.cccdMatTruoc?.[0]) {
+    payload.cccdMatTruoc =
+      `/uploads/nguoi-thue/${files.cccdMatTruoc[0].filename}`;
+  }
+
+  if (files.cccdMatSau?.[0]) {
+    payload.cccdMatSau =
+      `/uploads/nguoi-thue/${files.cccdMatSau[0].filename}`;
+  }
+
+  return this.nguoiThueService.update(id, payload);
+}
 
   @Delete(':id')
   remove(@Param('id') id: string) {
