@@ -290,14 +290,61 @@ async function confirmDeletePhong() {
 }
 
 async function saveGiuong() {
-  const payload = { ...giuongForm.value, phong: { id: giuongForm.value.phongId } }
-  if (editingGiuongId.value) {
-    await api.patch(`/giuong/${editingGiuongId.value}`, payload)
-  } else {
-    await api.post('/giuong', payload)
+  const payload = {
+    maGiuong: giuongForm.value.maGiuong,
+    trangThai: giuongForm.value.trangThai,
+    phong: {
+      id: giuongForm.value.phongId,
+    },
   }
-  resetGiuongForm()
-  await loadData()
+
+  try {
+    if (editingGiuongId.value) {
+      await api.patch(`/giuong/${editingGiuongId.value}`, payload)
+    } else {
+      await api.post('/giuong', payload)
+    }
+
+    resetGiuongForm()
+    await loadData()
+  } catch (error: any) {
+    console.error('Không thể lưu giường:', error)
+
+    alert(
+      error?.response?.data?.message ??
+      'Không thể lưu giường. Vui lòng thử lại.'
+    )
+  }
+}
+
+async function handleDeleteGiuong(item: any) {
+  console.log('Click xóa giường:', item)
+
+  const confirmed = window.confirm(
+    `Bạn có chắc chắn muốn xóa giường "${item.maGiuong}" của phòng "${item.phong?.maPhong}" không?`
+  )
+
+  if (!confirmed) {
+    return
+  }
+
+  try {
+    console.log('Đang xóa giường:', item.id)
+
+    await api.delete(`/giuong/${item.id}`)
+
+    alert('Xóa giường thành công!')
+
+    await loadData()
+  } catch (error: any) {
+    console.error('Không thể xóa giường:', error)
+
+    const message =
+      error?.response?.data?.message ??
+      'Không thể xóa giường. Vui lòng thử lại.'
+
+    alert(message)
+  }
 }
 
 async function saveNguoiThue() {
@@ -893,7 +940,13 @@ onMounted(() => {
                 <td>{{ getStatusText(item.trangThai) }}</td>
                 <td class="row-actions">
                   <button class="table-btn edit" @click="editGiuong(item)">Sửa</button>
-                  <button class="table-btn delete" @click="deleteItem('giuong', item.id)">Xóa</button>
+                  <button
+  type="button"
+  class="table-btn delete"
+  @click.stop="handleDeleteGiuong(item)"
+>
+  Xóa
+</button>
                 </td>
               </tr>
             </tbody>
