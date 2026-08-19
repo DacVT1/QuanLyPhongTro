@@ -271,6 +271,7 @@ function resetPhongForm() {
 
 function handleNhaTroChange() {
   phongForm.value.tangSo = ''
+  phongForm.value.maPhong = ''
 }
 
 function resetGiuongForm() {
@@ -862,6 +863,25 @@ function editPhong(item: any) {
   currentTab.value = 'phong'
 }
 
+function updateMaPhongByTang() {
+  if (!phongForm.value.nhaTroId || !phongForm.value.tangSo) {
+    phongForm.value.maPhong = ''
+    return
+  }
+
+  const nhaTro = nhaTros.value.find(
+    item => item.id === phongForm.value.nhaTroId
+  )
+
+  if (!nhaTro?.maNhaTro) {
+    phongForm.value.maPhong = ''
+    return
+  }
+
+  phongForm.value.maPhong =
+    `${nhaTro.maNhaTro}_T${phongForm.value.tangSo}`
+}
+
 function editGiuong(item: any) {
   editingGiuongId.value = item.id
 
@@ -1205,6 +1225,7 @@ onMounted(() => {
 
   <select
     v-model="phongForm.tangSo"
+    @change="updateMaPhongByTang"
     required
     :disabled="!phongForm.nhaTroId"
   >
