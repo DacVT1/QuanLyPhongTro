@@ -39,30 +39,69 @@ export class NhaTroService {
   }
 
   async create(payload: Partial<NhaTro>) {
-    return this.repository.save(this.repository.create(payload));
+    const maNhaTro = String(payload.maNhaTro ?? '').trim();
+
+    if (!maNhaTro) {
+      throw new ConflictException('Mã nhà trọ là bắt buộc');
+    }
+
+    const existing = await this.repository.findOne({
+      where: { maNhaTro },
+    });
+
+    if (existing) {
+      throw new ConflictException(`Mã nhà trọ ${maNhaTro} đã tồn tại`);
+    }
+
+    return this.repository.save(
+      this.repository.create({
+        ...payload,
+        maNhaTro,
+      }),
+    );
   }
 
   async update(id: string, payload: Partial<NhaTro>) {
-    await this.repository.update(id, payload);
-    return this.findOne(id);
-  }
-
-  async remove(id: string) {
-    // 1. Kiểm tra nhà trọ có tồn tại không
     const item = await this.findOne(id);
 
     if (!item) {
       throw new NotFoundException('Khong tim thay nha tro');
     }
 
-    // Lấy các Repository thông qua EntityManager hiện tại.
-    // Không cần thêm các Repository này vào NhaTroModule.
+    if (payload.maNhaTro !== undefined) {
+      const maNhaTro = String(payload.maNhaTro).trim();
+
+      if (!maNhaTro) {
+        throw new ConflictException('Mã nhà trọ là bắt buộc');
+      }
+
+      const existing = await this.repository.findOne({
+        where: { maNhaTro },
+      });
+
+      if (existing && existing.id !== id) {
+        throw new ConflictException(`Mã nhà trọ ${maNhaTro} đã tồn tại`);
+      }
+
+      payload.maNhaTro = maNhaTro;
+    }
+
+    await this.repository.update(id, payload);
+    return this.findOne(id);
+  }
+
+  async remove(id: string) {
+    const item = await this.findOne(id);
+
+    if (!item) {
+      throw new NotFoundException('Khong tim thay nha tro');
+    }
+
     const phongRepository = this.repository.manager.getRepository(Phong);
     const giuongRepository = this.repository.manager.getRepository(Giuong);
     const hopDongRepository = this.repository.manager.getRepository(HopDong);
     const hoaDonRepository = this.repository.manager.getRepository(HoaDon);
 
-    // 2. Đếm số phòng thuộc nhà trọ
     const soPhong = await phongRepository
       .createQueryBuilder('phong')
       .where('phong.nha_tro_id = :nhaTroId', {
@@ -70,8 +109,6 @@ export class NhaTroService {
       })
       .getCount();
 
-    // Nếu không có phòng thì các dữ liệu bên dưới cũng không thể
-    // liên kết trực tiếp với nhà trọ thông qua cấu trúc hiện tại.
     if (soPhong === 0) {
       await this.repository.remove(item);
 
@@ -82,7 +119,6 @@ export class NhaTroService {
       };
     }
 
-    // 3. Lấy danh sách ID phòng thuộc nhà trọ
     const phongIds = await phongRepository
       .createQueryBuilder('phong')
       .select('phong.id', 'id')
@@ -93,7 +129,6 @@ export class NhaTroService {
 
     const danhSachPhongId = phongIds.map((phong) => phong.id);
 
-    // 4. Đếm số giường thuộc các phòng
     const soGiuong = await giuongRepository
       .createQueryBuilder('giuong')
       .where('giuong.phong_id IN (:...phongIds)', {
@@ -101,7 +136,6 @@ export class NhaTroService {
       })
       .getCount();
 
-    // 5. Lấy danh sách ID giường
     let danhSachGiuongId: string[] = [];
 
     if (soGiuong > 0) {
@@ -116,7 +150,6 @@ export class NhaTroService {
       danhSachGiuongId = giuongIds.map((giuong) => giuong.id);
     }
 
-    // 6. Đếm số hợp đồng
     let soHopDong = 0;
 
     if (danhSachGiuongId.length > 0) {
@@ -128,7 +161,6 @@ export class NhaTroService {
         .getCount();
     }
 
-    // 7. Lấy danh sách ID hợp đồng
     let danhSachHopDongId: string[] = [];
 
     if (soHopDong > 0) {
@@ -143,7 +175,6 @@ export class NhaTroService {
       danhSachHopDongId = hopDongIds.map((hopDong) => hopDong.id);
     }
 
-    // 8. Đếm số hóa đơn
     let soHoaDon = 0;
 
     if (danhSachHopDongId.length > 0) {
@@ -155,7 +186,6 @@ export class NhaTroService {
         .getCount();
     }
 
-    // 9. Không cho phép xóa nếu còn dữ liệu liên quan
     throw new ConflictException({
       success: false,
       code: 'NHA_TRO_HAS_DATA',
