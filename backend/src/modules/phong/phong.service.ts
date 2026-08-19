@@ -45,7 +45,7 @@ export class PhongService {
   private buildRoomCode(maNhaTro: string, floor: unknown): string {
     return `${maNhaTro.trim()}_T${this.normalizeFloor(floor)}`
   }
-
+  
   async create(payload: Partial<Phong> & { nhaTro?: { id: string }; nhaTroId?: string; tangSo?: string | number }) {
     const nhaTroId = payload.nhaTro?.id ?? payload.nhaTroId
 
@@ -61,7 +61,7 @@ export class PhongService {
       throw new NotFoundException('Không tìm thấy nhà trọ')
     }
 
-    const floor = payload.tangSo ?? payload.maPhong
+    const floor = this.normalizeFloor(payload.tangSo ?? payload.maPhong,)
     const maPhong = this.buildRoomCode(nhaTro.maNhaTro, floor)
 
     const existing = await this.repository.findOne({
@@ -74,6 +74,7 @@ export class PhongService {
 
     const phong = this.repository.create({
       maPhong,
+      tangSo: Number(floor),
       soGiuongToiDa: payload.soGiuongToiDa,
       loaiPhong: payload.loaiPhong,
       dienTich: payload.dienTich,
