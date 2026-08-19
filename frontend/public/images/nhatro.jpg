@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="160" height="120" viewBox="0 0 160 120">
+  <rect width="160" height="120" fill="#e6f2ff" rx="8"/>
+  <rect x="18" y="50" width="124" height="52" fill="#fff" rx="6" stroke="#cfe7ff"/>
+  <polygon points="0,50 80,10 160,50" fill="#bae0ff"/>
+  <rect x="30" y="66" width="24" height="20" fill="#2563eb" rx="2"/>
+  <rect x="66" y="66" width="24" height="20" fill="#2563eb" rx="2"/>
+  <rect x="102" y="66" width="24" height="20" fill="#2563eb" rx="2"/>
+  <text x="80" y="96" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#0f172a" text-anchor="middle">Nhà trọ</text>
+</svg>
