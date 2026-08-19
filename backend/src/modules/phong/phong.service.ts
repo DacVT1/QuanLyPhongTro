@@ -125,9 +125,21 @@ export class PhongService {
     }
 
     const floor = payload.tangSo ?? payload.maPhong
-    if (floor !== undefined && floor !== null && String(floor).trim() !== '') {
-      phong.maPhong = this.buildRoomCode(phong.nhaTro.maNhaTro, floor)
-    }
+
+if (
+  floor !== undefined &&
+  floor !== null &&
+  String(floor).trim() !== ''
+) {
+  const normalizedFloor = this.normalizeFloor(floor)
+
+  phong.tangSo = Number(normalizedFloor)
+
+  phong.maPhong = this.buildRoomCode(
+    phong.nhaTro.maNhaTro,
+    normalizedFloor,
+  )
+}
 
     const duplicate = await this.repository.findOne({
       where: { maPhong: phong.maPhong },

@@ -260,7 +260,7 @@ function resetNhaTroForm() {
 function resetPhongForm() {
   phongForm.value = {
     maPhong: '',
-    tangSo: "1",
+    tangSo: '',
     soGiuongToiDa: 8,
     loaiPhong: 'phong_tieu_chuan',
     dienTich: 25,
@@ -853,6 +853,7 @@ function editPhong(item: any) {
   editingPhongId.value = item.id
   phongForm.value = {
     maPhong: item.maPhong ?? '',
+    tangSo: item.tangSo ?? '',
     soGiuongToiDa: item.soGiuongToiDa ?? 8,
     loaiPhong: item.loaiPhong ?? 'phong_tieu_chuan',
     dienTich: item.dienTich ?? 25,
@@ -1261,7 +1262,7 @@ onMounted(() => {
     <td>
       {{ item.nhaTro?.tenNhaTro || item.nhaTro?.maNhaTro}}
     </td>
-                <td>{{ item.soTang }}</td>
+                <td>{{ item.tangSo }}</td>
                 <td>{{ item.loaiPhong }}</td>
                 <td>{{ item.soGiuongToiDa }}</td>
                 <td class="row-actions">
