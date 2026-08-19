@@ -10,10 +10,10 @@ import { seedDatabase } from './database/seed';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-
-  // ==============================
-  // CORS
-  // ==============================
+app.use(
+  '/uploads',
+  express.static(join(process.cwd(), 'uploads')),
+);
   app.enableCors({
     origin: [
       'http://localhost:5173',

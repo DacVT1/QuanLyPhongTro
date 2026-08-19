@@ -39,6 +39,7 @@ cccdMatTruoc?: string;
 
 @Column({ nullable: true })
 cccdMatSau?: string;
+
   @CreateDateColumn()
   createdAt: Date;
 

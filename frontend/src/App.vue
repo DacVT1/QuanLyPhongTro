@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import api from './services/api'
-
+import { getImageUrl } from './utils/image';
 const tabs = ['dashboard', 'nhaTro', 'phong', 'giuong', 'nguoiThue', 'hopDong', 'hoaDon']
 const currentTab = ref('dashboard')
 
@@ -69,6 +69,8 @@ const nguoiThueForm = ref({
   bienSoXe: '',
   cccdMatTruoc: null as File | null,
   cccdMatSau: null as File | null,
+  cccdMatTruocUrl: '',
+  cccdMatSauUrl: '',
 })
 
 const hopDongForm = ref({
@@ -94,6 +96,8 @@ const editingGiuongId = ref<string | null>(null)
 const editingNguoiThueId = ref<string | null>(null)
 const cccdMatTruocInput = ref<HTMLInputElement | null>(null)
 const cccdMatSauInput = ref<HTMLInputElement | null>(null)
+const cccdMatTruocUrl = ref('')
+const cccdMatSauUrl = ref('')
 const editingHopDongId = ref<string | null>(null)
 const editingHoaDonId = ref<string | null>(null)
 
@@ -211,9 +215,10 @@ function resetNguoiThueForm() {
     bienSoXe: '',
     cccdMatTruoc: null,
     cccdMatSau: null,
+    cccdMatTruocUrl: '',
+    cccdMatSauUrl: '',
   }
 
-  // Clear file input thực tế
   if (cccdMatTruocInput.value) {
     cccdMatTruocInput.value.value = ''
   }
@@ -721,18 +726,19 @@ function editNguoiThue(item: any) {
     email: item.email ?? '',
     diaChi: item.diaChi ?? '',
     ngaySinh: item.ngaySinh
-      ? new Date(item.ngaySinh)
-          .toISOString()
-          .slice(0, 10)
+      ? new Date(item.ngaySinh).toISOString().slice(0, 10)
       : '',
     bienSoXe: item.bienSoXe ?? '',
 
-    // Không load ảnh cũ vào input file
+    // File mới, chưa chọn
     cccdMatTruoc: null,
     cccdMatSau: null,
+
+    // Giữ lại URL ảnh đã upload
+    cccdMatTruocUrl: getImageUrl(item.cccdMatTruoc),
+    cccdMatSauUrl: getImageUrl(item.cccdMatSau),
   }
 
-  // Luôn clear file input khi mở form sửa
   if (cccdMatTruocInput.value) {
     cccdMatTruocInput.value.value = ''
   }
@@ -1187,8 +1193,20 @@ onMounted(() => {
     @change="handleCccdMatTruocChange"
   />
 
+  <div v-if="nguoiThueForm.cccdMatTruocUrl" class="cccd-current">
+    <span>Ảnh hiện tại:</span>
+
+    <a
+      :href="nguoiThueForm.cccdMatTruocUrl"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      Xem CCCD mặt trước
+    </a>
+  </div>
+
   <small v-if="nguoiThueForm.cccdMatTruoc">
-    {{ nguoiThueForm.cccdMatTruoc.name }}
+    Ảnh mới: {{ nguoiThueForm.cccdMatTruoc.name }}
   </small>
 </label>
 
@@ -1202,8 +1220,20 @@ onMounted(() => {
     @change="handleCccdMatSauChange"
   />
 
+  <div v-if="nguoiThueForm.cccdMatSauUrl" class="cccd-current">
+    <span>Ảnh hiện tại:</span>
+
+    <a
+      :href="nguoiThueForm.cccdMatSauUrl"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      Xem CCCD mặt sau
+    </a>
+  </div>
+
   <small v-if="nguoiThueForm.cccdMatSau">
-    {{ nguoiThueForm.cccdMatSau.name }}
+    Ảnh mới: {{ nguoiThueForm.cccdMatSau.name }}
   </small>
 </label>
             <div class="actions">
