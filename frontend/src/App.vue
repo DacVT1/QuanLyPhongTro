@@ -98,28 +98,38 @@ const giuongOptions = computed(() => {
     (_, index) => String(index + 1)
   )
 
-  // Chưa chọn phòng thì hiển thị tất cả
+  // Chưa chọn phòng
   if (!giuongForm.value.phongId) {
     return allOptions
   }
 
-  // Lấy các mã giường đã tồn tại trong phòng đang chọn
   const existingCodes = giuongs.value
-    .filter((item) => item.phong?.id === giuongForm.value.phongId)
+    .filter(
+      (item) =>
+        item.phong?.id === giuongForm.value.phongId &&
+        item.id !== editingGiuongId.value
+    )
     .map((item) => String(item.maGiuong))
 
-  // Nếu đang sửa, giữ lại mã giường hiện tại
+  const currentCode = String(
+    giuongForm.value.maGiuong ?? ''
+  )
+
+  // Khi sửa, luôn giữ lại mã giường hiện tại
+  const availableCodes = allOptions.filter(
+    (code) => !existingCodes.includes(code)
+  )
+
   if (
     editingGiuongId.value &&
-    giuongForm.value.maGiuong &&
-    !existingCodes.includes(String(giuongForm.value.maGiuong))
+    currentCode &&
+    !availableCodes.includes(currentCode)
   ) {
-    existingCodes.push(String(giuongForm.value.maGiuong))
+    availableCodes.push(currentCode)
   }
 
-  // Chỉ trả về những mã chưa tồn tại
-  return allOptions.filter(
-    (code) => !existingCodes.includes(code)
+  return availableCodes.sort(
+    (a, b) => Number(a) - Number(b)
   )
 })
 
@@ -536,12 +546,16 @@ function editPhong(item: any) {
 
 function editGiuong(item: any) {
   editingGiuongId.value = item.id
+
   giuongForm.value = {
     nhaTroId: item.phong?.nhaTro?.id ?? '',
     phongId: item.phong?.id ?? '',
-    maGiuong: item.maGiuong ?? '',
+    maGiuong: item.maGiuong != null
+      ? String(item.maGiuong)
+      : '',
     trangThai: item.trangThai ?? 'trong',
   }
+
   currentTab.value = 'giuong'
 }
 
