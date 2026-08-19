@@ -213,7 +213,7 @@ function resetNguoiThueForm() {
     cccdMatSau: null,
   }
 
-  // Clear giá trị thực tế của input type="file"
+  // Clear file input thực tế
   if (cccdMatTruocInput.value) {
     cccdMatTruocInput.value.value = ''
   }
@@ -732,7 +732,7 @@ function editNguoiThue(item: any) {
     cccdMatSau: null,
   }
 
-  // Đảm bảo input file luôn trống khi mở form sửa
+  // Luôn clear file input khi mở form sửa
   if (cccdMatTruocInput.value) {
     cccdMatTruocInput.value.value = ''
   }
@@ -1150,7 +1150,7 @@ onMounted(() => {
             </label>
             <label>
               {{ requiredLabel('CCCD') }}
-              <input v-model="nguoiThueForm.cccd" placeholder="CCCD" :disabled="editingNguoiThueId !== null" required pattern="[0-9]{9,12}" />
+              <input v-model="nguoiThueForm.cccd" placeholder="CCCD" required pattern="[0-9]{9,12}" />
             </label>
             <label>
               {{ requiredLabel('Số điện thoại') }}
