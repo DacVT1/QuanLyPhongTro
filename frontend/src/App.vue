@@ -594,6 +594,20 @@ async function confirmDeleteNguoiThue() {
   }
 }
 
+function requestDeleteHopDong(item: any) {
+  if (!item?.id) {
+    return
+  }
+
+  pendingDelete.value = {
+    type: 'hop-dong',
+    id: item.id,
+    name: item.maHopDong,
+  }
+
+  showDeleteConfirm.value = true
+}
+
 async function saveGiuong() {
   const payload = {
   giuongSo: Number(giuongForm.value.giuongSo),
@@ -2021,7 +2035,13 @@ onMounted(() => {
                 <td>{{ formatCurrency(item.tongTien) }}</td>
                 <td class="row-actions">
                   <button class="table-btn edit" @click="editHoaDon(item)">Sửa</button>
-                  <button class="table-btn delete" @click="deleteItem('hoa-don', item.id)">Xóa</button>
+                  <button
+  type="button"
+  class="table-btn delete"
+  @click.stop="requestDeleteHopDong(item)"
+>
+  Xóa
+</button>
                 </td>
               </tr>
             </tbody>
