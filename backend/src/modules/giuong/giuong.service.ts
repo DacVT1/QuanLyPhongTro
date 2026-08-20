@@ -99,8 +99,7 @@ return this.repository.save(giuong)
       throw new NotFoundException('Không tìm thấy giường.')
     }
 
-    if (payload.maGiuong !== undefined) {
-      if (payload.giuongSo !== undefined) {
+if (payload.giuongSo !== undefined) {
   const giuongSo = Number(payload.giuongSo)
 
   if (!Number.isInteger(giuongSo) || giuongSo < 1) {
@@ -115,7 +114,6 @@ return this.repository.save(giuong)
     item.maGiuong = `${item.phong.maPhong}_G${giuongSo}`
   }
 }
-    }
 
     if (payload.trangThai !== undefined) {
       item.trangThai = payload.trangThai

@@ -11,13 +11,31 @@ export class HopDongService {
   ) {}
 
   async findAll() {
-    return this.repository.find({ relations: { giuong: true, nguoiThue: true, hoaDons: true } });
-  }
+  return this.repository.find({
+    relations: {
+      giuong: {
+        phong: {
+          nhaTro: true,
+        },
+      },
+      nguoiThue: true,
+      hoaDons: true,
+    },
+  });
+}
 
   async findOne(id: string) {
     return this.repository.findOne({
       where: { id },
-      relations: { giuong: true, nguoiThue: true, hoaDons: true },
+      relations: {
+        giuong: {
+          phong: {
+            nhaTro: true,
+          },
+        },
+        nguoiThue: true,
+        hoaDons: true,
+      },
     });
   }
 

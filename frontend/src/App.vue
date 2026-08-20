@@ -1382,7 +1382,6 @@ onMounted(() => {
               {{ requiredLabel('Giường số:') }}
               <select
   v-model="giuongForm.giuongSo"
-  :disabled="editingGiuongId !== null"
   required
 >
   <option value="">Chọn giường</option>
@@ -1617,7 +1616,7 @@ onMounted(() => {
               {{ requiredLabel('Giường') }}
               <select v-model="hopDongForm.giuongId" @change="syncHopDongCode" required>
                 <option value="">Chọn giường</option>
-                <option v-for="item in giuongs" :key="item.id" :value="item.id">{{ item.maGiuong }} - {{ item.phong?.maPhong }}</option>
+                <option v-for="item in giuongs" :key="item.id" :value="item.id">{{ item.maGiuong }}</option>
               </select>
             </label>
             <label>
