@@ -141,6 +141,7 @@ const nguoiThueForm = ref({
 
 const hopDongForm = ref({
   maHopDong: '',
+  nhaTroId: '',
   ngayBatDau: '',
   ngayKetThuc: '',
   tienThue: 0,
@@ -159,6 +160,53 @@ const hoaDonForm = ref({
   trangThai: 'chua_thanh_toan',
   hopDongId: '',
 })
+
+const hopDongGiuongOptions = computed(() => {
+  const nhaTroId = hopDongForm.value.nhaTroId
+
+  // Chưa chọn nhà trọ
+  if (!nhaTroId) {
+    return []
+  }
+
+  // Lấy ID các giường đã được sử dụng trong hợp đồng
+  const usedGiuongIds = hopDongs.value
+    .filter(item => {
+      // Khi sửa hợp đồng, cho phép giữ lại chính giường hiện tại
+      if (item.id === editingHopDongId.value) {
+        return false
+      }
+
+      return !!item.giuong?.id
+    })
+    .map(item => item.giuong.id)
+
+  // Chỉ lấy giường:
+  // 1. Thuộc nhà trọ đang chọn
+  // 2. Chưa được sử dụng trong hợp đồng khác
+  return giuongs.value.filter(item => {
+    const itemNhaTroId =
+      item.phong?.nhaTro?.id
+
+    if (itemNhaTroId !== nhaTroId) {
+      return false
+    }
+
+    if (usedGiuongIds.includes(item.id)) {
+      return false
+    }
+
+    return true
+  })
+})
+
+function handleNhaTroChangeForHopDong() {
+  // Mỗi khi đổi nhà trọ phải xóa giường đang chọn
+  hopDongForm.value.giuongId = ''
+
+  // Xóa mã hợp đồng cũ vì mã hợp đồng phụ thuộc vào giường
+  hopDongForm.value.maHopDong = ''
+}
 
 const editingNhaTroId = ref<string | null>(null)
 const editingPhongId = ref<string | null>(null)
@@ -346,6 +394,7 @@ if (cccdMatSauPreviewUrl.value) {
 function resetHopDongForm() {
   hopDongForm.value = {
     maHopDong: '',
+    nhaTroId: '',
     ngayBatDau: '',
     ngayKetThuc: '',
     tienThue: 0,
@@ -991,8 +1040,13 @@ function editNguoiThue(item: any) {
 function editHopDong(item: any) {
   editingHopDongId.value = item.id
 
+  const nhaTroId =
+    item.giuong?.phong?.nhaTro?.id ?? ''
+
   hopDongForm.value = {
     maHopDong: item.maHopDong ?? '',
+
+    nhaTroId,
 
     ngayBatDau: item.ngayBatDau
       ? new Date(item.ngayBatDau)
@@ -1006,23 +1060,27 @@ function editHopDong(item: any) {
           .slice(0, 10)
       : '',
 
-    tienThue: Number(item.tienThue ?? 0),
+    tienThue: Number(
+      item.tienThue ?? 0
+    ),
 
     chuKyThanhToan: Number(
-      item.chuKyThanhToan ?? 1,
+      item.chuKyThanhToan ?? 1
     ),
 
     tienDatCoc: Number(
-      item.tienDatCoc ?? 0,
+      item.tienDatCoc ?? 0
     ),
 
     ghiChu: item.ghiChu ?? '',
 
     giuongId: item.giuong?.id ?? '',
 
-    nguoiThueId: item.nguoiThue?.id ?? '',
+    nguoiThueId:
+      item.nguoiThue?.id ?? '',
 
-    trangThai: item.trangThai ?? 'active',
+    trangThai:
+      item.trangThai ?? 'active',
   }
 
   currentTab.value = 'hopDong'
@@ -1613,12 +1671,55 @@ onMounted(() => {
           <h3>{{ editingHopDongId ? 'Sửa hợp đồng' : 'Thêm hợp đồng' }}</h3>
           <form @submit.prevent="saveHopDong" class="form-grid">
             <label>
-              {{ requiredLabel('Giường') }}
-              <select v-model="hopDongForm.giuongId" @change="syncHopDongCode" required>
-                <option value="">Chọn giường</option>
-                <option v-for="item in giuongs" :key="item.id" :value="item.id">{{ item.maGiuong }}</option>
-              </select>
-            </label>
+  {{ requiredLabel('Nhà trọ') }}
+
+  <select
+    v-model="hopDongForm.nhaTroId"
+    @change="handleNhaTroChangeForHopDong"
+    required
+  >
+    <option value="">
+      Chọn nhà trọ
+    </option>
+
+    <option
+      v-for="item in nhaTros"
+      :key="item.id"
+      :value="item.id"
+    >
+      {{ item.maNhaTro }} - {{ item.tenNhaTro }}
+    </option>
+  </select>
+</label>
+
+<label v-if="hopDongForm.nhaTroId">
+  {{ requiredLabel('Giường') }}
+
+  <select
+    v-model="hopDongForm.giuongId"
+    @change="syncHopDongCode"
+    required
+  >
+    <option value="">
+      Chọn giường
+    </option>
+
+    <option
+      v-for="item in hopDongGiuongOptions"
+      :key="item.id"
+      :value="item.id"
+    >
+      {{ item.maGiuong }} - Giường {{ item.giuongSo }}
+    </option>
+  </select>
+
+  <small
+    v-if="hopDongGiuongOptions.length === 0"
+    class="form-hint"
+  >
+    Nhà trọ này không còn giường trống để lập hợp đồng.
+  </small>
+</label>
             <label>
               {{ requiredLabel('Người thuê') }}
               <select v-model="hopDongForm.nguoiThueId" required>
