@@ -32,6 +32,44 @@ function onImgError(event: Event) {
   }
 }
 
+function validateNgayHopDong() {
+  const ngayBatDau =
+    hopDongForm.value.ngayBatDau
+
+  const ngayKetThuc =
+    hopDongForm.value.ngayKetThuc
+
+  // Chưa nhập ngày bắt đầu
+  if (!ngayBatDau) {
+    return true
+  }
+
+  // Ngày kết thúc chưa nhập
+  if (!ngayKetThuc) {
+    return true
+  }
+
+  const startDate = new Date(
+    `${ngayBatDau}T00:00:00`
+  )
+
+  const endDate = new Date(
+    `${ngayKetThuc}T00:00:00`
+  )
+
+  if (startDate >= endDate) {
+    alert(
+      'Ngày bắt đầu phải nhỏ hơn ngày kết thúc.'
+    )
+
+    hopDongForm.value.ngayKetThuc = ''
+
+    return false
+  }
+
+  return true
+}
+
 const nhaTros = ref<any[]>([])
 const phongs = ref<any[]>([])
 const giuongs = ref<any[]>([])
@@ -747,6 +785,19 @@ async function saveNguoiThue() {
 }
 
 async function saveHopDong() {
+  if (!hopDongForm.value.ngayBatDau) {
+  alert('Vui lòng nhập ngày bắt đầu.')
+  return
+}
+
+if (!hopDongForm.value.ngayKetThuc) {
+  alert('Vui lòng nhập ngày kết thúc.')
+  return
+}
+
+if (!validateNgayHopDong()) {
+  return
+}
   if (!hopDongForm.value.maHopDong) {
     syncHopDongCode()
   }
@@ -1128,15 +1179,15 @@ function normalizeCodePart(value: string) {
 }
 
 function generateHopDongCode(giuongId: string) {
-  const giuong = giuongs.value.find((item) => item.id === giuongId)
-  if (!giuong?.phong) return ''
+  const giuong = giuongs.value.find(
+    item => item.id === giuongId
+  )
 
-  const nhaTroName = normalizeCodePart(giuong.phong.nhaTro?.tenNhaTro || nhaTros.value.find((item) => item.id === giuong.phong?.nhaTro?.id)?.tenNhaTro || 'NhaTro')
-  const tangSo = normalizeCodePart(giuong.phong.maPhong || 'Tầng')
-  const soGiuong = normalizeCodePart(giuong.maGiuong || '1')
-  const prefix = `${nhaTroName}_${tangSo}_${soGiuong}`
-  const sequence = hopDongs.value.filter((item) => item.maHopDong?.startsWith(prefix + '_')).length + 1
-  return `${prefix}_${sequence}`
+  if (!giuong?.maGiuong) {
+    return ''
+  }
+
+  return giuong.maGiuong
 }
 
 function generateHoaDonCode(hopDongId: string, thangThanhToan: string) {
@@ -1741,6 +1792,8 @@ onMounted(() => {
   <input
     v-model="hopDongForm.ngayKetThuc"
     type="date"
+    :min="hopDongForm.ngayBatDau || undefined"
+    @change="validateNgayHopDong"
   />
 </label>
 
@@ -1789,9 +1842,17 @@ onMounted(() => {
 <label>
   {{ requiredLabel('Trạng thái') }}
   <select v-model="hopDongForm.trangThai">
-    <option value="active">Có hiệu lực</option>
-    <option value="expired">Hết hiệu lực</option>
-    <option value="expired">Sắp hết hiệu lực</option>
+<option value="active">
+  Có hiệu lực
+</option>
+
+<option value="sap_het_han">
+  Sắp hết hiệu lực
+</option>
+
+<option value="expired">
+  Hết hiệu lực
+</option>
   </select>
 </label>
 
@@ -1812,43 +1873,98 @@ onMounted(() => {
 
         <div class="panel">
           <h3>Danh sách hợp đồng</h3>
-          <table>
-            <thead>
-              <tr>
-                <th>Mã hợp đồng</th>
-                <th>Người thuê</th>
-                <th>Giường</th>
-                <th>Ngày bắt đầu</th>
-                <th>Ngày kết thúc</th>
-                <th>Giá thuê</th>
-                <th>Hành động</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="item in hopDongs" :key="item.id">
-                <td>{{ item.maHopDong }}</td>
-                <td>{{ item.nguoiThue?.hoTen }}</td>
-                <td>{{ item.giuong?.maGiuong }}</td>
-                <td>
-  {{ item.ngayBatDau
-    ? new Date(item.ngayBatDau).toLocaleDateString('vi-VN')
-    : ''
-  }}
-                </td>
-                <td>
-  {{ item.ngayKetThuc
-    ? new Date(item.ngayKetThuc).toLocaleDateString('vi-VN')
-    : 'Không xác định'
-  }}
-                </td>
-                <td>{{ formatCurrency(item.tienThue) }}</td>
-                <td class="row-actions">
-                  <button class="table-btn edit" @click="editHopDong(item)">Sửa</button>
-                  <button class="table-btn delete" @click="deleteItem('hop-dong', item.id)">Xóa</button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+<table>
+  <thead>
+    <tr>
+      <th>Mã HĐ(Giường)</th>
+      <th>Người thuê</th>
+      <th>Ngày bắt đầu</th>
+      <th>Ngày kết thúc</th>
+      <th>Giá thuê</th>
+      <th>Trạng thái</th>
+      <th>Hành động</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    <tr
+      v-for="item in hopDongs"
+      :key="item.id"
+    >
+      <td>
+        {{ item.maHopDong }}
+      </td>
+
+      <td>
+        {{ item.nguoiThue?.hoTen }}
+      </td>
+
+      <td>
+        {{
+          item.ngayBatDau
+            ? new Date(
+                item.ngayBatDau
+              ).toLocaleDateString('vi-VN')
+            : ''
+        }}
+      </td>
+
+      <td>
+        {{
+          item.ngayKetThuc
+            ? new Date(
+                item.ngayKetThuc
+              ).toLocaleDateString('vi-VN')
+            : 'Không xác định'
+        }}
+      </td>
+
+      <td>
+        {{ formatCurrency(item.tienThue) }}
+      </td>
+
+      <td>
+        <span
+          :class="[
+            'status-badge',
+            item.trangThai
+          ]"
+        >
+          {{
+            item.trangThai === 'active'
+              ? 'Có hiệu lực'
+              : item.trangThai === 'expired'
+                ? 'Hết hiệu lực'
+                : item.trangThai === 'sap_het_han'
+                  ? 'Sắp hết hiệu lực'
+                  : item.trangThai
+          }}
+        </span>
+      </td>
+
+      <td class="row-actions">
+        <button
+          class="table-btn edit"
+          @click="editHopDong(item)"
+        >
+          Sửa
+        </button>
+
+        <button
+          class="table-btn delete"
+          @click="
+            deleteItem(
+              'hop-dong',
+              item.id
+            )
+          "
+        >
+          Xóa
+        </button>
+      </td>
+    </tr>
+  </tbody>
+</table>
         </div>
       </section>
 
