@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Injectable,
   NotFoundException,
+  ConflictException,
 } from '@nestjs/common'
 
 import { InjectRepository } from '@nestjs/typeorm'
@@ -162,14 +163,25 @@ if (payload.giuongSo !== undefined) {
   }
 
   async remove(id: string) {
-    const item = await this.findOne(id)
+  const item = await this.findOne(id);
 
-    if (!item) {
-      throw new NotFoundException('Không tìm thấy giường.')
-    }
-
-    await this.repository.remove(item)
-
-    return item
+  if (!item) {
+    throw new NotFoundException('Không tìm thấy giường.');
   }
+
+  const soHopDong = item.hopDongs?.length ?? 0;
+
+  if (soHopDong > 0) {
+    throw new ConflictException({
+      message: `Không thể xóa giường này! Giường đang được sử dụng trong ${soHopDong} hợp đồng. Vui lòng xóa hoặc xử lý hợp đồng liên quan trước khi xóa giường.`,
+      soHopDong,
+      maGiuong: item.maGiuong,
+      maPhong: item.phong?.maPhong ?? "",
+    });
+  }
+
+  await this.repository.remove(item);
+
+  return item;
+}
 }
