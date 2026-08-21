@@ -190,6 +190,7 @@ const hoaDonForm = ref({
   thangThanhToan: "",
   tongTien: 0,
   trangThai: "chua_thanh_toan",
+  ghiChu: "",
   hopDongId: "",
 });
 
@@ -498,6 +499,7 @@ function resetHoaDonForm() {
     thangThanhToan: "",
     tongTien: 0,
     trangThai: "chua_thanh_toan",
+    ghiChu: "",
     hopDongId: "",
   };
   editingHoaDonId.value = null;
@@ -1168,6 +1170,7 @@ function editHoaDon(item: any) {
       : "",
     tongTien: item.tongTien ?? 0,
     trangThai: item.trangThai ?? "chua_thanh_toan",
+    ghiChu: item.ghiChu ?? "",
     hopDongId: item.hopDong?.id ?? "",
   };
   currentTab.value = "hoaDon";
@@ -1869,31 +1872,28 @@ onMounted(() => {
               </select>
             </label>
             <label v-if="hopDongForm.nhaTroId">
-  {{ requiredLabel("Phòng") }}
+              {{ requiredLabel("Phòng") }}
 
-  <select
-    v-model="hopDongForm.phongId"
-    @change="handlePhongChangeForHopDong"
-    required
-  >
-    <option value="">Chọn phòng</option>
+              <select
+                v-model="hopDongForm.phongId"
+                @change="handlePhongChangeForHopDong"
+                required
+              >
+                <option value="">Chọn phòng</option>
 
-    <option
-      v-for="item in hopDongPhongOptions"
-      :key="item.id"
-      :value="item.id"
-    >
-      {{ item.maPhong }} - Tầng {{ item.tangSo }}
-    </option>
-  </select>
+                <option
+                  v-for="item in hopDongPhongOptions"
+                  :key="item.id"
+                  :value="item.id"
+                >
+                  {{ item.maPhong }} - Tầng {{ item.tangSo }}
+                </option>
+              </select>
 
-  <small
-    v-if="hopDongPhongOptions.length === 0"
-    class="form-hint"
-  >
-    Nhà trọ này chưa có phòng.
-  </small>
-</label>
+              <small v-if="hopDongPhongOptions.length === 0" class="form-hint">
+                Nhà trọ này chưa có phòng.
+              </small>
+            </label>
             <label v-if="hopDongForm.phongId">
               {{ requiredLabel("Giường") }}
 
@@ -2138,6 +2138,14 @@ onMounted(() => {
                 <option value="chua_thanh_toan">Chưa thanh toán</option>
                 <option value="da_thanh_toan">Đã thanh toán</option>
               </select>
+            </label>
+            <label class="full-width">
+              Ghi chú
+              <textarea
+                v-model="hoaDonForm.ghiChu"
+                rows="3"
+                placeholder="Nhập ghi chú cho hóa đơn..."
+              ></textarea>
             </label>
             <div class="actions">
               <button class="primary" type="submit">
