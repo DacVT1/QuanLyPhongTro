@@ -1,13 +1,17 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ConflictException} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { NguoiThue } from '../../entities/nguoi-thue.entity';
+import { HopDong } from '../../entities/hop-dong.entity';
 
 @Injectable()
 export class NguoiThueService {
   constructor(
     @InjectRepository(NguoiThue)
     private readonly repository: Repository<NguoiThue>,
+
+    @InjectRepository(HopDong)
+    private readonly hopDongRepository: Repository<HopDong>,
   ) {}
 
   async findAll() {
@@ -15,7 +19,10 @@ export class NguoiThueService {
   }
 
   async findOne(id: string) {
-    return this.repository.findOne({ where: { id }, relations: { hopDongs: true } });
+    return this.repository.findOne({
+      where: { id },
+      relations: { hopDongs: true },
+    });
   }
 
   async create(payload: Partial<NguoiThue>) {
@@ -28,9 +35,28 @@ export class NguoiThueService {
   }
 
   async remove(id: string) {
-    const item = await this.findOne(id);
-    if (!item) return null;
-    await this.repository.remove(item);
-    return item;
+  const item = await this.repository.findOne({
+    where: { id },
+  });
+
+  if (!item) {
+    return null;
   }
+
+  const hopDongCount = await this.hopDongRepository
+    .createQueryBuilder('hopDong')
+    .innerJoin('hopDong.nguoiThue', 'nguoiThue')
+    .where('nguoiThue.id = :id', { id })
+    .getCount();
+
+  if (hopDongCount > 0) {
+    throw new ConflictException(
+      'Không thể xóa người thuê vì người thuê đang có hợp đồng. Vui lòng xóa hợp đồng trước khi xóa người thuê.',
+    );
+  }
+
+  await this.repository.remove(item);
+
+  return item;
+}
 }

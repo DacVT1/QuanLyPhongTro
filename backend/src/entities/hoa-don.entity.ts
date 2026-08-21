@@ -21,7 +21,7 @@ export class HoaDon {
   thangThanhToan?: Date;
 
   @Column({ type: 'float', default: 0 })
-  tongTien: number;
+  tienPhong: number;
 
   @Column({ type: 'float', default: 0 })
   tienDien: number;
@@ -30,7 +30,13 @@ export class HoaDon {
   tienNuoc: number;
 
   @Column({ type: 'float', default: 0 })
-  tienDichVu: number;
+  tienDichVuKhac: number;
+
+  @Column({ type: 'float', default: 0 })
+  tongTien: number;
+  
+
+
 
   @Column({ default: 'chua_thanh_toan' })
   trangThai: string;

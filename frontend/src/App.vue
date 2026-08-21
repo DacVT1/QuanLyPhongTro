@@ -14,7 +14,155 @@ const tabs = [
   "hoaDon",
 ];
 const currentTab = ref("dashboard");
+const isMenuOpen = ref(false);
+const soDienThoaiError = ref("");
 
+const tienDienDisplay = ref("0");
+const tienNuocDisplay = ref("0");
+const tienDichVuKhacDisplay = ref("0");
+const tienDienError = ref("");
+const tienNuocError = ref("");
+const tienDichVuKhacError = ref("");
+
+
+function handleTienDienInput(event: Event) {
+  const input = event.target as HTMLInputElement;
+  const value = input.value;
+
+  if (!/^\d*$/.test(value.replace(/,/g, ""))) {
+    tienDienError.value = "Tiền điện chỉ được nhập số.";
+    return;
+  }
+
+  tienDienError.value = "";
+
+  const rawValue = value.replace(/,/g, "");
+
+  hoaDonForm.value.tienDien = Number(rawValue || 0);
+
+  tienDienDisplay.value = rawValue
+    ? Number(rawValue).toLocaleString("en-US")
+    : "0";
+
+  calculateHoaDonTongTien();
+}
+
+function handleTienNuocInput(event: Event) {
+  const input = event.target as HTMLInputElement;
+  const value = input.value;
+
+  if (!/^\d*$/.test(value.replace(/,/g, ""))) {
+    tienNuocError.value = "Tiền nước chỉ được nhập số.";
+    return;
+  }
+
+  tienNuocError.value = "";
+
+  const rawValue = value.replace(/,/g, "");
+
+  hoaDonForm.value.tienNuoc = Number(rawValue || 0);
+
+  tienNuocDisplay.value = rawValue
+    ? Number(rawValue).toLocaleString("en-US")
+    : "0";
+
+  calculateHoaDonTongTien();
+}
+
+function handleTienDichVuKhacInput(event: Event) {
+  const input = event.target as HTMLInputElement;
+  const value = input.value;
+
+  if (!/^\d*$/.test(value.replace(/,/g, ""))) {
+    tienDichVuKhacError.value =
+      "Tiền dịch vụ khác chỉ được nhập số.";
+    return;
+  }
+
+  tienDichVuKhacError.value = "";
+
+  const rawValue = value.replace(/,/g, "");
+
+  hoaDonForm.value.tienDichVuKhac =
+    Number(rawValue || 0);
+
+  tienDichVuKhacDisplay.value = rawValue
+    ? Number(rawValue).toLocaleString("en-US")
+    : "0";
+
+  calculateHoaDonTongTien();
+}
+
+function handleSoDienThoaiInput() {
+  const value = nguoiThueForm.value.sdt;
+
+  // Không tự cắt dữ liệu người dùng nhập
+  if (value.length > 10) {
+    soDienThoaiError.value = "Số điện thoại không được vượt quá 10 chữ số";
+    return;
+  }
+
+  // Kiểm tra ký tự không phải số
+  if (!/^\d*$/.test(value)) {
+    soDienThoaiError.value = "Số điện thoại chỉ được nhập chữ số";
+    return;
+  }
+
+  soDienThoaiError.value = "";
+}
+
+function validateSoDienThoai() {
+  const value = nguoiThueForm.value.sdt;
+
+  if (!value) {
+    soDienThoaiError.value = "Vui lòng nhập số điện thoại";
+    return false;
+  }
+
+  if (!/^\d+$/.test(value)) {
+    soDienThoaiError.value = "Số điện thoại chỉ được nhập chữ số";
+    return false;
+  }
+
+  if (!value.startsWith("0")) {
+    soDienThoaiError.value = "Số điện thoại phải bắt đầu bằng số 0";
+    return false;
+  }
+
+  if (value.length > 10) {
+    soDienThoaiError.value = "Số điện thoại không được vượt quá 10 chữ số";
+    return false;
+  }
+
+  if (value.length < 10) {
+    soDienThoaiError.value = "Số điện thoại phải có đúng 10 chữ số";
+    return false;
+  }
+
+  soDienThoaiError.value = "";
+  return true;
+}
+
+function handleTienThueInput(event: Event) {
+  const input = event.target as HTMLInputElement;
+
+  // Chỉ giữ lại chữ số
+  const rawValue = input.value.replace(/\D/g, "");
+
+  hopDongForm.value.tienThue = Number(rawValue || 0);
+
+  tienThueDisplay.value = rawValue
+    ? Number(rawValue).toLocaleString("en-US")
+    : "";
+}
+
+function toggleMenu() {
+  isMenuOpen.value = !isMenuOpen.value;
+}
+
+function closeMenu() {
+  isMenuOpen.value = false;
+}
 const summary = ref({
   totalNhaTro: 0,
   totalPhong: 0,
@@ -77,14 +225,6 @@ const giuongs = ref<any[]>([]);
 const nguoiThues = ref<any[]>([]);
 const hopDongs = ref<any[]>([]);
 const hoaDons = ref<any[]>([]);
-
-const hoaDonFilters = ref({
-  maHoaDon: "",
-  nguoiThue: "",
-  tongTien: "",
-  trangThai: "",
-  ngayNop: "",
-});
 
 const nhaTroForm = ref({
   maNhaTro: "",
@@ -160,7 +300,7 @@ const giuongForm = ref({
   nhaTroId: "",
   phongId: "",
   giuongSo: "",
-  giaGiuong: 0,
+  giaGiuong: 1500000,
   trangThai: "trong",
 });
 
@@ -168,10 +308,10 @@ const nguoiThueForm = ref({
   hoTen: "",
   cccd: "",
   sdt: "",
-  email: "",
+  email: "a@gmail.com",
   diaChi: "",
   ngaySinh: "",
-  bienSoXe: "",
+  bienSoXe: "00A0-00000",
   cccdMatTruoc: null as File | null,
   cccdMatSau: null as File | null,
   cccdMatTruocUrl: "",
@@ -186,7 +326,7 @@ const hopDongForm = ref({
   ngayKetThuc: "",
   tienThue: 0,
   chuKyThanhToan: 1,
-  tienDatCoc: 0,
+  tienDatCoc: 1000000,
   ghiChu: "",
   giuongId: "",
   nguoiThueId: "",
@@ -195,11 +335,15 @@ const hopDongForm = ref({
 
 const hoaDonForm = ref({
   maHoaDon: "",
-  thangThanhToan: "",
-  tongTien: 0,
-  trangThai: "chua_thanh_toan",
-  ghiChu: "",
   hopDongId: "",
+  thangThanhToan: "",
+  tienPhong: 0,
+  tienDien: 0,
+  tienNuoc: 0,
+  tienDichVuKhac: 0,
+  tongTien: 0,
+  trangThai: "CHUA_THANH_TOAN",
+  ghiChu: "",
 });
 
 const hopDongGiuongOptions = computed(() => {
@@ -276,14 +420,28 @@ const editingGiuongId = ref<string | null>(null);
 const editingNguoiThueId = ref<string | null>(null);
 const cccdMatTruocInput = ref<HTMLInputElement | null>(null);
 const cccdMatSauInput = ref<HTMLInputElement | null>(null);
-const giaGiuongDisplay = ref("");
+const giaGiuongDisplay = ref("1,500,000");
 const tienThueDisplay = ref("");
-const tienDatCocDisplay = ref("");
+const tienDatCocDisplay = ref("1,000,000");
 const editingHopDongId = ref<string | null>(null);
 const editingHoaDonId = ref<string | null>(null);
 
 const showDeleteHoaDonModal = ref(false);
 const showDeleteHopDongModal = ref(false);
+
+function formatTienThueDisplay(value: number | string | null | undefined) {
+  if (value === null || value === undefined || value === "") {
+    return "";
+  }
+
+  const numberValue = Number(String(value).replace(/[^\d]/g, ""));
+
+  if (isNaN(numberValue)) {
+    return "";
+  }
+
+  return numberValue.toLocaleString("vi-VN");
+}
 
 const deleteHoaDonInfo = ref({
   id: "",
@@ -296,7 +454,6 @@ const deleteHopDongInfo = ref({
   id: "",
   maHopDong: "",
 });
-
 
 function requestDeleteHoaDon(item: any) {
   deleteHoaDonInfo.value = {
@@ -349,7 +506,7 @@ const giuongOptions = computed(() => {
 
   // Chưa chọn tầng
   if (!giuongForm.value.phongId) {
-    return allOptions;
+    return [];
   }
 
   // Lấy các giường đã được sử dụng trong phòng đang chọn
@@ -462,11 +619,11 @@ function resetGiuongForm() {
     nhaTroId: "",
     phongId: "",
     giuongSo: "",
-    giaGiuong: 0,
+    giaGiuong: 1500000,
     trangThai: "trong",
   };
 
-  giaGiuongDisplay.value = "";
+  giaGiuongDisplay.value = "1,500,000";
 
   editingGiuongId.value = null;
 }
@@ -481,6 +638,20 @@ function handleGiaGiuongInput(event: Event) {
   giaGiuongDisplay.value = rawValue
     ? Number(rawValue).toLocaleString("en-US")
     : "";
+}
+
+function handleGiuongChangeForHopDong() {
+  syncHopDongCode();
+
+  const giuong = giuongs.value.find(
+    (item) => item.id === hopDongForm.value.giuongId,
+  );
+
+  const giaGiuong = Number(giuong?.giaGiuong ?? 0);
+
+  hopDongForm.value.tienThue = giaGiuong;
+
+  tienThueDisplay.value = giaGiuong ? giaGiuong.toLocaleString("en-US") : "";
 }
 
 function handleTienDatCocInput(event: Event) {
@@ -500,10 +671,10 @@ function resetNguoiThueForm() {
     hoTen: "",
     cccd: "",
     sdt: "",
-    email: "",
+    email: "a@gmail.com",
     diaChi: "",
     ngaySinh: "",
-    bienSoXe: "",
+    bienSoXe: "00A0-00000",
     cccdMatTruoc: null,
     cccdMatSau: null,
 
@@ -541,7 +712,7 @@ function resetHopDongForm() {
     ngayKetThuc: "",
     tienThue: 0,
     chuKyThanhToan: 1,
-    tienDatCoc: 0,
+    tienDatCoc: 1000000,
     ghiChu: "",
     giuongId: "",
     nguoiThueId: "",
@@ -549,7 +720,7 @@ function resetHopDongForm() {
   };
 
   tienThueDisplay.value = "";
-  tienDatCocDisplay.value = "";
+  tienDatCocDisplay.value = "1,000,000";
 
   editingHopDongId.value = null;
 }
@@ -558,11 +729,22 @@ function resetHoaDonForm() {
   hoaDonForm.value = {
     maHoaDon: "",
     thangThanhToan: "",
+    tienPhong: 0,
+    tienDien: 0,
+    tienNuoc: 0,
+    tienDichVuKhac: 0,
     tongTien: 0,
     trangThai: "chua_thanh_toan",
     ghiChu: "",
     hopDongId: "",
   };
+  // Reset giá trị hiển thị trên form về mặc định
+  tienDienDisplay.value = "0";
+  tienNuocDisplay.value = "0";
+  tienDichVuKhacDisplay.value = "0";
+  tienDienError.value = "";
+  tienNuocError.value = "";
+  tienDichVuKhacError.value = "";
   editingHoaDonId.value = null;
 }
 
@@ -625,14 +807,24 @@ function closeDeletePhongModal() {
 }
 
 function requestDeleteNguoiThue(item: any) {
+  const hopDongIds = hopDongs.value
+    .filter((hopDong) => {
+      const nguoiThueId = hopDong.nguoiThue?.id ?? hopDong.nguoiThueId;
+
+      return String(nguoiThueId) === String(item.id);
+    })
+    .map((hopDong) => hopDong.maHopDong)
+    .filter(Boolean);
+
   deleteNguoiThueInfo.value = {
     id: item.id,
     hoTen: item.hoTen ?? "Người thuê",
     cccd: item.cccd ?? "",
+    soHopDong: hopDongIds.length,
+    hopDongIds,
   };
 
   deleteNguoiThueErrorMessage.value = "";
-
   showDeleteNguoiThueModal.value = true;
 }
 
@@ -673,6 +865,12 @@ async function confirmDeleteNguoiThue() {
   const id = deleteNguoiThueInfo.value.id;
 
   if (!id) {
+    return;
+  }
+
+  if (deleteNguoiThueInfo.value.hopDongIds.length > 0) {
+    deleteNguoiThueErrorMessage.value =
+      "Không thể xóa người thuê vì người thuê đang có hợp đồng. Cần thực hiện xóa hợp đồng trước.";
     return;
   }
 
@@ -770,10 +968,13 @@ async function saveGiuong() {
 }
 
 function requestDeleteGiuong(item: any) {
+  const hopDongs = Array.isArray(item.hopDongs) ? item.hopDongs : [];
+
   deleteGiuongInfo.value = {
     id: item.id,
-    maGiuong: String(item.maGiuong ?? ""),
+    maGiuong: item.maGiuong ?? `Giường ${item.giuongSo ?? ""}`,
     maPhong: item.phong?.maPhong ?? "",
+    soHopDong: hopDongs.length,
   };
 
   deleteGiuongErrorMessage.value = "";
@@ -807,9 +1008,10 @@ async function confirmDeleteGiuong() {
   } catch (error: any) {
     console.error("Không thể xóa giường:", error);
 
+    const responseData = error?.response?.data;
+
     deleteGiuongErrorMessage.value =
-      error?.response?.data?.message ??
-      "Không thể xóa giường. Vui lòng thử lại.";
+      responseData?.message ?? "Không thể xóa giường. Vui lòng thử lại.";
   }
 }
 
@@ -848,6 +1050,10 @@ function handleCccdMatSauChange(event: Event) {
 }
 
 async function saveNguoiThue() {
+  // Kiểm tra số điện thoại trước khi tạo FormData và gọi API
+  if (!validateSoDienThoai()) {
+    return;
+  }
   const formData = new FormData();
 
   formData.append("hoTen", nguoiThueForm.value.hoTen);
@@ -908,22 +1114,37 @@ async function saveHopDong() {
   if (!validateNgayHopDong()) {
     return;
   }
+
   if (!hopDongForm.value.maHopDong) {
     syncHopDongCode();
   }
 
+  const giaThue = Number(hopDongForm.value.tienThue || 0);
+  const giuongId = hopDongForm.value.giuongId;
+
+  if (!giuongId) {
+    alert("Vui lòng chọn giường.");
+    return;
+  }
+
+  // 1. Cập nhật Giá giường theo Giá thuê
+  await api.patch(`/giuong/${giuongId}`, {
+    giaGiuong: giaThue,
+  });
+
+  // 2. Lưu hợp đồng
   const payload = {
     maHopDong: hopDongForm.value.maHopDong,
     ngayBatDau:
       hopDongForm.value.ngayBatDau || new Date().toISOString().slice(0, 10),
     ngayKetThuc: hopDongForm.value.ngayKetThuc || null,
-    tienThue: Number(hopDongForm.value.tienThue || 0),
+    tienThue: giaThue,
     chuKyThanhToan: Number(hopDongForm.value.chuKyThanhToan || 1),
     tienDatCoc: Number(hopDongForm.value.tienDatCoc || 0),
     ghiChu: hopDongForm.value.ghiChu || null,
     trangThai: hopDongForm.value.trangThai,
     giuong: {
-      id: hopDongForm.value.giuongId,
+      id: giuongId,
     },
     nguoiThue: {
       id: hopDongForm.value.nguoiThueId,
@@ -940,8 +1161,31 @@ async function saveHopDong() {
   await loadData();
 }
 
+function validateHoaDonTien() {
+  if (tienDienError.value) {
+    alert(tienDienError.value);
+    return false;
+  }
+
+  if (tienNuocError.value) {
+    alert(tienNuocError.value);
+    return false;
+  }
+
+  if (tienDichVuKhacError.value) {
+    alert(tienDichVuKhacError.value);
+    return false;
+  }
+
+  return true;
+}
+
 async function saveHoaDon() {
   try {
+    if (!validateHoaDonTien()) {
+      return;
+    }
+
     if (!hoaDonForm.value.hopDongId) {
       alert("Vui lòng chọn hợp đồng.");
       return;
@@ -967,12 +1211,27 @@ async function saveHoaDon() {
       );
     }
 
+    calculateHoaDonTongTien();
+
     const payload = {
       maHoaDon: hoaDonForm.value.maHoaDon,
+
       thangThanhToan: hoaDonForm.value.thangThanhToan,
+
+      tienPhong: Number(hoaDonForm.value.tienPhong || 0),
+
+      tienDien: Number(hoaDonForm.value.tienDien || 0),
+
+      tienNuoc: Number(hoaDonForm.value.tienNuoc || 0),
+
+      tienDichVuKhac: Number(hoaDonForm.value.tienDichVuKhac || 0),
+
       tongTien: Number(hoaDonForm.value.tongTien || 0),
+
       trangThai: hoaDonForm.value.trangThai,
+
       ghiChu: hoaDonForm.value.ghiChu || null,
+
       hopDong: {
         id: hoaDonForm.value.hopDongId,
       },
@@ -1004,6 +1263,7 @@ const deleteGiuongInfo = ref({
   id: "",
   maGiuong: "",
   maPhong: "",
+  soHopDong: 0,
 });
 const showDeleteNguoiThueModal = ref(false);
 
@@ -1011,6 +1271,8 @@ const deleteNguoiThueInfo = ref({
   id: "",
   hoTen: "",
   cccd: "",
+  soHopDong: 0,
+  hopDongIds: [] as string[],
 });
 
 const deleteNguoiThueErrorMessage = ref("");
@@ -1225,9 +1487,11 @@ function editHopDong(item: any) {
   const nhaTroId = item.giuong?.phong?.nhaTro?.id ?? "";
   const phongId = item.giuong?.phong?.id ?? "";
 
+  const tienThue = Number(item.tienThue ?? 0);
+  const tienDatCoc = Number(item.tienDatCoc ?? 0);
+
   hopDongForm.value = {
     maHopDong: item.maHopDong ?? "",
-
     nhaTroId,
     phongId,
 
@@ -1239,11 +1503,11 @@ function editHopDong(item: any) {
       ? new Date(item.ngayKetThuc).toISOString().slice(0, 10)
       : "",
 
-    tienThue: Number(item.tienThue ?? 0),
+    tienThue,
 
     chuKyThanhToan: Number(item.chuKyThanhToan ?? 1),
 
-    tienDatCoc: Number(item.tienDatCoc ?? 0),
+    tienDatCoc,
 
     ghiChu: item.ghiChu ?? "",
 
@@ -1254,22 +1518,82 @@ function editHopDong(item: any) {
     trangThai: item.trangThai ?? "active",
   };
 
+  // Hiển thị Giá thuê và Đặt cọc đã lưu
+  tienThueDisplay.value = tienThue ? tienThue.toLocaleString("en-US") : "";
+
+  tienDatCocDisplay.value = tienDatCoc
+    ? tienDatCoc.toLocaleString("en-US")
+    : "";
+
   currentTab.value = "hopDong";
 }
 
 function editHoaDon(item: any) {
   editingHoaDonId.value = item.id;
+  const tienPhong = Number(item.tienPhong ?? 0);
+  const tienDien = Number(item.tienDien ?? 0);
+  const tienNuoc = Number(item.tienNuoc ?? 0);
+  const tienDichVuKhac = Number(item.tienDichVuKhac ?? 0);
   hoaDonForm.value = {
     maHoaDon: item.maHoaDon ?? "",
     thangThanhToan: item.thangThanhToan
       ? new Date(item.thangThanhToan).toISOString().slice(0, 10)
       : "",
-    tongTien: item.tongTien ?? 0,
+    tienPhong,
+    tienDien,
+    tienNuoc,
+    tienDichVuKhac,
+    tongTien:
+      tienPhong +
+      tienDien +
+      tienNuoc +
+      tienDichVuKhac,
     trangThai: item.trangThai ?? "chua_thanh_toan",
     ghiChu: item.ghiChu ?? "",
     hopDongId: item.hopDong?.id ?? "",
   };
+  // Cập nhật giá trị hiển thị, KHÔNG tạo ref mới
+  tienDienDisplay.value = tienDien
+    ? tienDien.toLocaleString("en-US")
+    : "0";
+
+  tienNuocDisplay.value = tienNuoc
+    ? tienNuoc.toLocaleString("en-US")
+    : "0";
+
+  tienDichVuKhacDisplay.value = tienDichVuKhac
+    ? tienDichVuKhac.toLocaleString("en-US")
+    : "0";
+
   currentTab.value = "hoaDon";
+}
+
+function updateHoaDonTienPhong() {
+  const hopDongId = hoaDonForm.value.hopDongId;
+
+  if (!hopDongId) {
+    hoaDonForm.value.tienPhong = 0;
+    calculateHoaDonTongTien();
+    return;
+  }
+
+  const hopDong = hopDongs.value.find((item) => item.id === hopDongId);
+
+  hoaDonForm.value.tienPhong = Number(hopDong?.tienThue ?? 0);
+
+  calculateHoaDonTongTien();
+}
+
+function calculateHoaDonTongTien() {
+  const tienPhong = Number(hoaDonForm.value.tienPhong || 0);
+
+  const tienDien = Number(hoaDonForm.value.tienDien || 0);
+
+  const tienNuoc = Number(hoaDonForm.value.tienNuoc || 0);
+
+  const tienDichVuKhac = Number(hoaDonForm.value.tienDichVuKhac || 0);
+
+  hoaDonForm.value.tongTien = tienPhong + tienDien + tienNuoc + tienDichVuKhac;
 }
 
 function formatCurrency(value: number | string | undefined) {
@@ -1293,14 +1617,26 @@ function handleNhaTroChangeForGiuong() {
   giuongForm.value.giuongSo = "";
 }
 
-function normalizeCodePart(value: string) {
-  return (value ?? "")
-    .toString()
-    .trim()
-    .replace(/\s+/g, "_")
-    .replace(/[^a-zA-Z0-9_]/g, "")
-    .replace(/_+/g, "_")
-    .replace(/^_|_$/g, "");
+function handleHoaDonHopDongChange() {
+  const hopDongId = hoaDonForm.value.hopDongId;
+
+  if (!hopDongId) {
+    hoaDonForm.value.tienPhong = 0;
+    calculateHoaDonTongTien();
+    return;
+  }
+
+  const hopDong = hopDongs.value.find((item: any) => item.id === hopDongId);
+
+  if (!hopDong) {
+    hoaDonForm.value.tienPhong = 0;
+    calculateHoaDonTongTien();
+    return;
+  }
+
+  hoaDonForm.value.tienPhong = Number(hopDong.tienThue ?? 0);
+
+  calculateHoaDonTongTien();
 }
 
 function generateHopDongCode(giuongId: string) {
@@ -1394,82 +1730,157 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="app-shell">
-    <aside class="sidebar">
-      <div class="brand">
-        <div class="brand-mark">N</div>
-        <div>
-          <h1>Nhà Trọ</h1>
-          <small>Quản lý</small>
+  <div class="app-shell" :class="{ 'menu-open': isMenuOpen }">
+    <!-- =====================================================
+         NÚT MỞ MENU
+         ===================================================== -->
+    <button
+      v-if="!isMenuOpen"
+      type="button"
+      class="menu-toggle menu-open-button"
+      aria-label="Mở menu"
+      title="Mở menu"
+      @click="toggleMenu"
+    >
+      ☰
+    </button>
+
+    <!-- =====================================================
+         SIDEBAR
+         ===================================================== -->
+    <aside class="sidebar" :class="{ open: isMenuOpen }">
+      <div class="sidebar-header">
+        <div class="brand">
+          <div class="brand-mark">N</div>
+
+          <div>
+            <h1>Nhà Trọ</h1>
+            <small>Quản lý</small>
+          </div>
         </div>
+
+        <!-- Nút Tắt menu -->
+        <button
+          type="button"
+          class="menu-toggle menu-close-button"
+          aria-label="Tắt menu"
+          title="Tắt menu"
+          @click="closeMenu"
+        >
+          ×
+        </button>
       </div>
 
       <nav class="nav">
         <button
           v-for="tab in tabs"
           :key="tab"
+          type="button"
           :class="['nav-item', { active: currentTab === tab }]"
-          @click="currentTab = tab"
+          @click="
+            currentTab = tab;
+            closeMenu();
+          "
         >
-          {{
-            tab === "dashboard"
-              ? "Tổng quan"
-              : tab === "nhaTro"
-                ? "Nhà trọ"
-                : tab === "phong"
-                  ? "Phòng"
-                  : tab === "giuong"
-                    ? "Giường"
-                    : tab === "nguoiThue"
-                      ? "Người thuê"
-                      : tab === "hopDong"
-                        ? "Hợp đồng"
-                        : "Hóa đơn"
-          }}
+          <span class="nav-icon">
+            <template v-if="tab === 'dashboard'"> ⌂ </template>
+
+            <template v-else-if="tab === 'nhaTro'"> 🏠 </template>
+
+            <template v-else-if="tab === 'phong'"> ▦ </template>
+
+            <template v-else-if="tab === 'giuong'"> ▤ </template>
+
+            <template v-else-if="tab === 'nguoiThue'"> ♙ </template>
+
+            <template v-else-if="tab === 'hopDong'"> ▤ </template>
+
+            <template v-else> ▣ </template>
+          </span>
+
+          <span class="nav-label">
+            {{
+              tab === "dashboard"
+                ? "Tổng quan"
+                : tab === "nhaTro"
+                  ? "Nhà trọ"
+                  : tab === "phong"
+                    ? "Phòng"
+                    : tab === "giuong"
+                      ? "Giường"
+                      : tab === "nguoiThue"
+                        ? "Người thuê"
+                        : tab === "hopDong"
+                          ? "Hợp đồng"
+                          : "Hóa đơn"
+            }}
+          </span>
         </button>
       </nav>
     </aside>
 
+    <!-- =====================================================
+         OVERLAY
+         Dùng cho màn hình nhỏ
+         ===================================================== -->
+    <div v-if="isMenuOpen" class="menu-overlay" @click="closeMenu"></div>
+
+    <!-- =====================================================
+         NỘI DUNG CHÍNH
+         ===================================================== -->
     <main class="content">
       <header class="topbar">
         <div>
           <p class="eyebrow">Hệ thống</p>
           <h2>Quản lý nhà trọ</h2>
         </div>
+
         <button class="primary" @click="loadData">Làm mới dữ liệu</button>
       </header>
 
+      <!-- ===================================================
+           DASHBOARD
+           =================================================== -->
       <section v-if="currentTab === 'dashboard'" class="panel-grid">
         <div class="metric-card metric-nhatro highlight">
           <div class="metric-decor" aria-hidden="true"></div>
+
           <div class="metric-body">
             <span>Nhà trọ</span>
             <strong>{{ summary.totalNhaTro }}</strong>
           </div>
         </div>
+
         <div class="metric-card metric-phong">
           <div class="metric-decor" aria-hidden="true"></div>
+
           <div class="metric-body">
             <span>Phòng</span>
             <strong>{{ summary.totalPhong }}</strong>
           </div>
         </div>
+
         <div class="metric-card metric-giuong">
           <div class="metric-decor" aria-hidden="true"></div>
+
           <div class="metric-body">
             <span>Giường</span>
             <strong>{{ summary.totalGiuong }}</strong>
           </div>
         </div>
+
         <div class="metric-card metric-hopdong">
           <div class="metric-decor" aria-hidden="true"></div>
+
           <div class="metric-body">
             <span>Hợp đồng</span>
             <strong>{{ summary.totalHopDong }}</strong>
           </div>
         </div>
+
         <div class="metric-card metric-hoadon">
           <div class="metric-decor" aria-hidden="true"></div>
+
           <div class="metric-body">
             <span>Hóa đơn</span>
             <strong>{{ summary.totalHoaDon }}</strong>
@@ -1477,36 +1888,49 @@ onMounted(() => {
         </div>
       </section>
 
+      <!-- ===================================================
+           NHÀ TRỌ
+           =================================================== -->
       <section v-else-if="currentTab === 'nhaTro'" class="panel-grid">
         <div class="panel">
-          <h3>{{ editingNhaTroId ? "Sửa nhà trọ" : "Thêm nhà trọ" }}</h3>
+          <h3>
+            {{ editingNhaTroId ? "Sửa nhà trọ" : "Thêm nhà trọ" }}
+          </h3>
+
           <form @submit.prevent="saveNhaTro" class="form-grid">
             <label>
               {{ requiredLabel("Mã nhà trọ") }}
+
               <input
                 v-model="nhaTroForm.maNhaTro"
                 placeholder="Ví dụ: CG"
                 required
               />
             </label>
+
             <label>
               {{ requiredLabel("Tên nhà trọ") }}
+
               <input
                 v-model="nhaTroForm.tenNhaTro"
                 placeholder="Tên nhà trọ"
                 required
               />
             </label>
+
             <label>
               {{ requiredLabel("Địa chỉ") }}
+
               <input
                 v-model="nhaTroForm.diaChi"
                 placeholder="Địa chỉ"
                 required
               />
             </label>
+
             <label>
               {{ requiredLabel("Số tầng") }}
+
               <input
                 v-model.number="nhaTroForm.soTang"
                 type="number"
@@ -1515,18 +1939,22 @@ onMounted(() => {
                 required
               />
             </label>
+
             <label>
               {{ requiredLabel("Mô tả") }}
+
               <textarea
                 v-model="nhaTroForm.moTa"
                 placeholder="Mô tả"
                 rows="3"
               ></textarea>
             </label>
+
             <div class="actions">
               <button class="primary" type="submit">
                 {{ editingNhaTroId ? "Cập nhật" : "Lưu" }}
               </button>
+
               <button class="secondary" type="button" @click="resetNhaTroForm">
                 Hủy
               </button>
@@ -1536,6 +1964,7 @@ onMounted(() => {
 
         <div class="panel">
           <h3>Danh sách nhà trọ</h3>
+
           <table>
             <thead>
               <tr>
@@ -1546,16 +1975,19 @@ onMounted(() => {
                 <th>Hành động</th>
               </tr>
             </thead>
+
             <tbody>
               <tr v-for="item in nhaTros" :key="item.id">
                 <td>{{ item.maNhaTro }}</td>
                 <td>{{ item.tenNhaTro }}</td>
                 <td>{{ item.diaChi }}</td>
                 <td>{{ item.soTang }}</td>
+
                 <td class="row-actions">
                   <button class="table-btn edit" @click="editNhaTro(item)">
                     Sửa
                   </button>
+
                   <button
                     class="table-btn delete"
                     @click="requestDeleteNhaTro(item)"
@@ -1569,18 +2001,26 @@ onMounted(() => {
         </div>
       </section>
 
+      <!-- ===================================================
+           PHÒNG
+           =================================================== -->
       <section v-else-if="currentTab === 'phong'" class="panel-grid">
         <div class="panel">
-          <h3>{{ editingPhongId ? "Sửa phòng" : "Thêm phòng" }}</h3>
+          <h3>
+            {{ editingPhongId ? "Sửa phòng" : "Thêm phòng" }}
+          </h3>
+
           <form @submit.prevent="savePhong" class="form-grid">
             <label>
               {{ requiredLabel("Nhà trọ") }}
+
               <select
                 v-model="phongForm.nhaTroId"
                 @change="handleNhaTroChange"
                 required
               >
                 <option value="">Chọn nhà trọ</option>
+
                 <option v-for="item in nhaTros" :key="item.id" :value="item.id">
                   {{ item.tenNhaTro }}
                 </option>
@@ -1607,8 +2047,10 @@ onMounted(() => {
                 </option>
               </select>
             </label>
+
             <label>
               {{ requiredLabel("Số giường tối đa") }}
+
               <input
                 v-model.number="phongForm.soGiuongToiDa"
                 type="number"
@@ -1618,16 +2060,20 @@ onMounted(() => {
                 required
               />
             </label>
+
             <label>
               {{ requiredLabel("Loại phòng") }}
+
               <input
                 v-model="phongForm.loaiPhong"
                 placeholder="Loại phòng"
                 required
               />
             </label>
+
             <label>
               {{ requiredLabel("Diện tích") }}
+
               <input
                 v-model.number="phongForm.dienTich"
                 type="number"
@@ -1636,10 +2082,12 @@ onMounted(() => {
                 required
               />
             </label>
+
             <div class="actions">
               <button class="primary" type="submit">
                 {{ editingPhongId ? "Cập nhật" : "Lưu" }}
               </button>
+
               <button class="secondary" type="button" @click="resetPhongForm">
                 Hủy
               </button>
@@ -1649,6 +2097,7 @@ onMounted(() => {
 
         <div class="panel">
           <h3>Danh sách phòng</h3>
+
           <table>
             <thead>
               <tr>
@@ -1660,6 +2109,7 @@ onMounted(() => {
                 <th>Hành động</th>
               </tr>
             </thead>
+
             <tbody>
               <tr v-for="item in phongs" :key="item.id">
                 <td>
@@ -1669,13 +2119,18 @@ onMounted(() => {
                 <td>
                   {{ item.nhaTro?.tenNhaTro || item.nhaTro?.maNhaTro }}
                 </td>
+
                 <td>{{ item.tangSo }}</td>
+
                 <td>{{ item.loaiPhong }}</td>
+
                 <td>{{ item.soGiuongToiDa }}</td>
+
                 <td class="row-actions">
                   <button class="table-btn edit" @click="editPhong(item)">
                     Sửa
                   </button>
+
                   <button
                     type="button"
                     class="table-btn delete"
@@ -1690,25 +2145,35 @@ onMounted(() => {
         </div>
       </section>
 
+      <!-- ===================================================
+           GIƯỜNG
+           =================================================== -->
       <section v-else-if="currentTab === 'giuong'" class="panel-grid">
         <div class="panel">
-          <h3>{{ editingGiuongId ? "Sửa giường" : "Thêm giường" }}</h3>
+          <h3>
+            {{ editingGiuongId ? "Sửa giường" : "Thêm giường" }}
+          </h3>
+
           <form @submit.prevent="saveGiuong" class="form-grid">
             <label>
               {{ requiredLabel("Nhà trọ:") }}
+
               <select
                 v-model="giuongForm.nhaTroId"
                 @change="handleNhaTroChangeForGiuong"
                 required
               >
                 <option value="">Chọn nhà trọ</option>
+
                 <option v-for="item in nhaTros" :key="item.id" :value="item.id">
                   {{ item.tenNhaTro }}
                 </option>
               </select>
             </label>
+
             <label>
               {{ requiredLabel("Chọn tầng:") }}
+
               <select
                 v-model="giuongForm.phongId"
                 :disabled="!giuongForm.nhaTroId"
@@ -1716,6 +2181,7 @@ onMounted(() => {
                 required
               >
                 <option value="">Chọn tầng số</option>
+
                 <option
                   v-for="item in filteredPhongsByNhaTro"
                   :key="item.id"
@@ -1725,9 +2191,15 @@ onMounted(() => {
                 </option>
               </select>
             </label>
+
             <label>
               {{ requiredLabel("Giường số:") }}
-              <select v-model="giuongForm.giuongSo" required>
+
+              <select
+                v-model="giuongForm.giuongSo"
+                :disabled="!giuongForm.phongId"
+                required
+              >
                 <option value="">Chọn giường</option>
 
                 <option v-for="item in giuongOptions" :key="item" :value="item">
@@ -1735,6 +2207,7 @@ onMounted(() => {
                 </option>
               </select>
             </label>
+
             <label>
               {{ requiredLabel("Giá giường:") }}
 
@@ -1751,19 +2224,26 @@ onMounted(() => {
                 <span>VND</span>
               </div>
             </label>
+
             <label>
               {{ requiredLabel("Trạng thái") }}
+
               <select v-model="giuongForm.trangThai">
                 <option value="trong">Trống</option>
+
                 <option value="da_thue">Đã thuê</option>
+
                 <option value="bao_tri">Bảo trì</option>
+
                 <option value="sap_tra_tro">Sắp trả trọ</option>
               </select>
             </label>
+
             <div class="actions">
               <button class="primary" type="submit">
                 {{ editingGiuongId ? "Cập nhật" : "Lưu" }}
               </button>
+
               <button class="secondary" type="button" @click="resetGiuongForm">
                 Hủy
               </button>
@@ -1773,6 +2253,7 @@ onMounted(() => {
 
         <div class="panel">
           <h3>Danh sách giường</h3>
+
           <table>
             <thead>
               <tr>
@@ -1784,17 +2265,28 @@ onMounted(() => {
                 <th>Hành động</th>
               </tr>
             </thead>
+
             <tbody>
               <tr v-for="item in giuongs" :key="item.id">
                 <td>{{ item.phong?.tangSo }}</td>
+
                 <td>{{ item.maGiuong }}</td>
+
                 <td>{{ item.giuongSo }}</td>
-                <td>{{ formatCurrency(item.giaGiuong) }}</td>
-                <td>{{ getStatusText(item.trangThai) }}</td>
+
+                <td>
+                  {{ formatCurrency(item.giaGiuong) }}
+                </td>
+
+                <td>
+                  {{ getStatusText(item.trangThai) }}
+                </td>
+
                 <td class="row-actions">
                   <button class="table-btn edit" @click="editGiuong(item)">
                     Sửa
                   </button>
+
                   <button
                     type="button"
                     class="table-btn delete"
@@ -1809,22 +2301,29 @@ onMounted(() => {
         </div>
       </section>
 
+      <!-- ===================================================
+           NGƯỜI THUÊ
+           =================================================== -->
       <section v-else-if="currentTab === 'nguoiThue'" class="panel-grid">
         <div class="panel">
           <h3>
             {{ editingNguoiThueId ? "Sửa người thuê" : "Thêm người thuê" }}
           </h3>
+
           <form @submit.prevent="saveNguoiThue" class="form-grid">
             <label>
               {{ requiredLabel("Họ tên") }}
+
               <input
                 v-model="nguoiThueForm.hoTen"
                 placeholder="Họ tên"
                 required
               />
             </label>
+
             <label>
               {{ requiredLabel("CCCD") }}
+
               <input
                 v-model="nguoiThueForm.cccd"
                 placeholder="CCCD"
@@ -1832,18 +2331,27 @@ onMounted(() => {
                 pattern="[0-9]{9,12}"
               />
             </label>
+
             <label>
               {{ requiredLabel("Số điện thoại") }}
+
               <input
                 v-model="nguoiThueForm.sdt"
-                placeholder="Số điện thoại"
-                type="tel"
-                required
-                pattern="[0-9]{10,11}"
+                placeholder="0123456789"
+                type="text"
+                inputmode="numeric"
+                @input="handleSoDienThoaiInput"
+                @blur="validateSoDienThoai"
               />
+
+              <span v-if="soDienThoaiError" class="form-error">
+                {{ soDienThoaiError }}
+              </span>
             </label>
+
             <label>
               {{ requiredLabel("Email") }}
+
               <input
                 v-model="nguoiThueForm.email"
                 type="email"
@@ -1851,20 +2359,26 @@ onMounted(() => {
                 required
               />
             </label>
+
             <label>
               {{ requiredLabel("Địa chỉ") }}
+
               <input
                 v-model="nguoiThueForm.diaChi"
                 placeholder="Địa chỉ"
                 required
               />
             </label>
+
             <label>
               {{ requiredLabel("Ngày sinh") }}
+
               <input v-model="nguoiThueForm.ngaySinh" type="date" required />
             </label>
+
             <label>
               Biển số xe
+
               <input
                 v-model="nguoiThueForm.bienSoXe"
                 type="text"
@@ -1947,10 +2461,12 @@ onMounted(() => {
                 </a>
               </div>
             </label>
+
             <div class="actions">
               <button class="primary" type="submit">
                 {{ editingNguoiThueId ? "Cập nhật" : "Lưu" }}
               </button>
+
               <button
                 class="secondary"
                 type="button"
@@ -1964,6 +2480,7 @@ onMounted(() => {
 
         <div class="panel">
           <h3>Danh sách người thuê</h3>
+
           <table>
             <thead>
               <tr>
@@ -1973,15 +2490,18 @@ onMounted(() => {
                 <th>Hành động</th>
               </tr>
             </thead>
+
             <tbody>
               <tr v-for="item in nguoiThues" :key="item.id">
                 <td>{{ item.hoTen }}</td>
                 <td>{{ item.cccd }}</td>
                 <td>{{ item.sdt }}</td>
+
                 <td class="row-actions">
                   <button class="table-btn edit" @click="editNguoiThue(item)">
                     Sửa
                   </button>
+
                   <button
                     class="table-btn delete"
                     @click="requestDeleteNguoiThue(item)"
@@ -1995,9 +2515,15 @@ onMounted(() => {
         </div>
       </section>
 
+      <!-- ===================================================
+           HỢP ĐỒNG
+           =================================================== -->
       <section v-else-if="currentTab === 'hopDong'" class="panel-grid">
         <div class="panel">
-          <h3>{{ editingHopDongId ? "Sửa hợp đồng" : "Thêm hợp đồng" }}</h3>
+          <h3>
+            {{ editingHopDongId ? "Sửa hợp đồng" : "Thêm hợp đồng" }}
+          </h3>
+
           <form @submit.prevent="saveHopDong" class="form-grid">
             <label>
               {{ requiredLabel("Nhà trọ") }}
@@ -2014,6 +2540,7 @@ onMounted(() => {
                 </option>
               </select>
             </label>
+
             <label v-if="hopDongForm.nhaTroId">
               {{ requiredLabel("Phòng") }}
 
@@ -2037,12 +2564,13 @@ onMounted(() => {
                 Nhà trọ này chưa có phòng.
               </small>
             </label>
+
             <label v-if="hopDongForm.phongId">
               {{ requiredLabel("Giường") }}
 
               <select
                 v-model="hopDongForm.giuongId"
-                @change="syncHopDongCode"
+                @change="handleGiuongChangeForHopDong"
                 required
               >
                 <option value="">Chọn giường</option>
@@ -2060,10 +2588,13 @@ onMounted(() => {
                 Nhà trọ này không còn giường trống để lập hợp đồng.
               </small>
             </label>
+
             <label>
               {{ requiredLabel("Người thuê") }}
+
               <select v-model="hopDongForm.nguoiThueId" required>
                 <option value="">Chọn người thuê</option>
+
                 <option
                   v-for="item in nguoiThues"
                   :key="item.id"
@@ -2073,13 +2604,16 @@ onMounted(() => {
                 </option>
               </select>
             </label>
+
             <label>
               {{ requiredLabel("Ngày bắt đầu") }}
+
               <input v-model="hopDongForm.ngayBatDau" type="date" required />
             </label>
 
             <label>
               Ngày kết thúc
+
               <input
                 v-model="hopDongForm.ngayKetThuc"
                 type="date"
@@ -2090,37 +2624,42 @@ onMounted(() => {
 
             <label>
               {{ requiredLabel("Giá thuê") }}
+
               <div class="currency-input">
                 <input
-                  v-model.number="hopDongForm.tienThue"
-                  type="number"
-                  min="0"
-                  step="1000"
+                  :value="tienThueDisplay"
+                  type="text"
                   placeholder="Giá thuê"
+                  @input="handleTienThueInput"
+                  @blur="() => formatTienThueDisplay(tienThueDisplay)"
                   required
                 />
+
                 <span>VND</span>
               </div>
             </label>
 
             <label>
               {{ requiredLabel("Chu kỳ thanh toán") }}
+
               <select v-model.number="hopDongForm.chuKyThanhToan" required>
                 <option :value="1">Hàng tháng</option>
+
                 <option :value="3">3 tháng</option>
+
                 <option :value="6">6 tháng</option>
+
                 <option :value="12">12 tháng</option>
               </select>
             </label>
 
             <label>
               Đặt cọc
+
               <div class="currency-input">
                 <input
-                  v-model.number="hopDongForm.tienDatCoc"
-                  type="number"
-                  min="0"
-                  step="1000"
+                  :value="tienDatCocDisplay"
+                  type="text"
                   placeholder="Số tiền đặt cọc"
                 />
                 <span>VND</span>
@@ -2129,6 +2668,7 @@ onMounted(() => {
 
             <label>
               {{ requiredLabel("Trạng thái") }}
+
               <select v-model="hopDongForm.trangThai">
                 <option value="active">Có hiệu lực</option>
 
@@ -2140,16 +2680,19 @@ onMounted(() => {
 
             <label class="full-width">
               Ghi chú
+
               <textarea
                 v-model="hopDongForm.ghiChu"
                 rows="3"
                 placeholder="Nhập ghi chú cho hợp đồng..."
               ></textarea>
             </label>
+
             <div class="actions">
               <button class="primary" type="submit">
                 {{ editingHopDongId ? "Cập nhật" : "Lưu" }}
               </button>
+
               <button class="secondary" type="button" @click="resetHopDongForm">
                 Hủy
               </button>
@@ -2159,6 +2702,7 @@ onMounted(() => {
 
         <div class="panel">
           <h3>Danh sách hợp đồng</h3>
+
           <table>
             <thead>
               <tr>
@@ -2235,18 +2779,29 @@ onMounted(() => {
         </div>
       </section>
 
+      <!-- ===================================================
+           HÓA ĐƠN
+           =================================================== -->
       <section v-else-if="currentTab === 'hoaDon'" class="panel-grid">
         <div class="panel">
-          <h3>{{ editingHoaDonId ? "Sửa hóa đơn" : "Thêm hóa đơn" }}</h3>
+          <h3>
+            {{ editingHoaDonId ? "Sửa hóa đơn" : "Thêm hóa đơn" }}
+          </h3>
+
           <form @submit.prevent="saveHoaDon" class="form-grid">
             <label>
               {{ requiredLabel("Hợp đồng") }}
+
               <select
                 v-model="hoaDonForm.hopDongId"
-                @change="syncHoaDonCode"
+                @change="
+                  updateHoaDonTienPhong();
+                  syncHoaDonCode();
+                "
                 required
               >
                 <option value="">Chọn hợp đồng</option>
+
                 <option
                   v-for="item in hopDongs"
                   :key="item.id"
@@ -2256,8 +2811,10 @@ onMounted(() => {
                 </option>
               </select>
             </label>
+
             <label>
               {{ requiredLabel("Tháng thanh toán") }}
+
               <input
                 v-model="hoaDonForm.thangThanhToan"
                 type="date"
@@ -2265,35 +2822,111 @@ onMounted(() => {
                 required
               />
             </label>
+
+            <label>
+              {{ requiredLabel("Tiền phòng") }}
+
+              <div class="currency-input">
+                <input
+                  :value="formatCurrency(hoaDonForm.tienPhong)"
+                  type="text"
+                  readonly
+                />
+
+                <span>VND</span>
+              </div>
+            </label>
+
+            <label>
+              {{ requiredLabel("Tiền điện") }}
+
+              <div class="currency-input">
+                <input
+                  :value="tienDienDisplay"
+                  type="text"
+                  inputmode="numeric"
+                  placeholder="0"
+                  @input="handleTienDienInput"
+                  required
+                />
+
+                <span>VND</span>
+              </div>
+            </label>
+
+            <label>
+              {{ requiredLabel("Tiền nước") }}
+
+              <div class="currency-input">
+                <input
+                  :value="tienNuocDisplay"
+                  type="text"
+                  inputmode="numeric"
+                  placeholder="0"
+                  @input="handleTienNuocInput"
+                  required
+                />
+
+                <span>VND</span>
+              </div>
+            </label>
+
+            <label>
+              {{ requiredLabel("Tiền dịch vụ khác") }}
+
+              <div class="currency-input">
+                <input
+                  :value="tienDichVuKhacDisplay"
+                  type="text"
+                  inputmode="numeric"
+                  placeholder="0"
+                  @input="handleTienDichVuKhacInput"
+                  required
+                />
+
+                <span>VND</span>
+              </div>
+            </label>
+
             <label>
               {{ requiredLabel("Tổng tiền") }}
-              <input
-                v-model.number="hoaDonForm.tongTien"
-                type="number"
-                min="0"
-                placeholder="Tổng tiền"
-                required
-              />
+
+              <div class="currency-input">
+                <input
+                  :value="formatCurrency(hoaDonForm.tongTien)"
+                  type="text"
+                  readonly
+                />
+
+                <span>VND</span>
+              </div>
             </label>
+
             <label>
               {{ requiredLabel("Trạng thái") }}
+
               <select v-model="hoaDonForm.trangThai">
                 <option value="chua_thanh_toan">Chưa thanh toán</option>
+
                 <option value="da_thanh_toan">Đã thanh toán</option>
               </select>
             </label>
+
             <label class="full-width">
               Ghi chú
+
               <textarea
                 v-model="hoaDonForm.ghiChu"
                 rows="3"
                 placeholder="Nhập ghi chú cho hóa đơn..."
               ></textarea>
             </label>
+
             <div class="actions">
               <button class="primary" type="submit">
                 {{ editingHoaDonId ? "Cập nhật" : "Lưu" }}
               </button>
+
               <button class="secondary" type="button" @click="resetHoaDonForm">
                 Hủy
               </button>
@@ -2318,22 +2951,18 @@ onMounted(() => {
 
             <tbody>
               <tr v-for="item in hoaDons" :key="item.id">
-                <!-- Mã hóa đơn -->
                 <td>
                   {{ item.maHoaDon }}
                 </td>
 
-                <!-- Người thuê -->
                 <td>
                   {{ item.hopDong?.nguoiThue?.hoTen ?? "" }}
                 </td>
 
-                <!-- Tổng tiền -->
                 <td>
                   {{ formatCurrency(item.tongTien) }}
                 </td>
 
-                <!-- Trạng thái -->
                 <td>
                   <span
                     :class="[
@@ -2351,7 +2980,6 @@ onMounted(() => {
                   </span>
                 </td>
 
-                <!-- Ngày nộp -->
                 <td>
                   {{
                     item.trangThai === "da_thanh_toan" && item.ngayNop
@@ -2360,7 +2988,6 @@ onMounted(() => {
                   }}
                 </td>
 
-                <!-- Hành động -->
                 <td class="row-actions">
                   <button class="table-btn edit" @click="editHoaDon(item)">
                     Sửa
@@ -2380,7 +3007,13 @@ onMounted(() => {
         </div>
       </section>
     </main>
-    <!-- Modal xóa nhà trọ -->
+
+    <!-- =====================================================
+         MODAL XÓA NHÀ TRỌ
+         ===================================================== -->
+    <!-- =====================================================
+     MODAL XÓA NHÀ TRỌ
+     ===================================================== -->
     <div
       v-if="showDeleteNhaTroModal"
       class="modal-overlay"
@@ -2400,6 +3033,7 @@ onMounted(() => {
         </div>
 
         <div class="delete-modal-body">
+          <!-- Nhà trọ đang có dữ liệu liên quan -->
           <template
             v-if="
               deleteNhaTroInfo.soPhong > 0 ||
@@ -2408,62 +3042,62 @@ onMounted(() => {
               deleteNhaTroInfo.soHoaDon > 0
             "
           >
-            <div class="warning-message">
+            <p class="warning-message">
               <strong>Không thể xóa nhà trọ này!</strong>
+            </p>
 
-              <p>
-                Nhà trọ đang có dữ liệu liên quan. Bạn cần xử lý các dữ liệu này
-                trước khi xóa.
-              </p>
-            </div>
+            <p>
+              Nhà trọ
+              <strong>{{ deleteNhaTroInfo.tenNhaTro }}</strong>
+              đang có dữ liệu liên quan.
+            </p>
 
             <div class="related-data">
-              <div class="related-item">
+              <div v-if="deleteNhaTroInfo.soPhong > 0" class="related-item">
                 <span>Phòng</span>
                 <strong>{{ deleteNhaTroInfo.soPhong }}</strong>
               </div>
 
-              <div class="related-item">
+              <div v-if="deleteNhaTroInfo.soGiuong > 0" class="related-item">
                 <span>Giường</span>
                 <strong>{{ deleteNhaTroInfo.soGiuong }}</strong>
               </div>
 
-              <div class="related-item">
+              <div v-if="deleteNhaTroInfo.soHopDong > 0" class="related-item">
                 <span>Hợp đồng</span>
                 <strong>{{ deleteNhaTroInfo.soHopDong }}</strong>
               </div>
 
-              <div class="related-item">
+              <div v-if="deleteNhaTroInfo.soHoaDon > 0" class="related-item">
                 <span>Hóa đơn</span>
                 <strong>{{ deleteNhaTroInfo.soHoaDon }}</strong>
               </div>
             </div>
 
             <p class="delete-modal-note">
-              Việc xóa nhà trọ có thể ảnh hưởng đến các dữ liệu liên quan. Hãy
-              xóa hoặc xử lý các dữ liệu liên quan trước khi thực hiện thao tác
-              này.
+              Hãy xóa hoặc xử lý các dữ liệu liên quan trước khi xóa nhà trọ.
             </p>
           </template>
 
+          <!-- Nhà trọ không có dữ liệu liên quan -->
           <template v-else>
             <p class="confirm-message">
               Bạn có chắc chắn muốn xóa nhà trọ
-              <strong>{{ deleteNhaTroInfo.tenNhaTro }}</strong
-              >?
+              <strong>
+                {{ deleteNhaTroInfo.tenNhaTro }}
+              </strong>
+              không?
             </p>
 
             <p class="delete-modal-note">Thao tác này không thể hoàn tác.</p>
           </template>
 
-          <p
-            v-if="deleteErrorMessage && deleteNhaTroInfo.soPhong === 0"
-            class="error-message"
-          >
+          <p v-if="deleteErrorMessage" class="error-message">
             {{ deleteErrorMessage }}
           </p>
         </div>
 
+        <!-- CHỈ CÓ 1 KHỐI BUTTON -->
         <div class="delete-modal-actions">
           <button
             class="secondary"
@@ -2489,14 +3123,16 @@ onMounted(() => {
         </div>
       </div>
     </div>
-    <!-- Modal xóa phòng -->
+
+    <!-- =====================================================
+         MODAL XÓA PHÒNG
+         ===================================================== -->
     <div
       v-if="showDeletePhongModal"
       class="modal-overlay"
       @click.self="closeDeletePhongModal"
     >
       <div class="delete-modal">
-        <!-- Header -->
         <div class="delete-modal-header">
           <div class="warning-icon">⚠</div>
 
@@ -2505,6 +3141,7 @@ onMounted(() => {
 
             <p>
               {{ deletePhongInfo.maPhong }}
+
               <span v-if="deletePhongInfo.tenNhaTro">
                 - {{ deletePhongInfo.tenNhaTro }}
               </span>
@@ -2512,11 +3149,10 @@ onMounted(() => {
           </div>
         </div>
 
-        <!-- Body -->
         <div class="delete-modal-body">
           <template v-if="deletePhongInfo.soGiuong > 0">
             <div class="warning-message">
-              <strong>Không thể xóa phòng này!</strong>
+              <strong> Không thể xóa phòng này! </strong>
 
               <p>
                 Phòng đang có dữ liệu giường liên quan. Bạn cần xử lý các dữ
@@ -2557,7 +3193,6 @@ onMounted(() => {
           </p>
         </div>
 
-        <!-- Footer -->
         <div class="delete-modal-actions">
           <button
             class="secondary"
@@ -2579,6 +3214,9 @@ onMounted(() => {
       </div>
     </div>
 
+    <!-- =====================================================
+         MODAL XÓA HỢP ĐỒNG
+         ===================================================== -->
     <div
       v-if="showDeleteHopDongModal"
       class="modal-overlay"
@@ -2627,14 +3265,15 @@ onMounted(() => {
       </div>
     </div>
 
-    <!-- Modal xóa giường -->
+    <!-- =====================================================
+         MODAL XÓA GIƯỜNG
+         ===================================================== -->
     <div
       v-if="showDeleteGiuongModal"
       class="modal-overlay"
       @click.self="closeDeleteGiuongModal"
     >
       <div class="delete-modal">
-        <!-- Header -->
         <div class="delete-modal-header">
           <div class="warning-icon">⚠</div>
 
@@ -2643,6 +3282,7 @@ onMounted(() => {
 
             <p>
               {{ deleteGiuongInfo.maGiuong }}
+
               <span v-if="deleteGiuongInfo.maPhong">
                 - Phòng {{ deleteGiuongInfo.maPhong }}
               </span>
@@ -2650,32 +3290,75 @@ onMounted(() => {
           </div>
         </div>
 
-        <!-- Body -->
         <div class="delete-modal-body">
-          <p class="confirm-message">
-            Bạn có chắc chắn muốn xóa giường
-            <strong>
-              {{ deleteGiuongInfo.maGiuong }}
-            </strong>
+          <!-- GIƯỜNG ĐÃ CÓ HỢP ĐỒNG -->
+          <template v-if="deleteGiuongInfo.soHopDong > 0">
+            <div class="warning-message">
+              <strong>Không thể xóa giường này!</strong>
 
-            <span v-if="deleteGiuongInfo.maPhong">
-              của phòng
+              <p>
+                Giường đang được sử dụng trong
+                <strong>
+                  {{ deleteGiuongInfo.soHopDong }}
+                </strong>
+                hợp đồng.
+              </p>
+
+              <p>
+                Vui lòng xóa hoặc xử lý hợp đồng liên quan trước khi xóa giường.
+              </p>
+            </div>
+
+            <div class="related-data">
+              <div class="related-item">
+                <span>Mã HD(Giường)</span>
+                <strong>
+                  {{ deleteGiuongInfo.maGiuong }}
+                </strong>
+              </div>
+
+              <div class="related-item" v-if="deleteGiuongInfo.maPhong">
+                <span>Phòng</span>
+                <strong>
+                  {{ deleteGiuongInfo.maPhong }}
+                </strong>
+              </div>
+
+              <div class="related-item">
+                <span>Số hợp đồng</span>
+                <strong>
+                  {{ deleteGiuongInfo.soHopDong }}
+                </strong>
+              </div>
+            </div>
+          </template>
+
+          <!-- GIƯỜNG CHƯA CÓ HỢP ĐỒNG -->
+          <template v-else>
+            <p class="confirm-message">
+              Bạn có chắc chắn muốn xóa giường
               <strong>
-                {{ deleteGiuongInfo.maPhong }}
+                {{ deleteGiuongInfo.maGiuong }}
               </strong>
-            </span>
 
-            không?
-          </p>
+              <span v-if="deleteGiuongInfo.maPhong">
+                của phòng
+                <strong>
+                  {{ deleteGiuongInfo.maPhong }}
+                </strong>
+              </span>
 
-          <p class="delete-modal-note">Thao tác này không thể hoàn tác.</p>
+              không?
+            </p>
+
+            <p class="delete-modal-note">Thao tác này không thể hoàn tác.</p>
+          </template>
 
           <p v-if="deleteGiuongErrorMessage" class="error-message">
             {{ deleteGiuongErrorMessage }}
           </p>
         </div>
 
-        <!-- Footer -->
         <div class="delete-modal-actions">
           <button
             class="secondary"
@@ -2686,6 +3369,7 @@ onMounted(() => {
           </button>
 
           <button
+            v-if="deleteGiuongInfo.soHopDong === 0"
             class="danger-button"
             type="button"
             @click="confirmDeleteGiuong"
@@ -2695,7 +3379,10 @@ onMounted(() => {
         </div>
       </div>
     </div>
-    <!-- Modal xóa người thuê -->
+
+    <!-- =====================================================
+         MODAL XÓA NGƯỜI THUÊ
+         ===================================================== -->
     <div
       v-if="showDeleteNguoiThueModal"
       class="modal-overlay"
@@ -2710,6 +3397,7 @@ onMounted(() => {
 
             <p>
               {{ deleteNguoiThueInfo.hoTen }}
+
               <span v-if="deleteNguoiThueInfo.cccd">
                 - CCCD: {{ deleteNguoiThueInfo.cccd }}
               </span>
@@ -2718,15 +3406,33 @@ onMounted(() => {
         </div>
 
         <div class="delete-modal-body">
-          <p class="confirm-message">
-            Bạn có chắc chắn muốn xóa người thuê
-            <strong>
-              {{ deleteNguoiThueInfo.hoTen }}
-            </strong>
-            không?
-          </p>
+          <!-- Người thuê đang có hợp đồng -->
+          <template v-if="deleteNguoiThueInfo.hopDongIds.length > 0">
+            <p class="warning-message">
+              Bạn chú ý người thuê
+              <strong>{{ deleteNguoiThueInfo.hoTen }}</strong>
+              đang có trong hợp đồng
+              <strong>
+                {{ deleteNguoiThueInfo.hopDongIds.join(", ") }}
+              </strong>
+              nên không thể xóa được.
+            </p>
 
-          <p class="delete-modal-note">Thao tác này không thể hoàn tác.</p>
+            <p class="delete-modal-note">Cần thực hiện xóa hợp đồng trước.</p>
+          </template>
+
+          <!-- Người thuê không có hợp đồng -->
+          <template v-else>
+            <p class="confirm-message">
+              Bạn có chắc chắn muốn xóa người thuê
+              <strong>
+                {{ deleteNguoiThueInfo.hoTen }}
+              </strong>
+              không?
+            </p>
+
+            <p class="delete-modal-note">Thao tác này không thể hoàn tác.</p>
+          </template>
 
           <p v-if="deleteNguoiThueErrorMessage" class="error-message">
             {{ deleteNguoiThueErrorMessage }}
@@ -2743,6 +3449,7 @@ onMounted(() => {
           </button>
 
           <button
+            v-if="deleteNguoiThueInfo.hopDongIds.length === 0"
             class="danger-button"
             type="button"
             @click="confirmDeleteNguoiThue"
@@ -2752,6 +3459,10 @@ onMounted(() => {
         </div>
       </div>
     </div>
+
+    <!-- =====================================================
+         MODAL XÓA HÓA ĐƠN
+         ===================================================== -->
     <div
       v-if="showDeleteHoaDonModal"
       class="modal-backdrop"
@@ -2762,7 +3473,9 @@ onMounted(() => {
 
         <p>
           Bạn có chắc chắn muốn xóa hóa đơn
-          <strong>{{ deleteHoaDonInfo.maHoaDon }}</strong>
+          <strong>
+            {{ deleteHoaDonInfo.maHoaDon }}
+          </strong>
           không?
         </p>
 
@@ -2783,11 +3496,33 @@ onMounted(() => {
 </template>
 
 <style scoped>
+/* =========================================================
+   RESET + GLOBAL
+   ========================================================= */
+
+:global(html) {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  min-height: 100%;
+}
+
 :global(body) {
   margin: 0;
+  padding: 0;
+  width: 100%;
+  min-height: 100vh;
+
   background: linear-gradient(135deg, #f8fafc, #e2e8f0);
-  font-family: Inter, "Segoe UI", sans-serif;
+
+  font-family: Inter, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+
   color: #0f172a;
+}
+
+:global(#app) {
+  width: 100%;
+  min-height: 100vh;
 }
 
 * {
@@ -2801,267 +3536,880 @@ textarea {
   font: inherit;
 }
 
+/* =========================================================
+   APP LAYOUT
+   ========================================================= */
+
 .app-shell {
+  position: relative;
+
   display: grid;
-  grid-template-columns: 260px 1fr;
+
+  grid-template-columns: 260px minmax(0, 1fr);
+
+  grid-template-rows: minmax(100vh, auto);
+
+  width: 100%;
+  min-width: 0;
   min-height: 100vh;
+
+  overflow-x: hidden;
 }
 
+/* =========================================================
+   SIDEBAR
+   ========================================================= */
+
 .sidebar {
+  grid-column: 1;
+  grid-row: 1;
+
+  position: sticky;
+  top: 0;
+
+  width: 260px;
+  height: 100vh;
+
+  padding: 24px 16px;
+
   background: #0f172a;
   color: white;
-  padding: 28px 18px;
+
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  z-index: 1000;
+}
+
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  width: 100%;
+
+  margin-bottom: 28px;
 }
 
 .brand {
   display: flex;
   align-items: center;
-  gap: 14px;
-  margin-bottom: 30px;
+
+  gap: 12px;
+
+  min-width: 0;
 }
 
 .brand-mark {
+  flex: 0 0 42px;
+
   width: 42px;
   height: 42px;
+
   border-radius: 12px;
+
   background: linear-gradient(135deg, #38bdf8, #2563eb);
+
   display: grid;
   place-items: center;
+
+  font-size: 1rem;
   font-weight: 700;
+
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.25);
 }
 
 .brand h1 {
   margin: 0;
-  font-size: 1.2rem;
+
+  color: white;
+
+  font-size: 1.15rem;
+  line-height: 1.2;
+
+  white-space: nowrap;
 }
 
 .brand small {
-  opacity: 0.7;
+  display: block;
+
+  margin-top: 2px;
+
+  color: #94a3b8;
+
+  font-size: 0.72rem;
 }
+
+/* =========================================================
+   MENU BUTTON
+   ========================================================= */
+
+.menu-toggle {
+  border: none;
+
+  display: grid;
+  place-items: center;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease;
+}
+
+.menu-toggle:hover {
+  transform: translateY(-1px);
+}
+
+.menu-open-button {
+  display: none;
+
+  position: fixed;
+
+  top: 16px;
+  left: 16px;
+
+  width: 42px;
+  height: 42px;
+
+  border-radius: 10px;
+
+  background: #0f172a;
+  color: white;
+
+  font-size: 1.2rem;
+
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.2);
+
+  z-index: 1200;
+}
+
+.menu-close-button {
+  display: none;
+
+  flex: 0 0 34px;
+
+  width: 34px;
+  height: 34px;
+
+  border-radius: 8px;
+
+  background: rgba(255, 255, 255, 0.08);
+
+  color: white;
+
+  font-size: 1.2rem;
+}
+
+.menu-close-button:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* =========================================================
+   NAVIGATION
+   ========================================================= */
 
 .nav {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+
+  gap: 8px;
+
+  width: 100%;
 }
 
 .nav-item {
+  display: flex;
+  align-items: center;
+
+  width: 100%;
+  min-height: 44px;
+
   border: none;
   border-radius: 10px;
+
+  padding: 10px 12px;
+
   background: rgba(148, 163, 184, 0.08);
-  color: white;
-  padding: 12px 14px;
+
+  color: #e2e8f0;
+
   text-align: left;
+
   cursor: pointer;
-  transition: 0.2s ease;
+
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.nav-item:hover {
+  background: rgba(148, 163, 184, 0.15);
+
+  color: white;
+
+  transform: translateX(2px);
 }
 
 .nav-item.active {
   background: linear-gradient(135deg, #38bdf8, #2563eb);
+
+  color: white;
+
+  box-shadow: 0 5px 14px rgba(37, 99, 235, 0.25);
 }
 
-.content {
-  padding: 28px;
+.nav-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  flex: 0 0 28px;
+
+  width: 28px;
+
+  font-size: 0.95rem;
+
+  line-height: 1;
 }
+
+.nav-label {
+  min-width: 0;
+
+  font-size: 0.88rem;
+  font-weight: 500;
+
+  white-space: nowrap;
+}
+
+/* =========================================================
+   MENU OVERLAY
+   ========================================================= */
+
+.menu-overlay {
+  display: none;
+
+  position: fixed;
+
+  inset: 0;
+
+  background: rgba(15, 23, 42, 0.5);
+
+  backdrop-filter: blur(2px);
+
+  z-index: 900;
+}
+
+/* =========================================================
+   MAIN CONTENT
+   ========================================================= */
+
+.content {
+  grid-column: 2;
+  grid-row: 1;
+
+  min-width: 0;
+  width: 100%;
+
+  padding: 28px;
+
+  overflow-x: hidden;
+}
+
+/* =========================================================
+   TOP BAR
+   ========================================================= */
 
 .topbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 22px;
+
+  gap: 20px;
+
+  width: 100%;
+
+  margin-bottom: 24px;
+}
+
+.topbar > div {
+  min-width: 0;
 }
 
 .eyebrow {
   margin: 0;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  font-size: 0.7rem;
+
   color: #64748b;
+
+  letter-spacing: 0.08em;
+
+  text-transform: uppercase;
+
+  font-size: 0.7rem;
+  font-weight: 600;
 }
 
 .topbar h2 {
-  margin: 4px 0 0;
+  margin: 5px 0 0;
+
+  color: #0f172a;
+
   font-size: 2rem;
+  line-height: 1.2;
 }
+
+/* =========================================================
+   BUTTONS
+   ========================================================= */
 
 .primary,
 .secondary,
 .table-btn {
   border: none;
-  border-radius: 10px;
+
+  border-radius: 9px;
+
   padding: 10px 14px;
+
   cursor: pointer;
+
   font-weight: 600;
+
+  transition:
+    background 0.2s ease,
+    transform 0.15s ease,
+    box-shadow 0.2s ease;
 }
 
 .primary {
   background: linear-gradient(135deg, #2563eb, #0ea5e9);
+
   color: white;
+
+  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.2);
+}
+
+.primary:hover {
+  transform: translateY(-1px);
+
+  box-shadow: 0 6px 14px rgba(37, 99, 235, 0.25);
 }
 
 .secondary {
   background: #e2e8f0;
+
   color: #0f172a;
 }
 
+.secondary:hover {
+  background: #cbd5e1;
+}
+
+/* =========================================================
+   PANELS / GRID
+   ========================================================= */
+
 .panel-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 22px;
+
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+
+  gap: 20px;
+
+  width: 100%;
+
+  min-width: 0;
 }
 
-.metric-card,
 .panel {
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  border-radius: 18px;
+  min-width: 0;
+
+  width: 100%;
+
   padding: 20px;
+
+  background: rgba(255, 255, 255, 0.86);
+
+  border: 1px solid rgba(148, 163, 184, 0.2);
+
+  border-radius: 18px;
+
   box-shadow: 0 12px 24px rgba(15, 23, 42, 0.06);
+
+  backdrop-filter: blur(10px);
+
+  overflow-x: auto;
 }
+
+.panel h3 {
+  margin: 0 0 18px;
+
+  color: #0f172a;
+
+  font-size: 1.1rem;
+}
+
+/* =========================================================
+   DASHBOARD METRIC CARD
+   ========================================================= */
 
 .metric-card {
+  position: relative;
+
+  min-height: 130px;
+
   display: flex;
   flex-direction: column;
+
+  justify-content: center;
+
   gap: 6px;
-  position: relative;
+
+  padding: 20px;
+
+  border: 1px solid rgba(148, 163, 184, 0.2);
+
+  border-radius: 18px;
+
   overflow: hidden;
-}
 
-.metric-card .metric-media {
-  position: absolute;
-  inset: 0;
-  display: block;
-}
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.06);
 
-.metric-card .metric-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-  opacity: 0.12;
-  transform: scale(1.02);
-}
+  background: rgba(255, 255, 255, 0.8);
 
-.metric-card .metric-body {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  position: relative;
-  z-index: 2;
-}
-
-.metric-card .metric-overlay {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0),
-    rgba(255, 255, 255, 0)
-  );
-  z-index: 1;
+  backdrop-filter: blur(10px);
 }
 
 .metric-card.highlight {
   background: linear-gradient(135deg, #eff6ff, #dbeafe);
 }
 
+.metric-card .metric-decor {
+  position: absolute;
+
+  inset: 0;
+
+  z-index: 1;
+
+  pointer-events: none;
+}
+
+.metric-card .metric-body {
+  position: relative;
+
+  z-index: 2;
+
+  display: flex;
+  flex-direction: column;
+
+  gap: 5px;
+}
+
 .metric-card span {
   color: #475569;
+
+  font-size: 0.88rem;
 }
 
 .metric-card strong {
+  color: #0f172a;
+
   font-size: 2rem;
+  line-height: 1.1;
 }
 
-/* Decorative colored blocks for metrics (no images) */
-.metric-card .metric-decor {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  opacity: 1;
-  background-size: cover;
-}
+/* =========================================================
+   METRIC COLORS
+   ========================================================= */
 
 .metric-card.metric-nhatro .metric-decor {
-  background-image:
-    linear-gradient(135deg, #eff6ff, #dbeafe),
-    repeating-linear-gradient(
-      90deg,
-      rgba(255, 255, 255, 0.06) 0 2px,
-      transparent 2px 10px
-    );
+  background: linear-gradient(
+    135deg,
+    rgba(239, 246, 255, 0.95),
+    rgba(219, 234, 254, 0.95)
+  );
 }
 
 .metric-card.metric-phong .metric-decor {
-  background-image:
-    linear-gradient(135deg, #fff7ed, #ffedd5),
-    repeating-linear-gradient(
-      180deg,
-      rgba(0, 0, 0, 0.03) 0 1px,
-      transparent 1px 8px
-    );
+  background: linear-gradient(
+    135deg,
+    rgba(255, 247, 237, 0.95),
+    rgba(255, 237, 213, 0.95)
+  );
 }
 
 .metric-card.metric-giuong .metric-decor {
-  background-image:
-    linear-gradient(135deg, #f0fdf4, #bbf7d0),
-    repeating-linear-gradient(
-      90deg,
-      rgba(255, 255, 255, 0.06) 0 2px,
-      transparent 2px 12px
-    );
+  background: linear-gradient(
+    135deg,
+    rgba(240, 253, 244, 0.95),
+    rgba(187, 247, 208, 0.95)
+  );
 }
 
 .metric-card.metric-hopdong .metric-decor {
-  background-image:
-    linear-gradient(135deg, #fff1f2, #fed7e2),
-    repeating-linear-gradient(
-      180deg,
-      rgba(0, 0, 0, 0.03) 0 1px,
-      transparent 1px 6px
-    );
+  background: linear-gradient(
+    135deg,
+    rgba(255, 241, 242, 0.95),
+    rgba(254, 215, 226, 0.95)
+  );
 }
 
 .metric-card.metric-hoadon .metric-decor {
-  background-image:
-    linear-gradient(135deg, #f8fafc, #e6eef8),
-    repeating-linear-gradient(
-      90deg,
-      rgba(255, 255, 255, 0.06) 0 2px,
-      transparent 2px 10px
-    );
+  background: linear-gradient(
+    135deg,
+    rgba(248, 250, 252, 0.95),
+    rgba(226, 232, 240, 0.95)
+  );
+}
+
+/* =========================================================
+   FORM
+   ========================================================= */
+
+.form-grid {
+  display: grid;
+
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+
+  gap: 16px;
+
+  width: 100%;
+}
+
+.form-grid label {
+  display: flex;
+  flex-direction: column;
+
+  min-width: 0;
+
+  gap: 7px;
+
+  color: #334155;
+
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  min-width: 0;
+
+  border: 1px solid #cbd5e1;
+
+  border-radius: 10px;
+
+  padding: 11px 12px;
+
+  background: white;
+
+  color: #0f172a;
+
+  outline: none;
+
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: #3b82f6;
+
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+}
+
+textarea {
+  resize: vertical;
+
+  min-height: 90px;
+}
+
+.form-hint {
+  display: block;
+
+  margin-top: 2px;
+
+  color: #64748b;
+
+  font-size: 0.78rem;
+
+  font-weight: 400;
+
+  line-height: 1.4;
+}
+
+.form-error {
+  display: block;
+
+  margin-top: 2px;
+
+  color: #dc2626 !important;
+
+  font-size: 0.78rem;
+
+  font-weight: 400;
+
+  line-height: 1.4;
 }
 
 .full-width {
   grid-column: 1 / -1;
 }
 
+/* =========================================================
+   FORM ACTIONS
+   ========================================================= */
+
+.actions {
+  grid-column: 1 / -1;
+
+  display: flex;
+  align-items: center;
+
+  gap: 10px;
+
+  margin-top: 4px;
+}
+
+/* =========================================================
+   CURRENCY INPUT
+   ========================================================= */
+
+.currency-input {
+  position: relative;
+
+  display: flex;
+  align-items: center;
+
+  width: 100%;
+}
+
+.currency-input input {
+  width: 100%;
+
+  padding-right: 60px;
+}
+
+.currency-input span {
+  position: absolute;
+
+  right: 12px;
+
+  color: #64748b;
+
+  font-size: 0.85rem;
+  font-weight: 600;
+
+  pointer-events: none;
+}
+
+.money-input {
+  display: flex;
+  align-items: center;
+
+  gap: 8px;
+
+  width: 100%;
+}
+
+.money-input input {
+  flex: 1;
+}
+
+.money-input span {
+  color: #475569;
+
+  font-weight: 600;
+
+  white-space: nowrap;
+}
+
+/* =========================================================
+   TABLE
+   ========================================================= */
+
+.table-responsive {
+  width: 100%;
+
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+
+  min-width: 650px;
+
+  margin-top: 10px;
+
+  border-collapse: collapse;
+
+  table-layout: auto;
+}
+
+th,
+td {
+  padding: 12px 10px;
+
+  border-bottom: 1px solid #e2e8f0;
+
+  text-align: left;
+
+  vertical-align: middle;
+
+  white-space: normal;
+
+  overflow-wrap: anywhere;
+
+  word-break: break-word;
+}
+
+th {
+  background: #f8fafc;
+
+  color: #475569;
+
+  font-size: 0.82rem;
+  font-weight: 700;
+
+  white-space: nowrap;
+}
+
+td {
+  color: #334155;
+
+  font-size: 0.88rem;
+}
+
+tbody tr:hover {
+  background: rgba(248, 250, 252, 0.8);
+}
+
+/* =========================================================
+   TABLE ACTIONS
+   ========================================================= */
+
+.row-actions {
+  display: flex;
+  align-items: center;
+
+  gap: 8px;
+
+  white-space: nowrap;
+}
+
+.table-btn {
+  padding: 8px 11px;
+
+  font-size: 0.82rem;
+}
+
+.table-btn.edit {
+  background: #dbeafe;
+
+  color: #1d4ed8;
+}
+
+.table-btn.edit:hover {
+  background: #bfdbfe;
+}
+
+.table-btn.delete {
+  background: #fee2e2;
+
+  color: #b91c1c;
+}
+
+.table-btn.delete:hover {
+  background: #fecaca;
+}
+
+/* =========================================================
+   STATUS
+   ========================================================= */
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  min-height: 28px;
+
+  padding: 5px 10px;
+
+  border-radius: 999px;
+
+  font-size: 0.78rem;
+  font-weight: 700;
+
+  white-space: nowrap;
+}
+
+.status-badge.active {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.status-badge.expired {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.status-badge.sap_het_han {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.status-paid {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.status-unpaid {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+/* =========================================================
+   NHÀ TRỌ
+   ========================================================= */
+
 .nha-tro-grid {
   display: grid;
+
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+
   gap: 12px;
 }
 
 .nha-tro-card {
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.9),
-    rgba(255, 255, 255, 0.9)
-  );
+  padding: 14px;
+
+  background: rgba(255, 255, 255, 0.9);
+
   border: 1px solid rgba(148, 163, 184, 0.12);
-  padding: 12px;
+
   border-radius: 12px;
 }
 
 .nha-tro-row {
   display: flex;
+
   gap: 12px;
+
   margin-top: 8px;
+}
+
+.nha-tro-metric {
+  min-width: 0;
 }
 
 .nha-tro-metric small {
   display: block;
+
   color: #64748b;
 }
 
@@ -3069,119 +4417,100 @@ textarea {
   font-size: 1.25rem;
 }
 
-.panel h3 {
-  margin-top: 0;
-}
+/* =========================================================
+   RELATIONSHIP
+   ========================================================= */
 
 .relationship {
-  font-size: 1.04rem;
-  line-height: 1.7;
   margin: 0;
+
+  font-size: 1.04rem;
+
+  line-height: 1.7;
 }
 
-.form-grid {
-  display: grid;
-  gap: 12px;
-}
+/* =========================================================
+   CCCD
+   ========================================================= */
 
-input,
-select,
-textarea {
-  width: 100%;
-  border: 1px solid #cbd5e1;
-  border-radius: 10px;
-  padding: 11px 12px;
-  background: white;
-}
-
-textarea {
-  resize: vertical;
-}
-
-.actions {
+.cccd-current {
   display: flex;
-  gap: 10px;
-}
+  align-items: center;
+  flex-wrap: wrap;
 
-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 12px;
-  table-layout: fixed;
-}
-
-th,
-td {
-  padding: 12px 10px;
-  border-bottom: 1px solid #e2e8f0;
-  text-align: left;
-  white-space: normal;
-  overflow-wrap: anywhere;
-  word-break: break-word;
-}
-
-/* Make tables scroll horizontally when container is too small */
-.panel {
-  overflow-x: auto;
-}
-
-.table-responsive {
-  width: 100%;
-  overflow-x: auto;
-}
-
-.row-actions {
-  display: flex;
   gap: 8px;
+
+  margin-top: 5px;
+
+  padding: 8px 10px;
+
+  border-radius: 8px;
+
+  background: #f8fafc;
+
+  border: 1px solid #e2e8f0;
+
+  font-size: 0.82rem;
 }
 
-.table-btn.edit {
-  background: #dbeafe;
-  color: #1d4ed8;
+.cccd-current span {
+  color: #64748b;
+
+  font-weight: 600;
 }
 
-.table-btn.delete {
-  background: #fee2e2;
-  color: #b91c1c;
+.cccd-current a {
+  color: #2563eb;
+
+  text-decoration: none;
+
+  font-weight: 600;
 }
 
-@media (max-width: 900px) {
-  .app-shell {
-    grid-template-columns: 1fr;
-  }
-
-  .sidebar {
-    padding-bottom: 12px;
-  }
-
-  .content {
-    padding: 16px;
-  }
+.cccd-current a:hover {
+  text-decoration: underline;
 }
-/* ================================
-   MODAL XÓA NHÀ TRỌ
-================================ */
 
-.modal-overlay {
+/* =========================================================
+   DELETE MODAL - COMMON
+   ========================================================= */
+
+.modal-overlay,
+.modal-backdrop {
   position: fixed;
+
   inset: 0;
+
   z-index: 9999;
 
   display: flex;
   align-items: center;
   justify-content: center;
 
+  width: 100%;
+  height: 100%;
+
   padding: 20px;
 
   background: rgba(15, 23, 42, 0.55);
+
   backdrop-filter: blur(4px);
 }
 
-.delete-modal {
-  width: min(520px, 100%);
+.delete-modal,
+.modal-backdrop .modal,
+.modal-overlay > .modal {
+  width: min(520px, calc(100vw - 40px));
+
+  max-width: 520px;
+
+  margin: 0;
 
   background: white;
-  border-radius: 18px;
+
+  border: 1px solid #e2e8f0;
+
+  border-radius: 16px;
 
   box-shadow:
     0 25px 50px rgba(15, 23, 42, 0.25),
@@ -3195,21 +4524,28 @@ td {
 @keyframes modal-show {
   from {
     opacity: 0;
+
     transform: translateY(-10px) scale(0.98);
   }
 
   to {
     opacity: 1;
+
     transform: translateY(0) scale(1);
   }
 }
 
+/* =========================================================
+   DELETE MODAL HEADER
+   ========================================================= */
+
 .delete-modal-header {
   display: flex;
   align-items: center;
+
   gap: 14px;
 
-  padding: 22px;
+  padding: 20px 22px;
 
   border-bottom: 1px solid #e2e8f0;
 }
@@ -3217,22 +4553,25 @@ td {
 .delete-modal-header h3 {
   margin: 0;
 
-  font-size: 1.25rem;
   color: #0f172a;
+
+  font-size: 1.2rem;
+  font-weight: 700;
 }
 
 .delete-modal-header p {
   margin: 5px 0 0;
 
   color: #64748b;
-  font-size: 0.95rem;
+
+  font-size: 0.9rem;
 }
 
 .warning-icon {
+  flex: 0 0 46px;
+
   width: 46px;
   height: 46px;
-
-  flex-shrink: 0;
 
   display: grid;
   place-items: center;
@@ -3240,11 +4579,16 @@ td {
   border-radius: 50%;
 
   background: #fef3c7;
+
   color: #d97706;
 
-  font-size: 1.5rem;
+  font-size: 1.45rem;
   font-weight: 700;
 }
+
+/* =========================================================
+   DELETE MODAL BODY
+   ========================================================= */
 
 .delete-modal-body {
   padding: 22px;
@@ -3253,10 +4597,11 @@ td {
 .warning-message {
   padding: 14px 16px;
 
+  border: 1px solid #fed7aa;
+
   border-radius: 12px;
 
   background: #fff7ed;
-  border: 1px solid #fed7aa;
 
   color: #9a3412;
 }
@@ -3276,7 +4621,7 @@ td {
 .related-data {
   display: grid;
 
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 
   gap: 12px;
 
@@ -3285,16 +4630,18 @@ td {
 
 .related-item {
   display: flex;
-
   align-items: center;
   justify-content: space-between;
 
-  padding: 13px 15px;
+  min-width: 0;
+
+  padding: 12px 14px;
+
+  border: 1px solid #e2e8f0;
 
   border-radius: 10px;
 
   background: #f8fafc;
-  border: 1px solid #e2e8f0;
 }
 
 .related-item span {
@@ -3304,25 +4651,20 @@ td {
 .related-item strong {
   min-width: 32px;
 
+  color: #dc2626;
+
   text-align: center;
 
-  color: #dc2626;
-  font-size: 1.1rem;
-}
-
-.delete-modal-note {
-  margin: 16px 0 0;
-
-  color: #64748b;
-
-  font-size: 0.9rem;
-  line-height: 1.5;
+  font-size: 1.05rem;
 }
 
 .confirm-message {
   margin: 0;
 
-  font-size: 1rem;
+  color: #334155;
+
+  font-size: 0.95rem;
+
   line-height: 1.6;
 }
 
@@ -3330,10 +4672,22 @@ td {
   color: #dc2626;
 }
 
+.delete-modal-note {
+  margin: 15px 0 0;
+
+  color: #64748b;
+
+  font-size: 0.88rem;
+
+  line-height: 1.5;
+}
+
 .error-message {
-  margin-top: 14px;
+  margin-top: 14px !important;
 
   padding: 10px 12px;
+
+  border: 1px solid #fecaca;
 
   border-radius: 8px;
 
@@ -3341,12 +4695,19 @@ td {
 
   color: #b91c1c;
 
-  font-size: 0.9rem;
+  font-size: 0.88rem;
+
+  line-height: 1.4;
 }
 
-.delete-modal-actions {
-  display: flex;
+/* =========================================================
+   DELETE MODAL ACTIONS
+   ========================================================= */
 
+.delete-modal-actions,
+.modal-actions {
+  display: flex;
+  align-items: center;
   justify-content: flex-end;
 
   gap: 10px;
@@ -3358,99 +4719,42 @@ td {
   background: #f8fafc;
 }
 
-.danger-button {
+.danger-button,
+.modal-actions .danger,
+.modal-actions .btn.danger {
+  min-height: 40px;
+
+  padding: 0 16px;
+
   border: none;
 
-  border-radius: 10px;
+  border-radius: 9px;
 
-  padding: 10px 16px;
+  background: #dc2626;
+
+  color: white;
 
   cursor: pointer;
 
+  font-size: 0.88rem;
   font-weight: 600;
 
-  background: #dc2626;
-  color: white;
-
-  transition: 0.2s ease;
+  transition:
+    background 0.2s ease,
+    transform 0.15s ease;
 }
 
-.danger-button:hover {
+.danger-button:hover,
+.modal-actions .danger:hover,
+.modal-actions .btn.danger:hover {
   background: #b91c1c;
+
+  transform: translateY(-1px);
 }
 
-.currency-input {
-  display: flex;
-  align-items: center;
-  position: relative;
-}
-
-.currency-input input {
-  width: 100%;
-  padding-right: 55px;
-}
-
-.currency-input span {
-  position: absolute;
-  right: 12px;
-  color: #64748b;
-  font-size: 0.9rem;
-  font-weight: 600;
-  pointer-events: none;
-}
-
-.full-width {
-  grid-column: 1 / -1;
-}
-
-.full-width textarea {
-  width: 100%;
-  resize: vertical;
-  min-height: 90px;
-}
-
-.money-input {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.money-input input {
-  flex: 1;
-}
-
-.money-input span {
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-/* =========================
-   Modal xác nhận xóa
-   ========================= */
-
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 1000;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  background: rgba(0, 0, 0, 0.5);
-}
-
-.modal {
-  width: 100%;
-  max-width: 500px;
-
-  background: #ffffff;
-  border-radius: 8px;
-
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-
-  overflow: hidden;
-}
+/* =========================================================
+   STANDARD MODAL
+   ========================================================= */
 
 .modal-header {
   display: flex;
@@ -3471,18 +4775,22 @@ td {
 
 .modal-close {
   border: none;
+
   background: transparent;
 
+  color: #475569;
+
+  padding: 4px 8px;
+
   font-size: 24px;
+
   line-height: 1;
 
   cursor: pointer;
-
-  padding: 4px 8px;
 }
 
 .modal-close:hover {
-  opacity: 0.7;
+  color: #0f172a;
 }
 
 .modal-body {
@@ -3491,276 +4799,190 @@ td {
 
 .modal-body p {
   margin: 0;
+
+  color: #475569;
+
   line-height: 1.6;
 }
 
 .modal-body strong {
-  font-weight: 600;
-}
-
-.modal-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-
-  padding: 16px 20px;
-
-  border-top: 1px solid #e5e7eb;
-}
-
-.modal-actions button {
-  min-width: 80px;
-
-  padding: 8px 16px;
-
-  border: none;
-  border-radius: 6px;
-
-  cursor: pointer;
-
-  font-size: 14px;
-  font-weight: 500;
-}
-
-.modal-actions .secondary {
-  background: #e5e7eb;
-  color: #374151;
-}
-
-.modal-actions .secondary:hover {
-  background: #d1d5db;
-}
-
-.modal-actions .danger {
-  background: #dc2626;
-  color: #ffffff;
-}
-
-.modal-actions .danger:hover {
-  background: #b91c1c;
-}
-
-.error-message {
-  margin-top: 12px !important;
-
-  padding: 10px 12px;
-
-  border-radius: 6px;
-
-  background: #fee2e2;
-  color: #b91c1c;
-
-  font-size: 14px;
-}
-
-/* =========================================
-   MODAL XÁC NHẬN XÓA HÓA ĐƠN
-   ========================================= */
-
-.modal-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 99999;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  width: 100vw;
-  height: 100vh;
-
-  padding: 20px;
-
-  background: rgba(15, 23, 42, 0.55);
-  backdrop-filter: blur(4px);
-}
-
-/* Hộp thông báo */
-.modal-backdrop .modal {
-  width: min(460px, calc(100vw - 40px));
-  max-width: 460px;
-
-  margin: 0;
-
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 16px;
-
-  box-shadow:
-    0 25px 50px rgba(15, 23, 42, 0.25),
-    0 8px 20px rgba(15, 23, 42, 0.12);
-
-  overflow: hidden;
-
-  animation: delete-modal-show 0.2s ease-out;
-}
-
-@keyframes delete-modal-show {
-  from {
-    opacity: 0;
-    transform: translateY(-12px) scale(0.97);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-/* Tiêu đề */
-.modal-backdrop .modal h3 {
-  margin: 0;
-  padding: 20px 22px;
-
-  font-size: 1.2rem;
-  font-weight: 700;
-
   color: #0f172a;
 
-  border-bottom: 1px solid #e2e8f0;
-}
-
-/* Nội dung */
-.modal-backdrop .modal > p {
-  margin: 0;
-  padding: 20px 22px;
-
-  color: #475569;
-  font-size: 0.95rem;
-  line-height: 1.6;
-}
-
-.modal-backdrop .modal > p strong {
-  color: #dc2626;
   font-weight: 700;
 }
 
-/* Thông báo lỗi */
-.modal-backdrop .modal .error-message {
-  margin: -6px 22px 16px !important;
-  padding: 10px 12px;
+/* =========================================================
+   MOBILE
+   ========================================================= */
 
-  border: 1px solid #fecaca;
-  border-radius: 8px;
+@media (max-width: 900px) {
+  .app-shell {
+    display: block;
 
-  background: #fef2f2;
-  color: #b91c1c;
-
-  font-size: 0.9rem;
-  line-height: 1.4;
-}
-
-/* Khu vực nút */
-.modal-backdrop .modal .modal-actions {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-
-  gap: 10px;
-
-  padding: 16px 22px;
-
-  background: #f8fafc;
-  border-top: 1px solid #e2e8f0;
-}
-
-/* Tất cả button trong modal */
-.modal-backdrop .modal .modal-actions button {
-  min-width: 88px;
-  height: 40px;
-
-  padding: 0 18px;
-
-  border: none;
-  border-radius: 9px;
-
-  font-size: 0.9rem;
-  font-weight: 600;
-
-  cursor: pointer;
-
-  transition:
-    background-color 0.2s ease,
-    transform 0.15s ease,
-    box-shadow 0.2s ease;
-}
-
-/* Nút Hủy */
-.modal-backdrop .modal .modal-actions button:first-child {
-  background: #e2e8f0;
-  color: #334155;
-}
-
-.modal-backdrop .modal .modal-actions button:first-child:hover {
-  background: #cbd5e1;
-}
-
-.modal-backdrop .modal .modal-actions button:first-child:active {
-  transform: translateY(1px);
-}
-
-/* Nút Xóa */
-.modal-backdrop .modal .modal-actions .danger {
-  background: #dc2626;
-  color: #ffffff;
-
-  box-shadow: 0 3px 8px rgba(220, 38, 38, 0.25);
-}
-
-.modal-backdrop .modal .modal-actions .danger:hover {
-  background: #b91c1c;
-
-  box-shadow: 0 5px 12px rgba(220, 38, 38, 0.3);
-
-  transform: translateY(-1px);
-}
-
-.modal-backdrop .modal .modal-actions .danger:active {
-  background: #991b1b;
-  transform: translateY(1px);
-}
-
-/* Trạng thái đang disabled */
-.modal-backdrop .modal .modal-actions button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
-}
-
-/* Mobile */
-@media (max-width: 600px) {
-  .modal-backdrop {
-    padding: 16px;
+    width: 100%;
+    min-height: 100vh;
   }
 
-  .modal-backdrop .modal {
+  .menu-open-button {
+    display: grid;
+  }
+
+  .sidebar {
+    position: fixed;
+
+    top: 0;
+    left: 0;
+
+    width: 260px;
+    height: 100vh;
+
+    transform: translateX(-100%);
+
+    transition: transform 0.25s ease;
+
+    box-shadow: 10px 0 30px rgba(15, 23, 42, 0.18);
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  .menu-close-button {
+    display: grid;
+  }
+
+  .menu-open .menu-overlay {
+    display: block;
+  }
+
+  .content {
     width: 100%;
-    max-width: none;
+
+    padding: 22px 18px;
+  }
+
+  .topbar {
+    padding-left: 58px;
+  }
+
+  .topbar h2 {
+    font-size: 1.65rem;
+  }
+
+  .panel-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* =========================================================
+   TABLET / SMALL SCREEN
+   ========================================================= */
+
+@media (max-width: 700px) {
+  .content {
+    padding: 18px 14px;
+  }
+
+  .topbar {
+    align-items: flex-start;
+
+    gap: 14px;
+
+    padding-left: 54px;
+  }
+
+  .topbar h2 {
+    font-size: 1.45rem;
+  }
+
+  .topbar .primary {
+    flex-shrink: 0;
+
+    padding: 9px 11px;
+
+    font-size: 0.8rem;
+  }
+
+  .panel-grid {
+    grid-template-columns: 1fr;
+
+    gap: 16px;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .full-width,
+  .actions {
+    grid-column: auto;
+  }
+
+  .metric-card {
+    min-height: 110px;
+  }
+
+  .metric-card strong {
+    font-size: 1.7rem;
+  }
+
+  .panel {
+    padding: 16px;
+
     border-radius: 14px;
   }
 
-  .modal-backdrop .modal h3 {
-    padding: 18px;
-  }
-
-  .modal-backdrop .modal > p {
-    padding: 18px;
-  }
-
-  .modal-backdrop .modal .modal-actions {
-    padding: 14px 18px;
-  }
-
-  .modal-backdrop .modal .modal-actions button {
-    flex: 1;
-    min-width: 0;
+  .related-data {
+    grid-template-columns: 1fr;
   }
 }
 
-@media (max-width: 600px) {
-  .related-data {
-    grid-template-columns: 1fr;
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 480px) {
+  .menu-open-button {
+    top: 12px;
+    left: 12px;
+
+    width: 40px;
+    height: 40px;
+  }
+
+  .content {
+    padding: 14px 10px;
+  }
+
+  .topbar {
+    flex-direction: column;
+
+    padding-left: 52px;
+  }
+
+  .topbar .primary {
+    align-self: flex-start;
+  }
+
+  .panel {
+    padding: 14px;
+  }
+
+  .actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .actions button {
+    width: 100%;
+  }
+
+  .delete-modal,
+  .modal-backdrop .modal,
+  .modal-overlay > .modal {
+    width: calc(100vw - 24px);
+
+    border-radius: 14px;
   }
 
   .delete-modal-header {
@@ -3771,8 +4993,14 @@ td {
     padding: 18px;
   }
 
-  .delete-modal-actions {
+  .delete-modal-actions,
+  .modal-actions {
     padding: 14px 18px;
+  }
+
+  .delete-modal-actions button,
+  .modal-actions button {
+    min-height: 40px;
   }
 }
 </style>

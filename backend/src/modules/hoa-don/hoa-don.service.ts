@@ -32,6 +32,22 @@ export class HoaDonService {
   }
 
 async create(payload: Partial<HoaDon>) {
+  const tienPhong = Number(payload.tienPhong ?? 0);
+  const tienDien = Number(payload.tienDien ?? 0);
+  const tienNuoc = Number(payload.tienNuoc ?? 0);
+  const tienDichVuKhac = Number(payload.tienDichVuKhac ?? 0);
+
+  payload.tienPhong = tienPhong;
+  payload.tienDien = tienDien;
+  payload.tienNuoc = tienNuoc;
+  payload.tienDichVuKhac = tienDichVuKhac;
+
+  payload.tongTien =
+    tienPhong +
+    tienDien +
+    tienNuoc +
+    tienDichVuKhac;
+
   if (payload.trangThai === 'da_thanh_toan') {
     payload.ngayNop = new Date();
   } else {
@@ -52,7 +68,33 @@ async update(id: string, payload: Partial<HoaDon>) {
     throw new NotFoundException('Không tìm thấy hóa đơn');
   }
 
-  // Chỉ xử lý ngày nộp khi thực sự thay đổi trạng thái
+  const tienPhong = Number(
+    payload.tienPhong ?? hoaDon.tienPhong ?? 0,
+  );
+
+  const tienDien = Number(
+    payload.tienDien ?? hoaDon.tienDien ?? 0,
+  );
+
+  const tienNuoc = Number(
+    payload.tienNuoc ?? hoaDon.tienNuoc ?? 0,
+  );
+
+  const tienDichVuKhac = Number(
+    payload.tienDichVuKhac ?? hoaDon.tienDichVuKhac ?? 0,
+  );
+
+  payload.tienPhong = tienPhong;
+  payload.tienDien = tienDien;
+  payload.tienNuoc = tienNuoc;
+  payload.tienDichVuKhac = tienDichVuKhac;
+
+  payload.tongTien =
+    tienPhong +
+    tienDien +
+    tienNuoc +
+    tienDichVuKhac;
+
   if (
     payload.trangThai === 'da_thanh_toan' &&
     hoaDon.trangThai !== 'da_thanh_toan'
