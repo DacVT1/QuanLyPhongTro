@@ -20,11 +20,23 @@ const soDienThoaiError = ref("");
 const tienDienDisplay = ref("0");
 const tienNuocDisplay = ref("0");
 const tienDichVuKhacDisplay = ref("0");
+const tienDienError = ref("");
+const tienNuocError = ref("");
+const tienDichVuKhacError = ref("");
+
 
 function handleTienDienInput(event: Event) {
   const input = event.target as HTMLInputElement;
+  const value = input.value;
 
-  const rawValue = input.value.replace(/\D/g, "");
+  if (!/^\d*$/.test(value.replace(/,/g, ""))) {
+    tienDienError.value = "Tiền điện chỉ được nhập số.";
+    return;
+  }
+
+  tienDienError.value = "";
+
+  const rawValue = value.replace(/,/g, "");
 
   hoaDonForm.value.tienDien = Number(rawValue || 0);
 
@@ -37,8 +49,16 @@ function handleTienDienInput(event: Event) {
 
 function handleTienNuocInput(event: Event) {
   const input = event.target as HTMLInputElement;
+  const value = input.value;
 
-  const rawValue = input.value.replace(/\D/g, "");
+  if (!/^\d*$/.test(value.replace(/,/g, ""))) {
+    tienNuocError.value = "Tiền nước chỉ được nhập số.";
+    return;
+  }
+
+  tienNuocError.value = "";
+
+  const rawValue = value.replace(/,/g, "");
 
   hoaDonForm.value.tienNuoc = Number(rawValue || 0);
 
@@ -51,10 +71,20 @@ function handleTienNuocInput(event: Event) {
 
 function handleTienDichVuKhacInput(event: Event) {
   const input = event.target as HTMLInputElement;
+  const value = input.value;
 
-  const rawValue = input.value.replace(/\D/g, "");
+  if (!/^\d*$/.test(value.replace(/,/g, ""))) {
+    tienDichVuKhacError.value =
+      "Tiền dịch vụ khác chỉ được nhập số.";
+    return;
+  }
 
-  hoaDonForm.value.tienDichVuKhac = Number(rawValue || 0);
+  tienDichVuKhacError.value = "";
+
+  const rawValue = value.replace(/,/g, "");
+
+  hoaDonForm.value.tienDichVuKhac =
+    Number(rawValue || 0);
 
   tienDichVuKhacDisplay.value = rawValue
     ? Number(rawValue).toLocaleString("en-US")
@@ -708,6 +738,13 @@ function resetHoaDonForm() {
     ghiChu: "",
     hopDongId: "",
   };
+  // Reset giá trị hiển thị trên form về mặc định
+  tienDienDisplay.value = "0";
+  tienNuocDisplay.value = "0";
+  tienDichVuKhacDisplay.value = "0";
+  tienDienError.value = "";
+  tienNuocError.value = "";
+  tienDichVuKhacError.value = "";
   editingHoaDonId.value = null;
 }
 
@@ -1124,8 +1161,31 @@ async function saveHopDong() {
   await loadData();
 }
 
+function validateHoaDonTien() {
+  if (tienDienError.value) {
+    alert(tienDienError.value);
+    return false;
+  }
+
+  if (tienNuocError.value) {
+    alert(tienNuocError.value);
+    return false;
+  }
+
+  if (tienDichVuKhacError.value) {
+    alert(tienDichVuKhacError.value);
+    return false;
+  }
+
+  return true;
+}
+
 async function saveHoaDon() {
   try {
+    if (!validateHoaDonTien()) {
+      return;
+    }
+
     if (!hoaDonForm.value.hopDongId) {
       alert("Vui lòng chọn hợp đồng.");
       return;
