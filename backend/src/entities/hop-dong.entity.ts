@@ -54,7 +54,7 @@ export class HopDong {
   @JoinColumn({ name: 'giuong_id' })
   giuong: Giuong;
 
-  @ManyToOne(() => NguoiThue, (nguoiThue) => nguoiThue.hopDongs, { onDelete: 'CASCADE' })
+  @ManyToOne(() => NguoiThue, (nguoiThue) => nguoiThue.hopDongs, { onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'nguoi_thue_id' })
   nguoiThue: NguoiThue;
 
