@@ -150,13 +150,6 @@ const nguoiThues = ref<any[]>([]);
 const hopDongs = ref<any[]>([]);
 const hoaDons = ref<any[]>([]);
 
-const hoaDonFilters = ref({
-  maHoaDon: "",
-  nguoiThue: "",
-  tongTien: "",
-  trangThai: "",
-  ngayNop: "",
-});
 
 const nhaTroForm = ref({
   maNhaTro: "",
@@ -734,11 +727,12 @@ function requestDeleteNguoiThue(item: any) {
     .filter(Boolean);
 
   deleteNguoiThueInfo.value = {
-    id: item.id,
-    hoTen: item.hoTen ?? "Người thuê",
-    cccd: item.cccd ?? "",
-    hopDongIds,
-  };
+  id: item.id,
+  hoTen: item.hoTen ?? "Người thuê",
+  cccd: item.cccd ?? "",
+  soHopDong: hopDongIds.length,
+  hopDongIds,
+};
 
   deleteNguoiThueErrorMessage.value = "";
   showDeleteNguoiThueModal.value = true;
@@ -2435,13 +2429,13 @@ onMounted(() => {
 
               <div class="currency-input">
                 <input
-                  :value="tienThueDisplay"
-                  type="text"
-                  placeholder="Giá thuê"
-                  @input="handleTienThueInput"
-                  @blur="formatTienThueDisplay"
-                  required
-                />
+  :value="tienThueDisplay"
+  type="text"
+  placeholder="Giá thuê"
+  @input="handleTienThueInput"
+  @blur="() => formatTienThueDisplay(tienThueDisplay)"
+  required
+/>
 
                 <span>VND</span>
               </div>
