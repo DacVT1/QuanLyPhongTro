@@ -941,8 +941,14 @@ async function saveHoaDon() {
       return;
     }
 
-    // Khi tạo mới hoặc thay đổi hợp đồng/tháng,
-    // tự sinh lại mã hóa đơn.
+    /*
+     * Khi thêm mới:
+     *   luôn sinh mã hóa đơn mới.
+     *
+     * Khi sửa:
+     *   chỉ sinh lại mã nếu Hợp đồng hoặc
+     *   Tháng thanh toán đã thay đổi.
+     */
     if (!editingHoaDonId.value) {
       hoaDonForm.value.maHoaDon = generateHoaDonCode(
         hoaDonForm.value.hopDongId,
@@ -952,38 +958,29 @@ async function saveHoaDon() {
 
     const payload = {
       maHoaDon: hoaDonForm.value.maHoaDon,
-
       thangThanhToan: hoaDonForm.value.thangThanhToan,
-
       tongTien: Number(hoaDonForm.value.tongTien || 0),
-
       trangThai: hoaDonForm.value.trangThai,
-
       ghiChu: hoaDonForm.value.ghiChu || null,
-
       hopDong: {
         id: hoaDonForm.value.hopDongId,
       },
     };
 
     if (editingHoaDonId.value) {
-      await api.patch(
-        `/hoa-don/${editingHoaDonId.value}`,
-        payload,
-      );
+      await api.patch(`/hoa-don/${editingHoaDonId.value}`, payload);
     } else {
       await api.post("/hoa-don", payload);
     }
 
     resetHoaDonForm();
-
     await loadData();
   } catch (error: any) {
     console.error("Không thể lưu hóa đơn:", error);
 
     alert(
       error?.response?.data?.message ??
-        "Không thể lưu hóa đơn. Vui lòng thử lại.",
+        "Không thể cập nhật hóa đơn. Vui lòng thử lại.",
     );
   }
 }
@@ -1310,9 +1307,7 @@ function generateHoaDonCode(
   thangThanhToan: string,
   excludeHoaDonId?: string,
 ) {
-  const hopDong = hopDongs.value.find(
-    (item) => item.id === hopDongId,
-  );
+  const hopDong = hopDongs.value.find((item) => item.id === hopDongId);
 
   if (!hopDong?.maHopDong) {
     return "";
@@ -1333,9 +1328,9 @@ function generateHoaDonCode(
   const existingCodes = hoaDons.value
     .filter((item) => item.id !== excludeHoaDonId)
     .map((item) => item.maHoaDon)
-    .filter((code): code is string =>
-      typeof code === "string" &&
-      code.startsWith(`${baseCode}_`),
+    .filter(
+      (code): code is string =>
+        typeof code === "string" && code.startsWith(`${baseCode}_`),
     );
 
   // Tìm số thứ tự lớn nhất
@@ -2325,8 +2320,8 @@ onMounted(() => {
                   </button>
                   <button
                     type="button"
-                    class="table-btn delete"
-                    @click.stop="requestDeleteHoaDon(item)"
+                    class="btn danger"
+                    @click="requestDeleteHoaDon(item)"
                   >
                     Xóa
                   </button>
@@ -2705,6 +2700,33 @@ onMounted(() => {
             @click="confirmDeleteNguoiThue"
           >
             Xác nhận xóa
+          </button>
+        </div>
+      </div>
+    </div>
+    <div
+      v-if="showDeleteHoaDonModal"
+      class="modal-backdrop"
+      @click.self="closeDeleteHoaDonModal"
+    >
+      <div class="modal">
+        <h3>Xóa hóa đơn</h3>
+
+        <p>
+          Bạn có chắc chắn muốn xóa hóa đơn
+          <strong>{{ deleteHoaDonInfo.maHoaDon }}</strong>
+          không?
+        </p>
+
+        <p v-if="deleteHoaDonErrorMessage" class="error-message">
+          {{ deleteHoaDonErrorMessage }}
+        </p>
+
+        <div class="modal-actions">
+          <button type="button" @click="closeDeleteHoaDonModal">Hủy</button>
+
+          <button type="button" class="btn danger" @click="confirmDeleteHoaDon">
+            Xóa
           </button>
         </div>
       </div>
