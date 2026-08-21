@@ -78,6 +78,14 @@ const nguoiThues = ref<any[]>([]);
 const hopDongs = ref<any[]>([]);
 const hoaDons = ref<any[]>([]);
 
+const hoaDonFilters = ref({
+  maHoaDon: "",
+  nguoiThue: "",
+  tongTien: "",
+  trangThai: "",
+  ngayNop: "",
+});
+
 const nhaTroForm = ref({
   maNhaTro: "",
   tenNhaTro: "",
