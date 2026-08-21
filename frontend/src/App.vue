@@ -168,7 +168,7 @@ const giuongForm = ref({
   nhaTroId: "",
   phongId: "",
   giuongSo: "",
-  giaGiuong: 0,
+  giaGiuong: 1500000,
   trangThai: "trong",
 });
 
@@ -357,7 +357,7 @@ const giuongOptions = computed(() => {
 
   // Chưa chọn tầng
   if (!giuongForm.value.phongId) {
-    return allOptions;
+  return [];
   }
 
   // Lấy các giường đã được sử dụng trong phòng đang chọn
@@ -470,7 +470,7 @@ function resetGiuongForm() {
     nhaTroId: "",
     phongId: "",
     giuongSo: "",
-    giaGiuong: 0,
+    giaGiuong: 1500000,
     trangThai: "trong",
   };
 
@@ -1979,6 +1979,7 @@ onMounted(() => {
 
               <select
                 v-model="giuongForm.giuongSo"
+                :disabled="!giuongForm.phongId"
                 required
               >
                 <option value="">
