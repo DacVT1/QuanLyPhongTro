@@ -52,14 +52,15 @@ async update(id: string, payload: Partial<HoaDon>) {
     throw new NotFoundException('Không tìm thấy hóa đơn');
   }
 
-  if (payload.trangThai === 'da_thanh_toan') {
-    // Chuyển sang đã thanh toán
-    // Nếu chưa có ngày nộp thì lấy ngày hiện tại
-    if (!hoaDon.ngayNop) {
-      payload.ngayNop = new Date();
-    }
-  } else if (payload.trangThai === 'chua_thanh_toan') {
-    // Chuyển về chưa thanh toán
+  // Chỉ xử lý ngày nộp khi thực sự thay đổi trạng thái
+  if (
+    payload.trangThai === 'da_thanh_toan' &&
+    hoaDon.trangThai !== 'da_thanh_toan'
+  ) {
+    payload.ngayNop = new Date();
+  }
+
+  if (payload.trangThai === 'chua_thanh_toan') {
     payload.ngayNop = null;
   }
 
@@ -67,7 +68,6 @@ async update(id: string, payload: Partial<HoaDon>) {
 
   return this.findOne(id);
 }
-
   async remove(id: string) {
     const result = await this.repository.delete(id);
 
