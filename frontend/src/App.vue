@@ -727,7 +727,13 @@ function closeDeletePhongModal() {
 
 function requestDeleteNguoiThue(item: any) {
   const soHopDong = hopDongs.value.filter(
-    (hopDong) => hopDong.nguoiThue?.id === item.id,
+    (hopDong) => {
+      const nguoiThueId =
+        hopDong.nguoiThue?.id ??
+        hopDong.nguoiThueId;
+
+      return String(nguoiThueId) === String(item.id);
+    },
   ).length;
 
   deleteNguoiThueInfo.value = {
@@ -738,7 +744,6 @@ function requestDeleteNguoiThue(item: any) {
   };
 
   deleteNguoiThueErrorMessage.value = "";
-
   showDeleteNguoiThueModal.value = true;
 }
 
