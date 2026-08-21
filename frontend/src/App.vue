@@ -273,12 +273,62 @@ const tienThueDisplay = ref("");
 const tienDatCocDisplay = ref("");
 const editingHopDongId = ref<string | null>(null);
 const editingHoaDonId = ref<string | null>(null);
-const showDeleteHopDongModal = ref(false);
+const showDeleteHoaDonModal = ref(false);
+
+const deleteHoaDonInfo = ref({
+  id: "",
+  maHoaDon: "",
+});
+
+const deleteHoaDonErrorMessage = ref("");
 
 const deleteHopDongInfo = ref({
   id: "",
   maHopDong: "",
 });
+
+function requestDeleteHoaDon(item: any) {
+  deleteHoaDonInfo.value = {
+    id: item.id,
+    maHoaDon: item.maHoaDon ?? "Hóa đơn",
+  };
+
+  deleteHoaDonErrorMessage.value = "";
+  showDeleteHoaDonModal.value = true;
+}
+
+function closeDeleteHoaDonModal() {
+  showDeleteHoaDonModal.value = false;
+  deleteHoaDonErrorMessage.value = "";
+}
+
+async function confirmDeleteHoaDon() {
+  const id = deleteHoaDonInfo.value.id;
+
+  if (!id) {
+    return;
+  }
+
+  try {
+    deleteHoaDonErrorMessage.value = "";
+
+    await api.delete(`/hoa-don/${id}`);
+
+    closeDeleteHoaDonModal();
+
+    if (editingHoaDonId.value === id) {
+      resetHoaDonForm();
+    }
+
+    await loadData();
+  } catch (error: any) {
+    console.error("Không thể xóa hóa đơn:", error);
+
+    deleteHoaDonErrorMessage.value =
+      error?.response?.data?.message ??
+      "Không thể xóa hóa đơn. Vui lòng thử lại.";
+  }
+}
 
 const deleteHopDongErrorMessage = ref("");
 
@@ -880,24 +930,62 @@ async function saveHopDong() {
 }
 
 async function saveHoaDon() {
-  if (!hoaDonForm.value.maHoaDon) {
-    syncHoaDonCode();
-  }
+  try {
+    if (!hoaDonForm.value.hopDongId) {
+      alert("Vui lòng chọn hợp đồng.");
+      return;
+    }
 
-  const payload = {
-    ...hoaDonForm.value,
-    thangThanhToan:
-      hoaDonForm.value.thangThanhToan || new Date().toISOString().slice(0, 10),
-    hopDong: { id: hoaDonForm.value.hopDongId },
-  };
+    if (!hoaDonForm.value.thangThanhToan) {
+      alert("Vui lòng chọn tháng thanh toán.");
+      return;
+    }
 
-  if (editingHoaDonId.value) {
-    await api.patch(`/hoa-don/${editingHoaDonId.value}`, payload);
-  } else {
-    await api.post("/hoa-don", payload);
+    // Khi tạo mới hoặc thay đổi hợp đồng/tháng,
+    // tự sinh lại mã hóa đơn.
+    if (!editingHoaDonId.value) {
+      hoaDonForm.value.maHoaDon = generateHoaDonCode(
+        hoaDonForm.value.hopDongId,
+        hoaDonForm.value.thangThanhToan,
+      );
+    }
+
+    const payload = {
+      maHoaDon: hoaDonForm.value.maHoaDon,
+
+      thangThanhToan: hoaDonForm.value.thangThanhToan,
+
+      tongTien: Number(hoaDonForm.value.tongTien || 0),
+
+      trangThai: hoaDonForm.value.trangThai,
+
+      ghiChu: hoaDonForm.value.ghiChu || null,
+
+      hopDong: {
+        id: hoaDonForm.value.hopDongId,
+      },
+    };
+
+    if (editingHoaDonId.value) {
+      await api.patch(
+        `/hoa-don/${editingHoaDonId.value}`,
+        payload,
+      );
+    } else {
+      await api.post("/hoa-don", payload);
+    }
+
+    resetHoaDonForm();
+
+    await loadData();
+  } catch (error: any) {
+    console.error("Không thể lưu hóa đơn:", error);
+
+    alert(
+      error?.response?.data?.message ??
+        "Không thể lưu hóa đơn. Vui lòng thử lại.",
+    );
   }
-  resetHoaDonForm();
-  await loadData();
 }
 
 const showDeleteNhaTroModal = ref(false);
@@ -2238,7 +2326,7 @@ onMounted(() => {
                   <button
                     type="button"
                     class="table-btn delete"
-                    @click.stop="requestDeleteHopDong(item)"
+                    @click.stop="requestDeleteHoaDon(item)"
                   >
                     Xóa
                   </button>
