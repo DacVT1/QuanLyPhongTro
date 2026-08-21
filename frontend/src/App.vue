@@ -2292,28 +2292,64 @@ onMounted(() => {
 
         <div class="panel">
           <h3>Danh sách hóa đơn</h3>
+
           <table>
             <thead>
               <tr>
-                <th>Mã hóa đơn</th>
-                <th>Tháng</th>
-                <th>Hợp đồng</th>
+                <th>Mã HĐ</th>
+                <th>Người thuê</th>
                 <th>Tổng tiền</th>
+                <th>Trạng thái</th>
+                <th>Ngày nộp</th>
                 <th>Hành động</th>
               </tr>
             </thead>
+
             <tbody>
               <tr v-for="item in hoaDons" :key="item.id">
-                <td>{{ item.maHoaDon }}</td>
+                <!-- Mã hóa đơn -->
+                <td>
+                  {{ item.maHoaDon }}
+                </td>
+
+                <!-- Người thuê -->
+                <td>
+                  {{ item.hopDong?.nguoiThue?.hoTen ?? "" }}
+                </td>
+
+                <!-- Tổng tiền -->
+                <td>
+                  {{ formatCurrency(item.tongTien) }}
+                </td>
+
+                <!-- Trạng thái -->
+                <td>
+                  <span
+                    :class="[
+                      'status-badge',
+                      item.trangThai === 'da_thanh_toan'
+                        ? 'status-paid'
+                        : 'status-unpaid',
+                    ]"
+                  >
+                    {{
+                      item.trangThai === "da_thanh_toan"
+                        ? "Đã thanh toán"
+                        : "Chưa thanh toán"
+                    }}
+                  </span>
+                </td>
+
+                <!-- Ngày nộp -->
                 <td>
                   {{
-                    item.thangThanhToan
-                      ? new Date(item.thangThanhToan).toISOString().slice(0, 7)
+                    item.trangThai === "da_thanh_toan" && item.ngayNop
+                      ? new Date(item.ngayNop).toLocaleDateString("vi-VN")
                       : ""
                   }}
                 </td>
-                <td>{{ item.hopDong?.maHopDong }}</td>
-                <td>{{ formatCurrency(item.tongTien) }}</td>
+
+                <!-- Hành động -->
                 <td class="row-actions">
                   <button class="table-btn edit" @click="editHoaDon(item)">
                     Sửa

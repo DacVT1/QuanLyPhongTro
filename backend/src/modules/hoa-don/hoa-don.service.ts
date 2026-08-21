@@ -12,35 +12,64 @@ export class HoaDonService {
 
   async findAll() {
     return this.repository.find({
-      relations: { hopDong: true },
+      relations: {
+        hopDong: {
+          nguoiThue: true,
+        },
+      },
     });
   }
 
   async findOne(id: string) {
     return this.repository.findOne({
       where: { id },
-      relations: { hopDong: true },
+      relations: {
+        hopDong: {
+          nguoiThue: true,
+        },
+      },
     });
   }
 
-  async create(payload: Partial<HoaDon>) {
-    return this.repository.save(
-      this.repository.create(payload),
-    );
+async create(payload: Partial<HoaDon>) {
+  if (payload.trangThai === 'da_thanh_toan') {
+    payload.ngayNop = new Date();
+  } else {
+    payload.ngayNop = null;
   }
 
-  async update(id: string, payload: Partial<HoaDon>) {
-    await this.repository.update(id, payload);
-    return this.findOne(id);
+  return this.repository.save(
+    this.repository.create(payload),
+  );
+}
+
+async update(id: string, payload: Partial<HoaDon>) {
+  const hoaDon = await this.repository.findOne({
+    where: { id },
+  });
+
+  if (!hoaDon) {
+    throw new NotFoundException('Không tìm thấy hóa đơn');
   }
+
+  if (payload.trangThai === 'da_thanh_toan') {
+    if (!hoaDon.ngayNop) {
+      payload.ngayNop = new Date();
+    }
+  } else if (payload.trangThai === 'chua_thanh_toan') {
+    payload.ngayNop = null;
+  }
+
+  await this.repository.update(id, payload);
+
+  return this.findOne(id);
+}
 
   async remove(id: string) {
     const result = await this.repository.delete(id);
 
     if (!result.affected) {
-      throw new NotFoundException(
-        'Không tìm thấy hóa đơn để xóa',
-      );
+      throw new NotFoundException('Không tìm thấy hóa đơn để xóa');
     }
 
     return {

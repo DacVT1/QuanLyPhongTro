@@ -35,6 +35,9 @@ export class HoaDon {
   @Column({ default: 'chua_thanh_toan' })
   trangThai: string;
 
+  @Column({ type: 'date', nullable: true })
+  ngayNop: Date | null;
+
   @Column({ nullable: true })
   ghiChu?: string;
 
