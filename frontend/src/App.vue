@@ -78,6 +78,14 @@ const nguoiThues = ref<any[]>([]);
 const hopDongs = ref<any[]>([]);
 const hoaDons = ref<any[]>([]);
 
+const hoaDonFilters = ref({
+  maHoaDon: "",
+  nguoiThue: "",
+  tongTien: "",
+  trangThai: "",
+  ngayNop: "",
+});
+
 const nhaTroForm = ref({
   maNhaTro: "",
   tenNhaTro: "",
@@ -273,7 +281,9 @@ const tienThueDisplay = ref("");
 const tienDatCocDisplay = ref("");
 const editingHopDongId = ref<string | null>(null);
 const editingHoaDonId = ref<string | null>(null);
+
 const showDeleteHoaDonModal = ref(false);
+const showDeleteHopDongModal = ref(false);
 
 const deleteHoaDonInfo = ref({
   id: "",
@@ -286,6 +296,7 @@ const deleteHopDongInfo = ref({
   id: "",
   maHopDong: "",
 });
+
 
 function requestDeleteHoaDon(item: any) {
   deleteHoaDonInfo.value = {
