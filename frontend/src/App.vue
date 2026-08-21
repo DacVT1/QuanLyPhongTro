@@ -67,6 +67,19 @@ function validateSoDienThoai() {
   return true;
 }
 
+function handleTienThueInput(event: Event) {
+  const input = event.target as HTMLInputElement;
+
+  // Chỉ giữ lại chữ số
+  const rawValue = input.value.replace(/\D/g, "");
+
+  hopDongForm.value.tienThue = Number(rawValue || 0);
+
+  tienThueDisplay.value = rawValue
+    ? Number(rawValue).toLocaleString("en-US")
+    : "";
+}
+
 function toggleMenu() {
   isMenuOpen.value = !isMenuOpen.value;
 }
@@ -245,7 +258,7 @@ const hopDongForm = ref({
   ngayKetThuc: "",
   tienThue: 0,
   chuKyThanhToan: 1,
-  tienDatCoc: 0,
+  tienDatCoc: 1000000,
   ghiChu: "",
   giuongId: "",
   nguoiThueId: "",
@@ -541,6 +554,22 @@ function handleGiaGiuongInput(event: Event) {
     : "";
 }
 
+function handleGiuongChangeForHopDong() {
+  syncHopDongCode();
+
+  const giuong = giuongs.value.find(
+    (item) => item.id === hopDongForm.value.giuongId,
+  );
+
+  const giaGiuong = Number(giuong?.giaGiuong ?? 0);
+
+  hopDongForm.value.tienThue = giaGiuong;
+
+  tienThueDisplay.value = giaGiuong
+    ? giaGiuong.toLocaleString("en-US")
+    : "";
+}
+
 function handleTienDatCocInput(event: Event) {
   const input = event.target as HTMLInputElement;
 
@@ -599,7 +628,7 @@ function resetHopDongForm() {
     ngayKetThuc: "",
     tienThue: 0,
     chuKyThanhToan: 1,
-    tienDatCoc: 0,
+    tienDatCoc: 1000000,
     ghiChu: "",
     giuongId: "",
     nguoiThueId: "",
@@ -607,7 +636,7 @@ function resetHopDongForm() {
   };
 
   tienThueDisplay.value = "";
-  tienDatCocDisplay.value = "";
+  tienDatCocDisplay.value = "1,000,000";
 
   editingHopDongId.value = null;
 }
@@ -906,6 +935,10 @@ function handleCccdMatSauChange(event: Event) {
 }
 
 async function saveNguoiThue() {
+  // Kiểm tra số điện thoại trước khi tạo FormData và gọi API
+  if (!validateSoDienThoai()) {
+    return;
+  }
   const formData = new FormData();
 
   formData.append("hoTen", nguoiThueForm.value.hoTen);
@@ -2061,18 +2094,17 @@ onMounted(() => {
                 v-model="nguoiThueForm.sdt"
                 placeholder="0123456789"
                 type="text"
-                maxlength="10"
                 inputmode="numeric"
                 @input="handleSoDienThoaiInput"
                 @blur="validateSoDienThoai"
               />
 
-              <p
-                v-if="soDienThoaiError"
-                class="mt-1 text-sm font-normal text-red-500"
-              >
-                {{ soDienThoaiError }}
-              </p>
+              <span
+    v-if="soDienThoaiError"
+    class="form-error"
+  >
+    {{ soDienThoaiError }}
+  </span>
             </label>
 
             <label>
@@ -2296,7 +2328,7 @@ onMounted(() => {
 
               <select
                 v-model="hopDongForm.giuongId"
-                @change="syncHopDongCode"
+                @change="handleGiuongChangeForHopDong"
                 required
               >
                 <option value="">Chọn giường</option>
@@ -2352,17 +2384,17 @@ onMounted(() => {
               {{ requiredLabel("Giá thuê") }}
 
               <div class="currency-input">
-                <input
-                  v-model.number="hopDongForm.tienThue"
-                  type="number"
-                  min="0"
-                  step="1000"
-                  placeholder="Giá thuê"
-                  required
-                />
+  <input
+    :value="tienThueDisplay"
+    type="text"
+    placeholder="Giá thuê"
+    @input="handleTienThueInput"
+    @blur="formatTienThueDisplay"
+    required
+  />
 
-                <span>VND</span>
-              </div>
+  <span>VND</span>
+</div>
             </label>
 
             <label>
@@ -2383,16 +2415,13 @@ onMounted(() => {
               Đặt cọc
 
               <div class="currency-input">
-                <input
-                  v-model.number="hopDongForm.tienDatCoc"
-                  type="number"
-                  min="0"
-                  step="1000"
-                  placeholder="Số tiền đặt cọc"
-                />
-
-                <span>VND</span>
-              </div>
+  <input
+    :value="tienDatCocDisplay"
+    type="text"
+    placeholder="Số tiền đặt cọc"
+  />
+  <span>VND</span>
+</div>
             </label>
 
             <label>
@@ -3734,6 +3763,20 @@ textarea {
   margin-top: 2px;
 
   color: #64748b;
+
+  font-size: 0.78rem;
+
+  font-weight: 400;
+
+  line-height: 1.4;
+}
+
+.form-error {
+  display: block;
+
+  margin-top: 2px;
+
+  color: #dc2626 !important;
 
   font-size: 0.78rem;
 
