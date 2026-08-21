@@ -1,7 +1,20 @@
 <script setup lang="ts">
+import {
+  Chart as ChartJS,
+  ArcElement,
+  Tooltip,
+  Legend,
+} from "chart.js";
+
+import { Doughnut } from "vue-chartjs";
 import { computed, onMounted, ref } from "vue";
 import api from "./services/api";
 import { getImageUrl } from "./utils/image";
+ChartJS.register(
+  ArcElement,
+  Tooltip,
+  Legend,
+);
 const cccdMatTruocPreviewUrl = ref("");
 const cccdMatSauPreviewUrl = ref("");
 const tabs = [
@@ -24,6 +37,173 @@ const tienDienError = ref("");
 const tienNuocError = ref("");
 const tienDichVuKhacError = ref("");
 
+function getPhongChartData(house: any) {
+  return {
+    labels: [
+      "Phòng có người ở",
+      "Phòng còn trống",
+    ],
+
+    datasets: [
+      {
+        data: [
+          house.totalPhongCoNguoi,
+          Math.max(
+            house.totalPhong -
+              house.totalPhongCoNguoi,
+            0,
+          ),
+        ],
+
+        backgroundColor: [
+          "#2563eb",
+          "#e5e7eb",
+        ],
+
+        borderWidth: 0,
+      },
+    ],
+  };
+}
+
+function getGiuongChartData(house: any) {
+  return {
+    labels: [
+      "Giường có người ở",
+      "Giường còn trống",
+    ],
+
+    datasets: [
+      {
+        data: [
+          house.totalGiuongCoNguoi,
+          Math.max(
+            house.totalGiuong -
+              house.totalGiuongCoNguoi,
+            0,
+          ),
+        ],
+
+        backgroundColor: [
+          "#7c3aed",
+          "#e5e7eb",
+        ],
+
+        borderWidth: 0,
+      },
+    ],
+  };
+}
+
+function getThanhToanChartData(house: any) {
+  return {
+    labels: [
+      "Đã thanh toán",
+      "Chưa thanh toán",
+    ],
+
+    datasets: [
+      {
+        data: [
+          house.totalGiuongDaThanhToan,
+          Math.max(
+            house.totalGiuong -
+              house.totalGiuongDaThanhToan,
+            0,
+          ),
+        ],
+
+        backgroundColor: [
+          "#16a34a",
+          "#e5e7eb",
+        ],
+
+        borderWidth: 0,
+      },
+    ],
+  };
+}
+
+const doughnutOptions = {
+  responsive: true,
+
+  maintainAspectRatio: false,
+
+  cutout: "68%",
+
+  plugins: {
+    legend: {
+      display: false,
+    },
+
+    tooltip: {
+      enabled: true,
+    },
+  },
+};
+
+const doughnutCenterTextPlugin = {
+  id: "doughnutCenterText",
+
+  afterDraw(chart: any) {
+    const { ctx } = chart;
+
+    const dataset =
+      chart.data.datasets[0];
+
+    if (!dataset?.data?.length) {
+      return;
+    }
+
+    const total = dataset.data.reduce(
+      (sum: number, value: number) =>
+        sum + Number(value),
+      0,
+    );
+
+    if (total === 0) {
+      return;
+    }
+
+    const currentValue =
+      Number(dataset.data[0]);
+
+    const percent =
+      (currentValue / total) * 100;
+
+    const text =
+      `${percent.toFixed(2).replace(/\.00$/, "")}%`;
+
+    const meta =
+      chart.getDatasetMeta(0);
+
+    if (!meta?.data?.length) {
+      return;
+    }
+
+    const x = meta.data[0].x;
+    const y = meta.data[0].y;
+
+    ctx.save();
+
+    ctx.font =
+      "800 28px Arial";
+
+    ctx.fillStyle =
+      "#172033";
+
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+
+    ctx.fillText(
+      text,
+      x,
+      y,
+    );
+
+    ctx.restore();
+  },
+};
 
 function handleTienDienInput(event: Event) {
   const input = event.target as HTMLInputElement;
@@ -1886,6 +2066,122 @@ onMounted(() => {
             <strong>{{ summary.totalHoaDon }}</strong>
           </div>
         </div>
+        <div class="dashboard-chart-card">
+
+  <h4>
+    Tỷ lệ phòng có người ở
+  </h4>
+
+  <div class="chart-container">
+
+    <Doughnut
+      :data="getPhongChartData(house)"
+      :options="doughnutOptions"
+      :plugins="[doughnutCenterTextPlugin]"
+    />
+
+  </div>
+
+  <div class="chart-value">
+    <strong>
+      {{ house.totalPhongCoNguoi }}/{{ house.totalPhong }}
+    </strong>
+
+    <span>phòng</span>
+  </div>
+
+  <div class="chart-description">
+
+    <div class="description-icon">
+      👥
+    </div>
+
+    <p>
+      Tỷ lệ phòng đang có người ở
+      so với tổng số phòng của nhà trọ.
+    </p>
+
+  </div>
+
+</div>
+
+<div class="dashboard-chart-card">
+
+  <h4>
+    Tỷ lệ số giường có người ở
+  </h4>
+
+  <div class="chart-container">
+
+    <Doughnut
+      :data="getGiuongChartData(house)"
+      :options="doughnutOptions"
+      :plugins="[doughnutCenterTextPlugin]"
+    />
+
+  </div>
+
+  <div class="chart-value">
+    <strong>
+      {{ house.totalGiuongCoNguoi }}/{{ house.totalGiuong }}
+    </strong>
+
+    <span>giường</span>
+  </div>
+
+  <div class="chart-description">
+
+    <div class="description-icon">
+      🛏️
+    </div>
+
+    <p>
+      Tỷ lệ số giường đang có người ở
+      so với tổng số giường của nhà trọ.
+    </p>
+
+  </div>
+
+</div>
+
+<div class="dashboard-chart-card">
+
+  <h4>
+    Tỷ lệ giường đã thanh toán hóa đơn
+  </h4>
+
+  <div class="chart-container">
+
+    <Doughnut
+      :data="getThanhToanChartData(house)"
+      :options="doughnutOptions"
+      :plugins="[doughnutCenterTextPlugin]"
+    />
+
+  </div>
+
+  <div class="chart-value">
+    <strong>
+      {{ house.totalGiuongDaThanhToan }}/{{ house.totalGiuong }}
+    </strong>
+
+    <span>hóa đơn</span>
+  </div>
+
+  <div class="chart-description">
+
+    <div class="description-icon">
+      🧾
+    </div>
+
+    <p>
+      Tỷ lệ giường đã thanh toán hóa đơn
+      so với tổng số giường của nhà trọ.
+    </p>
+
+  </div>
+
+</div>
       </section>
 
       <!-- ===================================================
@@ -3008,9 +3304,6 @@ onMounted(() => {
       </section>
     </main>
 
-    <!-- =====================================================
-         MODAL XÓA NHÀ TRỌ
-         ===================================================== -->
     <!-- =====================================================
      MODAL XÓA NHÀ TRỌ
      ===================================================== -->
@@ -4810,7 +5103,127 @@ tbody tr:hover {
 
   font-weight: 700;
 }
+.dashboard-chart-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+  gap: 20px;
+  margin-top: 24px;
+}
 
+.dashboard-chart-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 18px;
+  padding: 22px;
+  text-align: center;
+}
+
+.dashboard-chart-card h4 {
+  margin: 0 0 18px;
+
+  color: #172033;
+
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.chart-container {
+  position: relative;
+
+  width: 230px;
+  height: 230px;
+
+  margin: 0 auto;
+}
+
+.chart-value {
+  margin-top: 8px;
+
+  display: flex;
+
+  justify-content: center;
+
+  align-items: baseline;
+
+  gap: 6px;
+}
+
+.chart-value strong {
+  font-size: 20px;
+
+  color: #172033;
+}
+
+.chart-value span {
+  color: #64748b;
+
+  font-size: 13px;
+}
+
+.chart-description {
+  display: flex;
+
+  align-items: center;
+
+  gap: 12px;
+
+  margin-top: 18px;
+
+  padding: 13px;
+
+  border-radius: 12px;
+
+  background: #f8fafc;
+
+  text-align: left;
+}
+
+.description-icon {
+  flex-shrink: 0;
+
+  width: 38px;
+  height: 38px;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 10px;
+
+  background: #ffffff;
+
+  font-size: 19px;
+}
+
+.chart-description p {
+  margin: 0;
+
+  color: #475569;
+
+  font-size: 13px;
+
+  line-height: 1.5;
+}
+
+@media (max-width: 1200px) {
+  .dashboard-chart-grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-chart-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .chart-container {
+    width: 210px;
+    height: 210px;
+  }
+}
 /* =========================================================
    MOBILE
    ========================================================= */
