@@ -252,9 +252,9 @@ const editingGiuongId = ref<string | null>(null)
 const editingNguoiThueId = ref<string | null>(null)
 const cccdMatTruocInput = ref<HTMLInputElement | null>(null)
 const cccdMatSauInput = ref<HTMLInputElement | null>(null)
-const cccdMatTruocUrl = ref('')
-const cccdMatSauUrl = ref('')
 const giaGiuongDisplay = ref('')
+const tienThueDisplay = ref('')
+const tienDatCocDisplay = ref('')
 const editingHopDongId = ref<string | null>(null)
 const editingHoaDonId = ref<string | null>(null)
 const showDeleteHopDongModal = ref(false)
@@ -400,6 +400,18 @@ function handleGiaGiuongInput(event: Event) {
     : ''
 }
 
+function handleTienDatCocInput(event: Event) {
+  const input = event.target as HTMLInputElement
+
+  const rawValue = input.value.replace(/\D/g, '')
+
+  hopDongForm.value.tienDatCoc = Number(rawValue || 0)
+
+  tienDatCocDisplay.value = rawValue
+    ? Number(rawValue).toLocaleString('en-US')
+    : ''
+}
+
 function resetNguoiThueForm() {
   nguoiThueForm.value = {
     hoTen: '',
@@ -451,6 +463,9 @@ function resetHopDongForm() {
     nguoiThueId: '',
     trangThai: 'active',
   }
+
+  tienThueDisplay.value = ''
+  tienDatCocDisplay.value = ''
 
   editingHopDongId.value = null
 }
