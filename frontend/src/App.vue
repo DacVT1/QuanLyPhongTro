@@ -1217,7 +1217,11 @@ function generateHopDongCode(giuongId: string) {
   return giuong.maGiuong;
 }
 
-function generateHoaDonCode(hopDongId: string, thangThanhToan: string) {
+function generateHoaDonCode(
+  hopDongId: string,
+  thangThanhToan: string,
+  excludeHoaDonId?: string,
+) {
   const hopDong = hopDongs.value.find(
     (item) => item.id === hopDongId,
   );
@@ -1233,7 +1237,40 @@ function generateHoaDonCode(hopDongId: string, thangThanhToan: string) {
   const month = date.getMonth() + 1;
   const year = date.getFullYear();
 
-  return `${hopDong.maHopDong}_TH${month}/${year}`;
+  // Phần mã chung của hóa đơn
+  // Ví dụ: CG_T2_G3_TH3/2026
+  const baseCode = `${hopDong.maHopDong}_TH${month}/${year}`;
+
+  // Lấy các hóa đơn đã tồn tại cùng hợp đồng + cùng tháng/năm
+  const existingCodes = hoaDons.value
+    .filter((item) => item.id !== excludeHoaDonId)
+    .map((item) => item.maHoaDon)
+    .filter((code): code is string =>
+      typeof code === "string" &&
+      code.startsWith(`${baseCode}_`),
+    );
+
+  // Tìm số thứ tự lớn nhất
+  let maxSequence = 0;
+
+  for (const code of existingCodes) {
+    const match = code.match(
+      new RegExp(`^${baseCode.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}_(\\d+)$`),
+    );
+
+    if (match) {
+      const sequence = Number(match[1]);
+
+      if (sequence > maxSequence) {
+        maxSequence = sequence;
+      }
+    }
+  }
+
+  // Tăng số thứ tự và luôn hiển thị 2 chữ số
+  const nextSequence = String(maxSequence + 1).padStart(2, "0");
+
+  return `${baseCode}_${nextSequence}`;
 }
 
 function syncHopDongCode() {
@@ -1249,9 +1286,11 @@ function syncHoaDonCode() {
     hoaDonForm.value.maHoaDon = "";
     return;
   }
+
   hoaDonForm.value.maHoaDon = generateHoaDonCode(
     hoaDonForm.value.hopDongId,
     hoaDonForm.value.thangThanhToan,
+    editingHoaDonId.value ?? undefined,
   );
 }
 
