@@ -19,7 +19,13 @@ export class Giuong {
   @Column()
   maGiuong: string;
 
-  @Column({ default: 'trong' })
+  @Column({ default: 1 })
+  giuongSo: number;
+
+  @Column({ type: 'integer', default: 0 })
+  giaGiuong: number;
+
+  @Column({ default: 'Trống' })
   trangThai: string;
 
   @ManyToOne(() => Phong, (phong) => phong.giuongs, { onDelete: 'CASCADE' })

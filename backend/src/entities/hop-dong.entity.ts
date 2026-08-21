@@ -29,6 +29,12 @@ export class HopDong {
   @Column({ type: 'float', default: 0 })
   tienThue: number;
 
+  @Column({ type: 'integer', default: 1 })
+  chuKyThanhToan: number;
+
+  @Column({ type: 'float', default: 0 })
+  tienDatCoc: number;
+
   @Column({ type: 'float', default: 0 })
   tienDien: number;
 

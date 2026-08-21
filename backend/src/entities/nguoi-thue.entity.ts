@@ -30,6 +30,15 @@ export class NguoiThue {
 
   @Column({ type: 'date', nullable: true })
   ngaySinh?: Date;
+  
+@Column({ nullable: true })
+bienSoXe?: string;
+
+@Column({ nullable: true })
+cccdMatTruoc?: string;
+
+@Column({ nullable: true })
+cccdMatSau?: string;
 
   @CreateDateColumn()
   createdAt: Date;

@@ -19,6 +19,9 @@ export class Phong {
   @Column()
   maPhong: string;
 
+  @Column({ default: 1 })
+  tangSo: number;
+
   @Column({ default: 8 })
   soGiuongToiDa: number;
 
