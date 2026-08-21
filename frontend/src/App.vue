@@ -257,6 +257,14 @@ const cccdMatSauUrl = ref('')
 const giaGiuongDisplay = ref('')
 const editingHopDongId = ref<string | null>(null)
 const editingHoaDonId = ref<string | null>(null)
+const showDeleteHopDongModal = ref(false)
+
+const deleteHopDongInfo = ref({
+  id: '',
+  maHopDong: '',
+})
+
+const deleteHopDongErrorMessage = ref('')
 
 const giuongOptions = computed(() => {
   // Danh sách tối đa 8 giường
@@ -595,17 +603,46 @@ async function confirmDeleteNguoiThue() {
 }
 
 function requestDeleteHopDong(item: any) {
-  if (!item?.id) {
+  deleteHopDongInfo.value = {
+    id: item.id,
+    maHopDong: item.maHopDong ?? 'Hợp đồng',
+  }
+
+  deleteHopDongErrorMessage.value = ''
+  showDeleteHopDongModal.value = true
+}
+
+function closeDeleteHopDongModal() {
+  showDeleteHopDongModal.value = false
+  deleteHopDongErrorMessage.value = ''
+}
+
+async function confirmDeleteHopDong() {
+  const id = deleteHopDongInfo.value.id
+
+  if (!id) {
     return
   }
 
-  pendingDelete.value = {
-    type: 'hop-dong',
-    id: item.id,
-    name: item.maHopDong,
-  }
+  try {
+    deleteHopDongErrorMessage.value = ''
 
-  showDeleteConfirm.value = true
+    await api.delete(`/hop-dong/${id}`)
+
+    closeDeleteHopDongModal()
+
+    if (editingHopDongId.value === id) {
+      resetHopDongForm()
+    }
+
+    await loadData()
+  } catch (error: any) {
+    console.error('Không thể xóa hợp đồng:', error)
+
+    deleteHopDongErrorMessage.value =
+      error?.response?.data?.message ??
+      'Không thể xóa hợp đồng. Vui lòng thử lại.'
+  }
 }
 
 async function saveGiuong() {
@@ -1965,16 +2002,12 @@ onMounted(() => {
         </button>
 
         <button
-          class="table-btn delete"
-          @click="
-            deleteItem(
-              'hop-dong',
-              item.id
-            )
-          "
-        >
-          Xóa
-        </button>
+  type="button"
+  class="table-btn delete"
+  @click.stop="requestDeleteHopDong(item)"
+>
+  Xóa
+</button>
       </td>
     </tr>
   </tbody>
@@ -2271,6 +2304,62 @@ onMounted(() => {
     </div>
   </div>
 </div>
+
+<div
+  v-if="showDeleteHopDongModal"
+  class="modal-overlay"
+  @click.self="closeDeleteHopDongModal"
+>
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Xác nhận xóa hợp đồng</h3>
+
+      <button
+        type="button"
+        class="modal-close"
+        @click="closeDeleteHopDongModal"
+      >
+        ×
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <p>
+        Bạn có chắc chắn muốn xóa hợp đồng
+        <strong>
+          {{ deleteHopDongInfo.maHopDong }}
+        </strong>
+        không?
+      </p>
+
+      <p
+        v-if="deleteHopDongErrorMessage"
+        class="error-message"
+      >
+        {{ deleteHopDongErrorMessage }}
+      </p>
+    </div>
+
+    <div class="modal-actions">
+      <button
+        type="button"
+        class="secondary"
+        @click="closeDeleteHopDongModal"
+      >
+        Hủy
+      </button>
+
+      <button
+        type="button"
+        class="danger"
+        @click="confirmDeleteHopDong"
+      >
+        Xóa
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal xóa giường -->
 <div
   v-if="showDeleteGiuongModal"
@@ -3031,6 +3120,135 @@ td {
 .money-input span {
   font-weight: 600;
   white-space: nowrap;
+}
+
+/* =========================
+   Modal xác nhận xóa
+   ========================= */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.modal {
+  width: 100%;
+  max-width: 500px;
+
+  background: #ffffff;
+  border-radius: 8px;
+
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+
+  overflow: hidden;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 16px 20px;
+
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.modal-header h3 {
+  margin: 0;
+
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.modal-close {
+  border: none;
+  background: transparent;
+
+  font-size: 24px;
+  line-height: 1;
+
+  cursor: pointer;
+
+  padding: 4px 8px;
+}
+
+.modal-close:hover {
+  opacity: 0.7;
+}
+
+.modal-body {
+  padding: 20px;
+}
+
+.modal-body p {
+  margin: 0;
+  line-height: 1.6;
+}
+
+.modal-body strong {
+  font-weight: 600;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+
+  padding: 16px 20px;
+
+  border-top: 1px solid #e5e7eb;
+}
+
+.modal-actions button {
+  min-width: 80px;
+
+  padding: 8px 16px;
+
+  border: none;
+  border-radius: 6px;
+
+  cursor: pointer;
+
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.modal-actions .secondary {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.modal-actions .secondary:hover {
+  background: #d1d5db;
+}
+
+.modal-actions .danger {
+  background: #dc2626;
+  color: #ffffff;
+}
+
+.modal-actions .danger:hover {
+  background: #b91c1c;
+}
+
+.error-message {
+  margin-top: 12px !important;
+
+  padding: 10px 12px;
+
+  border-radius: 6px;
+
+  background: #fee2e2;
+  color: #b91c1c;
+
+  font-size: 14px;
 }
 
 @media (max-width: 600px) {
