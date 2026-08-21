@@ -3505,6 +3505,211 @@ td {
   font-size: 14px;
 }
 
+/* =========================================
+   MODAL XÁC NHẬN XÓA HÓA ĐƠN
+   ========================================= */
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 100vw;
+  height: 100vh;
+
+  padding: 20px;
+
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(4px);
+}
+
+/* Hộp thông báo */
+.modal-backdrop .modal {
+  width: min(460px, calc(100vw - 40px));
+  max-width: 460px;
+
+  margin: 0;
+
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+
+  box-shadow:
+    0 25px 50px rgba(15, 23, 42, 0.25),
+    0 8px 20px rgba(15, 23, 42, 0.12);
+
+  overflow: hidden;
+
+  animation: delete-modal-show 0.2s ease-out;
+}
+
+@keyframes delete-modal-show {
+  from {
+    opacity: 0;
+    transform: translateY(-12px) scale(0.97);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Tiêu đề */
+.modal-backdrop .modal h3 {
+  margin: 0;
+  padding: 20px 22px;
+
+  font-size: 1.2rem;
+  font-weight: 700;
+
+  color: #0f172a;
+
+  border-bottom: 1px solid #e2e8f0;
+}
+
+/* Nội dung */
+.modal-backdrop .modal > p {
+  margin: 0;
+  padding: 20px 22px;
+
+  color: #475569;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.modal-backdrop .modal > p strong {
+  color: #dc2626;
+  font-weight: 700;
+}
+
+/* Thông báo lỗi */
+.modal-backdrop .modal .error-message {
+  margin: -6px 22px 16px !important;
+  padding: 10px 12px;
+
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+
+  background: #fef2f2;
+  color: #b91c1c;
+
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+/* Khu vực nút */
+.modal-backdrop .modal .modal-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+
+  gap: 10px;
+
+  padding: 16px 22px;
+
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+}
+
+/* Tất cả button trong modal */
+.modal-backdrop .modal .modal-actions button {
+  min-width: 88px;
+  height: 40px;
+
+  padding: 0 18px;
+
+  border: none;
+  border-radius: 9px;
+
+  font-size: 0.9rem;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition:
+    background-color 0.2s ease,
+    transform 0.15s ease,
+    box-shadow 0.2s ease;
+}
+
+/* Nút Hủy */
+.modal-backdrop .modal .modal-actions button:first-child {
+  background: #e2e8f0;
+  color: #334155;
+}
+
+.modal-backdrop .modal .modal-actions button:first-child:hover {
+  background: #cbd5e1;
+}
+
+.modal-backdrop .modal .modal-actions button:first-child:active {
+  transform: translateY(1px);
+}
+
+/* Nút Xóa */
+.modal-backdrop .modal .modal-actions .danger {
+  background: #dc2626;
+  color: #ffffff;
+
+  box-shadow: 0 3px 8px rgba(220, 38, 38, 0.25);
+}
+
+.modal-backdrop .modal .modal-actions .danger:hover {
+  background: #b91c1c;
+
+  box-shadow: 0 5px 12px rgba(220, 38, 38, 0.3);
+
+  transform: translateY(-1px);
+}
+
+.modal-backdrop .modal .modal-actions .danger:active {
+  background: #991b1b;
+  transform: translateY(1px);
+}
+
+/* Trạng thái đang disabled */
+.modal-backdrop .modal .modal-actions button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Mobile */
+@media (max-width: 600px) {
+  .modal-backdrop {
+    padding: 16px;
+  }
+
+  .modal-backdrop .modal {
+    width: 100%;
+    max-width: none;
+    border-radius: 14px;
+  }
+
+  .modal-backdrop .modal h3 {
+    padding: 18px;
+  }
+
+  .modal-backdrop .modal > p {
+    padding: 18px;
+  }
+
+  .modal-backdrop .modal .modal-actions {
+    padding: 14px 18px;
+  }
+
+  .modal-backdrop .modal .modal-actions button {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
 @media (max-width: 600px) {
   .related-data {
     grid-template-columns: 1fr;
