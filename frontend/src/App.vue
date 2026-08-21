@@ -1,7 +1,11 @@
 <script setup lang="ts">
+import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
+
+import { Doughnut } from "vue-chartjs";
 import { computed, onMounted, ref } from "vue";
 import api from "./services/api";
 import { getImageUrl } from "./utils/image";
+ChartJS.register(ArcElement, Tooltip, Legend);
 const cccdMatTruocPreviewUrl = ref("");
 const cccdMatSauPreviewUrl = ref("");
 const tabs = [
@@ -24,6 +28,131 @@ const tienDienError = ref("");
 const tienNuocError = ref("");
 const tienDichVuKhacError = ref("");
 
+function getPhongChartData(house: any) {
+  return {
+    labels: ["Phòng có người ở", "Phòng còn trống"],
+
+    datasets: [
+      {
+        data: [
+          house.totalPhongCoNguoi,
+          Math.max(house.totalPhong - house.totalPhongCoNguoi, 0),
+        ],
+
+        backgroundColor: ["#2563eb", "#e5e7eb"],
+
+        borderWidth: 0,
+      },
+    ],
+  };
+}
+
+function getGiuongChartData(house: any) {
+  return {
+    labels: ["Giường có người ở", "Giường còn trống"],
+
+    datasets: [
+      {
+        data: [
+          house.totalGiuongCoNguoi,
+          Math.max(house.totalGiuong - house.totalGiuongCoNguoi, 0),
+        ],
+
+        backgroundColor: ["#7c3aed", "#e5e7eb"],
+
+        borderWidth: 0,
+      },
+    ],
+  };
+}
+
+function getThanhToanChartData(house: any) {
+  return {
+    labels: ["Đã thanh toán", "Chưa thanh toán"],
+
+    datasets: [
+      {
+        data: [
+          house.totalGiuongDaThanhToan,
+          Math.max(house.totalGiuong - house.totalGiuongDaThanhToan, 0),
+        ],
+
+        backgroundColor: ["#16a34a", "#e5e7eb"],
+
+        borderWidth: 0,
+      },
+    ],
+  };
+}
+
+const doughnutOptions = {
+  responsive: true,
+
+  maintainAspectRatio: false,
+
+  cutout: "68%",
+
+  plugins: {
+    legend: {
+      display: false,
+    },
+
+    tooltip: {
+      enabled: true,
+    },
+  },
+};
+
+const doughnutCenterTextPlugin = {
+  id: "doughnutCenterText",
+
+  afterDraw(chart: any) {
+    const { ctx } = chart;
+
+    const dataset = chart.data.datasets[0];
+
+    if (!dataset?.data?.length) {
+      return;
+    }
+
+    const total = dataset.data.reduce(
+      (sum: number, value: number) => sum + Number(value),
+      0,
+    );
+
+    if (total === 0) {
+      return;
+    }
+
+    const currentValue = Number(dataset.data[0]);
+
+    const percent = (currentValue / total) * 100;
+
+    const text = `${percent.toFixed(2).replace(/\.00$/, "")}%`;
+
+    const meta = chart.getDatasetMeta(0);
+
+    if (!meta?.data?.length) {
+      return;
+    }
+
+    const x = meta.data[0].x;
+    const y = meta.data[0].y;
+
+    ctx.save();
+
+    ctx.font = "800 28px Arial";
+
+    ctx.fillStyle = "#172033";
+
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+
+    ctx.fillText(text, x, y);
+
+    ctx.restore();
+  },
+};
 
 function handleTienDienInput(event: Event) {
   const input = event.target as HTMLInputElement;
@@ -74,8 +203,7 @@ function handleTienDichVuKhacInput(event: Event) {
   const value = input.value;
 
   if (!/^\d*$/.test(value.replace(/,/g, ""))) {
-    tienDichVuKhacError.value =
-      "Tiền dịch vụ khác chỉ được nhập số.";
+    tienDichVuKhacError.value = "Tiền dịch vụ khác chỉ được nhập số.";
     return;
   }
 
@@ -83,8 +211,7 @@ function handleTienDichVuKhacInput(event: Event) {
 
   const rawValue = value.replace(/,/g, "");
 
-  hoaDonForm.value.tienDichVuKhac =
-    Number(rawValue || 0);
+  hoaDonForm.value.tienDichVuKhac = Number(rawValue || 0);
 
   tienDichVuKhacDisplay.value = rawValue
     ? Number(rawValue).toLocaleString("en-US")
@@ -225,6 +352,64 @@ const giuongs = ref<any[]>([]);
 const nguoiThues = ref<any[]>([]);
 const hopDongs = ref<any[]>([]);
 const hoaDons = ref<any[]>([]);
+
+const nhaTroDashboard = computed(() => {
+  return nhaTros.value.map((nhaTro) => {
+    const rooms = phongs.value.filter(
+      (phong) => phong.nhaTro?.id === nhaTro.id,
+    );
+
+    const beds = giuongs.value.filter(
+      (giuong) => giuong.phong?.nhaTro?.id === nhaTro.id,
+    );
+
+    const activeContracts = hopDongs.value.filter(
+      (hopDong) =>
+        hopDong.trangThai === "active" &&
+        hopDong.giuong?.phong?.nhaTro?.id === nhaTro.id,
+    );
+
+    const occupiedRoomIds = new Set(
+      activeContracts
+        .map((hopDong) => hopDong.giuong?.phong?.id)
+        .filter(Boolean),
+    );
+
+    const occupiedBedIds = new Set(
+      activeContracts.map((hopDong) => hopDong.giuong?.id).filter(Boolean),
+    );
+
+    const paidContracts = hoaDons.value.filter(
+      (hoaDon) =>
+        hoaDon.trangThai === "DA_THANH_TOAN" &&
+        hoaDon.hopDong?.giuong?.phong?.nhaTro?.id === nhaTro.id,
+    );
+
+    const paidBedIds = new Set(
+      paidContracts.map((hoaDon) => hoaDon.hopDong?.giuong?.id).filter(Boolean),
+    );
+
+    return {
+      id: nhaTro.id,
+
+      maNhaTro: nhaTro.maNhaTro ?? "",
+
+      tenNhaTro: nhaTro.tenNhaTro ?? "",
+
+      soTang: Number(nhaTro.soTang ?? 0),
+
+      totalPhong: rooms.length,
+
+      totalPhongCoNguoi: occupiedRoomIds.size,
+
+      totalGiuong: beds.length,
+
+      totalGiuongCoNguoi: occupiedBedIds.size,
+
+      totalGiuongDaThanhToan: paidBedIds.size,
+    };
+  });
+});
 
 const nhaTroForm = ref({
   maNhaTro: "",
@@ -1543,23 +1728,15 @@ function editHoaDon(item: any) {
     tienDien,
     tienNuoc,
     tienDichVuKhac,
-    tongTien:
-      tienPhong +
-      tienDien +
-      tienNuoc +
-      tienDichVuKhac,
+    tongTien: tienPhong + tienDien + tienNuoc + tienDichVuKhac,
     trangThai: item.trangThai ?? "chua_thanh_toan",
     ghiChu: item.ghiChu ?? "",
     hopDongId: item.hopDong?.id ?? "",
   };
   // Cập nhật giá trị hiển thị, KHÔNG tạo ref mới
-  tienDienDisplay.value = tienDien
-    ? tienDien.toLocaleString("en-US")
-    : "0";
+  tienDienDisplay.value = tienDien ? tienDien.toLocaleString("en-US") : "0";
 
-  tienNuocDisplay.value = tienNuoc
-    ? tienNuoc.toLocaleString("en-US")
-    : "0";
+  tienNuocDisplay.value = tienNuoc ? tienNuoc.toLocaleString("en-US") : "0";
 
   tienDichVuKhacDisplay.value = tienDichVuKhac
     ? tienDichVuKhac.toLocaleString("en-US")
@@ -1884,6 +2061,131 @@ onMounted(() => {
           <div class="metric-body">
             <span>Hóa đơn</span>
             <strong>{{ summary.totalHoaDon }}</strong>
+          </div>
+        </div>
+        <div
+          v-for="house in nhaTroDashboard"
+          :key="house.id"
+          class="dashboard-house-card"
+        >
+          <!-- =====================================================
+       THÔNG TIN NHÀ TRỌ
+       ===================================================== -->
+
+          <div class="dashboard-house-header">
+            <div>
+              <h3>
+                {{ house.tenNhaTro }}
+
+                <span v-if="house.maNhaTro"> ({{ house.maNhaTro }}) </span>
+              </h3>
+
+              <p>Tổng số tầng: {{ house.soTang }} tầng</p>
+            </div>
+          </div>
+
+          <!-- =====================================================
+       3 BIỂU ĐỒ
+       ===================================================== -->
+
+          <div class="dashboard-chart-grid">
+            <!-- =================================================
+         BIỂU ĐỒ 1
+         ================================================= -->
+
+            <div class="dashboard-chart-card">
+              <h4>Tỷ lệ phòng có người ở</h4>
+
+              <div class="chart-container">
+                <Doughnut
+                  :data="getPhongChartData(house)"
+                  :options="doughnutOptions"
+                  :plugins="[doughnutCenterTextPlugin]"
+                />
+              </div>
+
+              <div class="chart-value">
+                <strong>
+                  {{ house.totalPhongCoNguoi }}/{{ house.totalPhong }}
+                </strong>
+
+                <span> phòng </span>
+              </div>
+
+              <div class="chart-description">
+                <div class="description-icon">👥</div>
+
+                <p>
+                  Tỷ lệ phòng đang có người ở so với tổng số phòng của nhà trọ.
+                </p>
+              </div>
+            </div>
+
+            <!-- =================================================
+         BIỂU ĐỒ 2
+         ================================================= -->
+
+            <div class="dashboard-chart-card">
+              <h4>Tỷ lệ số giường có người ở</h4>
+
+              <div class="chart-container">
+                <Doughnut
+                  :data="getGiuongChartData(house)"
+                  :options="doughnutOptions"
+                  :plugins="[doughnutCenterTextPlugin]"
+                />
+              </div>
+
+              <div class="chart-value">
+                <strong>
+                  {{ house.totalGiuongCoNguoi }}/{{ house.totalGiuong }}
+                </strong>
+
+                <span> giường </span>
+              </div>
+
+              <div class="chart-description">
+                <div class="description-icon">🛏️</div>
+
+                <p>
+                  Tỷ lệ số giường đang có người ở so với tổng số giường của nhà
+                  trọ.
+                </p>
+              </div>
+            </div>
+
+            <!-- =================================================
+         BIỂU ĐỒ 3
+         ================================================= -->
+
+            <div class="dashboard-chart-card">
+              <h4>Tỷ lệ giường đã thanh toán hóa đơn</h4>
+
+              <div class="chart-container">
+                <Doughnut
+                  :data="getThanhToanChartData(house)"
+                  :options="doughnutOptions"
+                  :plugins="[doughnutCenterTextPlugin]"
+                />
+              </div>
+
+              <div class="chart-value">
+                <strong>
+                  {{ house.totalGiuongDaThanhToan }}/{{ house.totalGiuong }}
+                </strong>
+
+                <span> hóa đơn </span>
+              </div>
+
+              <div class="chart-description">
+                <div class="description-icon">🧾</div>
+
+                <p>
+                  Tỷ lệ giường đã thanh toán hóa đơn so với tổng số giường của
+                  nhà trọ.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -3008,9 +3310,6 @@ onMounted(() => {
       </section>
     </main>
 
-    <!-- =====================================================
-         MODAL XÓA NHÀ TRỌ
-         ===================================================== -->
     <!-- =====================================================
      MODAL XÓA NHÀ TRỌ
      ===================================================== -->
@@ -4811,6 +5110,272 @@ tbody tr:hover {
   font-weight: 700;
 }
 
+.dashboard-chart-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+
+  gap: 20px;
+
+  width: 100%;
+  min-width: 0;
+
+  margin-top: 24px;
+
+  box-sizing: border-box;
+}
+
+.dashboard-house-card {
+  grid-column: 1 / -1;
+
+  width: 100%;
+  min-width: 0;
+
+  padding: 24px;
+
+  background: rgba(255, 255, 255, 0.9);
+
+  border: 1px solid rgba(148, 163, 184, 0.2);
+
+  border-radius: 18px;
+
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.06);
+
+  box-sizing: border-box;
+}
+
+.dashboard-house-header {
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  gap: 16px;
+
+  margin-bottom: 4px;
+}
+
+.dashboard-house-header h3 {
+  margin: 0;
+
+  color: #0f172a;
+
+  font-size: 1.25rem;
+
+  line-height: 1.3;
+}
+
+.dashboard-house-header h3 span {
+  color: #2563eb;
+
+  font-weight: 700;
+}
+
+.dashboard-house-header p {
+  margin: 6px 0 0;
+
+  color: #64748b;
+
+  font-size: 0.88rem;
+}
+
+.dashboard-house-card {
+  grid-column: 1 / -1;
+
+  width: 100%;
+  min-width: 0;
+
+  padding: 24px;
+
+  background: rgba(255, 255, 255, 0.9);
+
+  border: 1px solid rgba(148, 163, 184, 0.2);
+
+  border-radius: 18px;
+
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.06);
+
+  box-sizing: border-box;
+}
+
+.dashboard-house-header {
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  gap: 16px;
+
+  margin-bottom: 4px;
+}
+
+.dashboard-house-header h3 {
+  margin: 0;
+
+  color: #0f172a;
+
+  font-size: 1.25rem;
+
+  line-height: 1.3;
+}
+
+.dashboard-house-header h3 span {
+  color: #2563eb;
+
+  font-weight: 700;
+}
+
+.dashboard-house-header p {
+  margin: 6px 0 0;
+
+  color: #64748b;
+
+  font-size: 0.88rem;
+}
+
+.dashboard-chart-card {
+  width: 100%;
+  min-width: 0;
+
+  box-sizing: border-box;
+
+  background: #ffffff;
+
+  border: 1px solid #e5e7eb;
+
+  border-radius: 18px;
+
+  padding: 22px;
+
+  text-align: center;
+
+  overflow: hidden;
+}
+
+.dashboard-chart-card h4 {
+  margin: 0 0 18px;
+
+  color: #172033;
+
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.chart-container {
+  position: relative;
+
+  width: min(230px, 100%);
+
+  height: 230px;
+
+  margin: 0 auto;
+
+  box-sizing: border-box;
+}
+
+.chart-container canvas {
+  display: block;
+
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.chart-value {
+  margin-top: 8px;
+
+  display: flex;
+
+  justify-content: center;
+
+  align-items: baseline;
+
+  gap: 6px;
+}
+
+.chart-value strong {
+  font-size: 20px;
+
+  color: #172033;
+}
+
+.chart-value span {
+  color: #64748b;
+
+  font-size: 13px;
+}
+
+.chart-description {
+  display: flex;
+
+  align-items: center;
+
+  gap: 12px;
+
+  margin-top: 18px;
+
+  padding: 13px;
+
+  border-radius: 12px;
+
+  background: #f8fafc;
+
+  text-align: left;
+}
+
+.description-icon {
+  flex-shrink: 0;
+
+  width: 38px;
+  height: 38px;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 10px;
+
+  background: #ffffff;
+
+  font-size: 19px;
+}
+
+.chart-description p {
+  margin: 0;
+
+  color: #475569;
+
+  font-size: 13px;
+
+  line-height: 1.5;
+}
+
+@media (max-width: 1200px) {
+  .dashboard-chart-grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-house-card {
+    padding: 18px;
+  }
+
+  .dashboard-chart-grid {
+    grid-template-columns: 1fr;
+
+    gap: 16px;
+  }
+
+  .chart-container {
+    width: 210px;
+    height: 210px;
+  }
+}
 /* =========================================================
    MOBILE
    ========================================================= */
