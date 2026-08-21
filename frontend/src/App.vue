@@ -350,7 +350,7 @@ const cccdMatTruocInput = ref<HTMLInputElement | null>(null);
 const cccdMatSauInput = ref<HTMLInputElement | null>(null);
 const giaGiuongDisplay = ref("1,500,000");
 const tienThueDisplay = ref("");
-const tienDatCocDisplay = ref("");
+const tienDatCocDisplay = ref("1,000,000");
 const editingHopDongId = ref<string | null>(null);
 const editingHoaDonId = ref<string | null>(null);
 
@@ -1339,9 +1339,11 @@ function editHopDong(item: any) {
   const nhaTroId = item.giuong?.phong?.nhaTro?.id ?? "";
   const phongId = item.giuong?.phong?.id ?? "";
 
+  const tienThue = Number(item.tienThue ?? 0);
+  const tienDatCoc = Number(item.tienDatCoc ?? 0);
+
   hopDongForm.value = {
     maHopDong: item.maHopDong ?? "",
-
     nhaTroId,
     phongId,
 
@@ -1353,11 +1355,11 @@ function editHopDong(item: any) {
       ? new Date(item.ngayKetThuc).toISOString().slice(0, 10)
       : "",
 
-    tienThue: Number(item.tienThue ?? 0),
+    tienThue,
 
     chuKyThanhToan: Number(item.chuKyThanhToan ?? 1),
 
-    tienDatCoc: Number(item.tienDatCoc ?? 0),
+    tienDatCoc,
 
     ghiChu: item.ghiChu ?? "",
 
@@ -1367,6 +1369,15 @@ function editHopDong(item: any) {
 
     trangThai: item.trangThai ?? "active",
   };
+
+  // Hiển thị Giá thuê và Đặt cọc đã lưu
+  tienThueDisplay.value = tienThue
+    ? tienThue.toLocaleString("en-US")
+    : "";
+
+  tienDatCocDisplay.value = tienDatCoc
+    ? tienDatCoc.toLocaleString("en-US")
+    : "";
 
   currentTab.value = "hopDong";
 }
