@@ -17,6 +17,52 @@ const currentTab = ref("dashboard");
 const isMenuOpen = ref(false);
 const soDienThoaiError = ref("");
 
+const tienDienDisplay = ref("0");
+const tienNuocDisplay = ref("0");
+const tienDichVuKhacDisplay = ref("0");
+
+function handleTienDienInput(event: Event) {
+  const input = event.target as HTMLInputElement;
+
+  const rawValue = input.value.replace(/\D/g, "");
+
+  hoaDonForm.value.tienDien = Number(rawValue || 0);
+
+  tienDienDisplay.value = rawValue
+    ? Number(rawValue).toLocaleString("en-US")
+    : "0";
+
+  calculateHoaDonTongTien();
+}
+
+function handleTienNuocInput(event: Event) {
+  const input = event.target as HTMLInputElement;
+
+  const rawValue = input.value.replace(/\D/g, "");
+
+  hoaDonForm.value.tienNuoc = Number(rawValue || 0);
+
+  tienNuocDisplay.value = rawValue
+    ? Number(rawValue).toLocaleString("en-US")
+    : "0";
+
+  calculateHoaDonTongTien();
+}
+
+function handleTienDichVuKhacInput(event: Event) {
+  const input = event.target as HTMLInputElement;
+
+  const rawValue = input.value.replace(/\D/g, "");
+
+  hoaDonForm.value.tienDichVuKhac = Number(rawValue || 0);
+
+  tienDichVuKhacDisplay.value = rawValue
+    ? Number(rawValue).toLocaleString("en-US")
+    : "0";
+
+  calculateHoaDonTongTien();
+}
+
 function handleSoDienThoaiInput() {
   const value = nguoiThueForm.value.sdt;
 
@@ -259,11 +305,15 @@ const hopDongForm = ref({
 
 const hoaDonForm = ref({
   maHoaDon: "",
-  thangThanhToan: "",
-  tongTien: 0,
-  trangThai: "chua_thanh_toan",
-  ghiChu: "",
   hopDongId: "",
+  thangThanhToan: "",
+  tienPhong: 0,
+  tienDien: 0,
+  tienNuoc: 0,
+  tienDichVuKhac: 0,
+  tongTien: 0,
+  trangThai: "CHUA_THANH_TOAN",
+  ghiChu: "",
 });
 
 const hopDongGiuongOptions = computed(() => {
@@ -649,6 +699,10 @@ function resetHoaDonForm() {
   hoaDonForm.value = {
     maHoaDon: "",
     thangThanhToan: "",
+    tienPhong: 0,
+    tienDien: 0,
+    tienNuoc: 0,
+    tienDichVuKhac: 0,
     tongTien: 0,
     trangThai: "chua_thanh_toan",
     ghiChu: "",
@@ -1097,12 +1151,27 @@ async function saveHoaDon() {
       );
     }
 
+    calculateHoaDonTongTien();
+
     const payload = {
       maHoaDon: hoaDonForm.value.maHoaDon,
+
       thangThanhToan: hoaDonForm.value.thangThanhToan,
+
+      tienPhong: Number(hoaDonForm.value.tienPhong || 0),
+
+      tienDien: Number(hoaDonForm.value.tienDien || 0),
+
+      tienNuoc: Number(hoaDonForm.value.tienNuoc || 0),
+
+      tienDichVuKhac: Number(hoaDonForm.value.tienDichVuKhac || 0),
+
       tongTien: Number(hoaDonForm.value.tongTien || 0),
+
       trangThai: hoaDonForm.value.trangThai,
+
       ghiChu: hoaDonForm.value.ghiChu || null,
+
       hopDong: {
         id: hoaDonForm.value.hopDongId,
       },
@@ -1401,17 +1470,70 @@ function editHopDong(item: any) {
 
 function editHoaDon(item: any) {
   editingHoaDonId.value = item.id;
+  const tienPhong = Number(item.tienPhong ?? 0);
+  const tienDien = Number(item.tienDien ?? 0);
+  const tienNuoc = Number(item.tienNuoc ?? 0);
+  const tienDichVuKhac = Number(item.tienDichVuKhac ?? 0);
   hoaDonForm.value = {
     maHoaDon: item.maHoaDon ?? "",
     thangThanhToan: item.thangThanhToan
       ? new Date(item.thangThanhToan).toISOString().slice(0, 10)
       : "",
-    tongTien: item.tongTien ?? 0,
+    tienPhong,
+    tienDien,
+    tienNuoc,
+    tienDichVuKhac,
+    tongTien:
+      tienPhong +
+      tienDien +
+      tienNuoc +
+      tienDichVuKhac,
     trangThai: item.trangThai ?? "chua_thanh_toan",
     ghiChu: item.ghiChu ?? "",
     hopDongId: item.hopDong?.id ?? "",
   };
+  // Cập nhật giá trị hiển thị, KHÔNG tạo ref mới
+  tienDienDisplay.value = tienDien
+    ? tienDien.toLocaleString("en-US")
+    : "0";
+
+  tienNuocDisplay.value = tienNuoc
+    ? tienNuoc.toLocaleString("en-US")
+    : "0";
+
+  tienDichVuKhacDisplay.value = tienDichVuKhac
+    ? tienDichVuKhac.toLocaleString("en-US")
+    : "0";
+
   currentTab.value = "hoaDon";
+}
+
+function updateHoaDonTienPhong() {
+  const hopDongId = hoaDonForm.value.hopDongId;
+
+  if (!hopDongId) {
+    hoaDonForm.value.tienPhong = 0;
+    calculateHoaDonTongTien();
+    return;
+  }
+
+  const hopDong = hopDongs.value.find((item) => item.id === hopDongId);
+
+  hoaDonForm.value.tienPhong = Number(hopDong?.tienThue ?? 0);
+
+  calculateHoaDonTongTien();
+}
+
+function calculateHoaDonTongTien() {
+  const tienPhong = Number(hoaDonForm.value.tienPhong || 0);
+
+  const tienDien = Number(hoaDonForm.value.tienDien || 0);
+
+  const tienNuoc = Number(hoaDonForm.value.tienNuoc || 0);
+
+  const tienDichVuKhac = Number(hoaDonForm.value.tienDichVuKhac || 0);
+
+  hoaDonForm.value.tongTien = tienPhong + tienDien + tienNuoc + tienDichVuKhac;
 }
 
 function formatCurrency(value: number | string | undefined) {
@@ -1435,14 +1557,26 @@ function handleNhaTroChangeForGiuong() {
   giuongForm.value.giuongSo = "";
 }
 
-function normalizeCodePart(value: string) {
-  return (value ?? "")
-    .toString()
-    .trim()
-    .replace(/\s+/g, "_")
-    .replace(/[^a-zA-Z0-9_]/g, "")
-    .replace(/_+/g, "_")
-    .replace(/^_|_$/g, "");
+function handleHoaDonHopDongChange() {
+  const hopDongId = hoaDonForm.value.hopDongId;
+
+  if (!hopDongId) {
+    hoaDonForm.value.tienPhong = 0;
+    calculateHoaDonTongTien();
+    return;
+  }
+
+  const hopDong = hopDongs.value.find((item: any) => item.id === hopDongId);
+
+  if (!hopDong) {
+    hoaDonForm.value.tienPhong = 0;
+    calculateHoaDonTongTien();
+    return;
+  }
+
+  hoaDonForm.value.tienPhong = Number(hopDong.tienThue ?? 0);
+
+  calculateHoaDonTongTien();
 }
 
 function generateHopDongCode(giuongId: string) {
@@ -2600,7 +2734,10 @@ onMounted(() => {
 
               <select
                 v-model="hoaDonForm.hopDongId"
-                @change="syncHoaDonCode"
+                @change="
+                  updateHoaDonTienPhong();
+                  syncHoaDonCode();
+                "
                 required
               >
                 <option value="">Chọn hợp đồng</option>
@@ -2627,15 +2764,82 @@ onMounted(() => {
             </label>
 
             <label>
+              {{ requiredLabel("Tiền phòng") }}
+
+              <div class="currency-input">
+                <input
+                  :value="formatCurrency(hoaDonForm.tienPhong)"
+                  type="text"
+                  readonly
+                />
+
+                <span>VND</span>
+              </div>
+            </label>
+
+            <label>
+              {{ requiredLabel("Tiền điện") }}
+
+              <div class="currency-input">
+                <input
+                  :value="tienDienDisplay"
+                  type="text"
+                  inputmode="numeric"
+                  placeholder="0"
+                  @input="handleTienDienInput"
+                  required
+                />
+
+                <span>VND</span>
+              </div>
+            </label>
+
+            <label>
+              {{ requiredLabel("Tiền nước") }}
+
+              <div class="currency-input">
+                <input
+                  :value="tienNuocDisplay"
+                  type="text"
+                  inputmode="numeric"
+                  placeholder="0"
+                  @input="handleTienNuocInput"
+                  required
+                />
+
+                <span>VND</span>
+              </div>
+            </label>
+
+            <label>
+              {{ requiredLabel("Tiền dịch vụ khác") }}
+
+              <div class="currency-input">
+                <input
+                  :value="tienDichVuKhacDisplay"
+                  type="text"
+                  inputmode="numeric"
+                  placeholder="0"
+                  @input="handleTienDichVuKhacInput"
+                  required
+                />
+
+                <span>VND</span>
+              </div>
+            </label>
+
+            <label>
               {{ requiredLabel("Tổng tiền") }}
 
-              <input
-                v-model.number="hoaDonForm.tongTien"
-                type="number"
-                min="0"
-                placeholder="Tổng tiền"
-                required
-              />
+              <div class="currency-input">
+                <input
+                  :value="formatCurrency(hoaDonForm.tongTien)"
+                  type="text"
+                  readonly
+                />
+
+                <span>VND</span>
+              </div>
             </label>
 
             <label>
@@ -2750,129 +2954,115 @@ onMounted(() => {
     <!-- =====================================================
      MODAL XÓA NHÀ TRỌ
      ===================================================== -->
-<div
-  v-if="showDeleteNhaTroModal"
-  class="modal-overlay"
-  @click.self="closeDeleteNhaTroModal"
->
-  <div class="delete-modal">
-    <div class="delete-modal-header">
-      <div class="warning-icon">⚠</div>
+    <div
+      v-if="showDeleteNhaTroModal"
+      class="modal-overlay"
+      @click.self="closeDeleteNhaTroModal"
+    >
+      <div class="delete-modal">
+        <div class="delete-modal-header">
+          <div class="warning-icon">⚠</div>
 
-      <div>
-        <h3>Xác nhận xóa nhà trọ</h3>
+          <div>
+            <h3>Xác nhận xóa nhà trọ</h3>
 
-        <p>
-          {{ deleteNhaTroInfo.tenNhaTro }}
-        </p>
-      </div>
-    </div>
-
-    <div class="delete-modal-body">
-      <!-- Nhà trọ đang có dữ liệu liên quan -->
-      <template
-        v-if="
-          deleteNhaTroInfo.soPhong > 0 ||
-          deleteNhaTroInfo.soGiuong > 0 ||
-          deleteNhaTroInfo.soHopDong > 0 ||
-          deleteNhaTroInfo.soHoaDon > 0
-        "
-      >
-        <p class="warning-message">
-          <strong>Không thể xóa nhà trọ này!</strong>
-        </p>
-
-        <p>
-          Nhà trọ
-          <strong>{{ deleteNhaTroInfo.tenNhaTro }}</strong>
-          đang có dữ liệu liên quan.
-        </p>
-
-        <div class="related-data">
-          <div
-            v-if="deleteNhaTroInfo.soPhong > 0"
-            class="related-item"
-          >
-            <span>Phòng</span>
-            <strong>{{ deleteNhaTroInfo.soPhong }}</strong>
-          </div>
-
-          <div
-            v-if="deleteNhaTroInfo.soGiuong > 0"
-            class="related-item"
-          >
-            <span>Giường</span>
-            <strong>{{ deleteNhaTroInfo.soGiuong }}</strong>
-          </div>
-
-          <div
-            v-if="deleteNhaTroInfo.soHopDong > 0"
-            class="related-item"
-          >
-            <span>Hợp đồng</span>
-            <strong>{{ deleteNhaTroInfo.soHopDong }}</strong>
-          </div>
-
-          <div
-            v-if="deleteNhaTroInfo.soHoaDon > 0"
-            class="related-item"
-          >
-            <span>Hóa đơn</span>
-            <strong>{{ deleteNhaTroInfo.soHoaDon }}</strong>
+            <p>
+              {{ deleteNhaTroInfo.tenNhaTro }}
+            </p>
           </div>
         </div>
 
-        <p class="delete-modal-note">
-          Hãy xóa hoặc xử lý các dữ liệu liên quan trước khi xóa nhà trọ.
-        </p>
-      </template>
+        <div class="delete-modal-body">
+          <!-- Nhà trọ đang có dữ liệu liên quan -->
+          <template
+            v-if="
+              deleteNhaTroInfo.soPhong > 0 ||
+              deleteNhaTroInfo.soGiuong > 0 ||
+              deleteNhaTroInfo.soHopDong > 0 ||
+              deleteNhaTroInfo.soHoaDon > 0
+            "
+          >
+            <p class="warning-message">
+              <strong>Không thể xóa nhà trọ này!</strong>
+            </p>
 
-      <!-- Nhà trọ không có dữ liệu liên quan -->
-      <template v-else>
-        <p class="confirm-message">
-          Bạn có chắc chắn muốn xóa nhà trọ
-          <strong>
-            {{ deleteNhaTroInfo.tenNhaTro }}
-          </strong>
-          không?
-        </p>
+            <p>
+              Nhà trọ
+              <strong>{{ deleteNhaTroInfo.tenNhaTro }}</strong>
+              đang có dữ liệu liên quan.
+            </p>
 
-        <p class="delete-modal-note">
-          Thao tác này không thể hoàn tác.
-        </p>
-      </template>
+            <div class="related-data">
+              <div v-if="deleteNhaTroInfo.soPhong > 0" class="related-item">
+                <span>Phòng</span>
+                <strong>{{ deleteNhaTroInfo.soPhong }}</strong>
+              </div>
 
-      <p v-if="deleteErrorMessage" class="error-message">
-        {{ deleteErrorMessage }}
-      </p>
+              <div v-if="deleteNhaTroInfo.soGiuong > 0" class="related-item">
+                <span>Giường</span>
+                <strong>{{ deleteNhaTroInfo.soGiuong }}</strong>
+              </div>
+
+              <div v-if="deleteNhaTroInfo.soHopDong > 0" class="related-item">
+                <span>Hợp đồng</span>
+                <strong>{{ deleteNhaTroInfo.soHopDong }}</strong>
+              </div>
+
+              <div v-if="deleteNhaTroInfo.soHoaDon > 0" class="related-item">
+                <span>Hóa đơn</span>
+                <strong>{{ deleteNhaTroInfo.soHoaDon }}</strong>
+              </div>
+            </div>
+
+            <p class="delete-modal-note">
+              Hãy xóa hoặc xử lý các dữ liệu liên quan trước khi xóa nhà trọ.
+            </p>
+          </template>
+
+          <!-- Nhà trọ không có dữ liệu liên quan -->
+          <template v-else>
+            <p class="confirm-message">
+              Bạn có chắc chắn muốn xóa nhà trọ
+              <strong>
+                {{ deleteNhaTroInfo.tenNhaTro }}
+              </strong>
+              không?
+            </p>
+
+            <p class="delete-modal-note">Thao tác này không thể hoàn tác.</p>
+          </template>
+
+          <p v-if="deleteErrorMessage" class="error-message">
+            {{ deleteErrorMessage }}
+          </p>
+        </div>
+
+        <!-- CHỈ CÓ 1 KHỐI BUTTON -->
+        <div class="delete-modal-actions">
+          <button
+            class="secondary"
+            type="button"
+            @click="closeDeleteNhaTroModal"
+          >
+            Đóng
+          </button>
+
+          <button
+            v-if="
+              deleteNhaTroInfo.soPhong === 0 &&
+              deleteNhaTroInfo.soGiuong === 0 &&
+              deleteNhaTroInfo.soHopDong === 0 &&
+              deleteNhaTroInfo.soHoaDon === 0
+            "
+            class="danger-button"
+            type="button"
+            @click="confirmDeleteNhaTro"
+          >
+            Xác nhận xóa
+          </button>
+        </div>
+      </div>
     </div>
-
-    <!-- CHỈ CÓ 1 KHỐI BUTTON -->
-    <div class="delete-modal-actions">
-      <button
-        class="secondary"
-        type="button"
-        @click="closeDeleteNhaTroModal"
-      >
-        Đóng
-      </button>
-
-      <button
-        v-if="
-          deleteNhaTroInfo.soPhong === 0 &&
-          deleteNhaTroInfo.soGiuong === 0 &&
-          deleteNhaTroInfo.soHopDong === 0 &&
-          deleteNhaTroInfo.soHoaDon === 0
-        "
-        class="danger-button"
-        type="button"
-        @click="confirmDeleteNhaTro"
-      >
-        Xác nhận xóa
-      </button>
-    </div>
-  </div>
-</div>
 
     <!-- =====================================================
          MODAL XÓA PHÒNG
