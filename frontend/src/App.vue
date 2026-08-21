@@ -1,11 +1,19 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
-import api from './services/api'
-import { getImageUrl } from './utils/image';
-const cccdMatTruocPreviewUrl = ref('')
-const cccdMatSauPreviewUrl = ref('')
-const tabs = ['dashboard', 'nhaTro', 'phong', 'giuong', 'nguoiThue', 'hopDong', 'hoaDon']
-const currentTab = ref('dashboard')
+import { computed, onMounted, ref } from "vue";
+import api from "./services/api";
+import { getImageUrl } from "./utils/image";
+const cccdMatTruocPreviewUrl = ref("");
+const cccdMatSauPreviewUrl = ref("");
+const tabs = [
+  "dashboard",
+  "nhaTro",
+  "phong",
+  "giuong",
+  "nguoiThue",
+  "hopDong",
+  "hoaDon",
+];
+const currentTab = ref("dashboard");
 
 const summary = ref({
   totalNhaTro: 0,
@@ -13,269 +21,324 @@ const summary = ref({
   totalGiuong: 0,
   totalHopDong: 0,
   totalHoaDon: 0,
-})
+});
 
-const nhatroImg = ref('/images/nhatro.svg')
+const nhatroImg = ref("/images/nhatro.svg");
 
-const fallbackSvg = `<svg xmlns='http://www.w3.org/2000/svg' width='80' height='60' viewBox='0 0 80 60'><rect width='100%' height='100%' fill='%23e6f2ff'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' font-family='Arial, Helvetica, sans-serif' font-size='12' fill='%230f172a'>Nha tro</text></svg>`
-const fallbackUri = 'data:image/svg+xml;utf8,' + encodeURIComponent(fallbackSvg)
+const fallbackSvg = `<svg xmlns='http://www.w3.org/2000/svg' width='80' height='60' viewBox='0 0 80 60'><rect width='100%' height='100%' fill='%23e6f2ff'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' font-family='Arial, Helvetica, sans-serif' font-size='12' fill='%230f172a'>Nha tro</text></svg>`;
+const fallbackUri =
+  "data:image/svg+xml;utf8," + encodeURIComponent(fallbackSvg);
 
 function onImageError() {
-  nhatroImg.value = fallbackUri
+  nhatroImg.value = fallbackUri;
 }
 
 function onImgError(event: Event) {
-  const el = event.target as HTMLImageElement
+  const el = event.target as HTMLImageElement;
   if (el && !el.dataset.fallbackApplied) {
-    el.dataset.fallbackApplied = '1'
-    el.src = fallbackUri
+    el.dataset.fallbackApplied = "1";
+    el.src = fallbackUri;
   }
 }
 
 function validateNgayHopDong() {
-  const ngayBatDau =
-    hopDongForm.value.ngayBatDau
+  const ngayBatDau = hopDongForm.value.ngayBatDau;
 
-  const ngayKetThuc =
-    hopDongForm.value.ngayKetThuc
+  const ngayKetThuc = hopDongForm.value.ngayKetThuc;
 
   // Chưa nhập ngày bắt đầu
   if (!ngayBatDau) {
-    return true
+    return true;
   }
 
   // Ngày kết thúc chưa nhập
   if (!ngayKetThuc) {
-    return true
+    return true;
   }
 
-  const startDate = new Date(
-    `${ngayBatDau}T00:00:00`
-  )
+  const startDate = new Date(`${ngayBatDau}T00:00:00`);
 
-  const endDate = new Date(
-    `${ngayKetThuc}T00:00:00`
-  )
+  const endDate = new Date(`${ngayKetThuc}T00:00:00`);
 
   if (startDate >= endDate) {
-    alert(
-      'Ngày bắt đầu phải nhỏ hơn ngày kết thúc.'
-    )
+    alert("Ngày bắt đầu phải nhỏ hơn ngày kết thúc.");
 
-    hopDongForm.value.ngayKetThuc = ''
+    hopDongForm.value.ngayKetThuc = "";
 
-    return false
+    return false;
   }
 
-  return true
+  return true;
 }
 
-const nhaTros = ref<any[]>([])
-const phongs = ref<any[]>([])
-const giuongs = ref<any[]>([])
-const nguoiThues = ref<any[]>([])
-const hopDongs = ref<any[]>([])
-const hoaDons = ref<any[]>([])
+const nhaTros = ref<any[]>([]);
+const phongs = ref<any[]>([]);
+const giuongs = ref<any[]>([]);
+const nguoiThues = ref<any[]>([]);
+const hopDongs = ref<any[]>([]);
+const hoaDons = ref<any[]>([]);
 
 const nhaTroForm = ref({
-  maNhaTro: '',
-  tenNhaTro: '',
-  diaChi: '',
+  maNhaTro: "",
+  tenNhaTro: "",
+  diaChi: "",
   soTang: 1,
-  moTa: '',
-})
+  moTa: "",
+});
 
 const phongForm = ref({
-  maPhong: '',
-  tangSo: '',
+  maPhong: "",
+  tangSo: "",
   soGiuongToiDa: 8,
-  loaiPhong: 'phong_tieu_chuan',
+  loaiPhong: "phong_tieu_chuan",
   dienTich: 25,
-  nhaTroId: '',
-})
+  nhaTroId: "",
+});
 
 const tangSoOptions = computed(() => {
   if (!phongForm.value.nhaTroId) {
-    return []
+    return [];
   }
 
   const nhaTro = nhaTros.value.find(
-    item => item.id === phongForm.value.nhaTroId
-  )
+    (item) => item.id === phongForm.value.nhaTroId,
+  );
 
   if (!nhaTro) {
-    return []
+    return [];
   }
 
-  const soTang = Number(nhaTro.soTang ?? 0)
+  const soTang = Number(nhaTro.soTang ?? 0);
 
   if (soTang <= 0) {
-    return []
+    return [];
   }
 
   // Các tầng đã được sử dụng bởi phòng khác
   const usedFloors = phongs.value
-    .filter(item => {
+    .filter((item) => {
       if (item.nhaTro?.id !== phongForm.value.nhaTroId) {
-        return false
+        return false;
       }
 
       // Khi sửa phòng thì không loại tầng hiện tại của chính phòng đó
       if (item.id === editingPhongId.value) {
-        return false
+        return false;
       }
 
-      return true
+      return true;
     })
-    .map(item => {
+    .map((item) => {
       // Ưu tiên tangSo nếu backend đã lưu
-      if (
-        item.tangSo !== undefined &&
-        item.tangSo !== null
-      ) {
-        return Number(item.tangSo)
+      if (item.tangSo !== undefined && item.tangSo !== null) {
+        return Number(item.tangSo);
       }
 
       // Hỗ trợ dữ liệu cũ: lấy từ CG_T1, CG_T2...
-      const match = String(item.maPhong ?? '')
-        .match(/_T(\d+)$/)
+      const match = String(item.maPhong ?? "").match(/_T(\d+)$/);
 
-      return match ? Number(match[1]) : null
+      return match ? Number(match[1]) : null;
     })
     .filter(
-      (floor): floor is number =>
-        floor !== null && Number.isInteger(floor)
-    )
+      (floor): floor is number => floor !== null && Number.isInteger(floor),
+    );
 
-  return Array.from(
-    { length: soTang },
-    (_, index) => index + 1
-  ).filter(
-    floor => !usedFloors.includes(floor)
-  )
-})
+  return Array.from({ length: soTang }, (_, index) => index + 1).filter(
+    (floor) => !usedFloors.includes(floor),
+  );
+});
 
 const giuongForm = ref({
-  nhaTroId: '',
-  phongId: '',
-  giuongSo: '',
+  nhaTroId: "",
+  phongId: "",
+  giuongSo: "",
   giaGiuong: 0,
-  trangThai: 'trong',
-})
+  trangThai: "trong",
+});
 
 const nguoiThueForm = ref({
-  hoTen: '',
-  cccd: '',
-  sdt: '',
-  email: '',
-  diaChi: '',
-  ngaySinh: '',
-  bienSoXe: '',
+  hoTen: "",
+  cccd: "",
+  sdt: "",
+  email: "",
+  diaChi: "",
+  ngaySinh: "",
+  bienSoXe: "",
   cccdMatTruoc: null as File | null,
   cccdMatSau: null as File | null,
-  cccdMatTruocUrl: '',
-  cccdMatSauUrl: '',
-})
+  cccdMatTruocUrl: "",
+  cccdMatSauUrl: "",
+});
 
 const hopDongForm = ref({
-  maHopDong: '',
-  nhaTroId: '',
-  ngayBatDau: '',
-  ngayKetThuc: '',
+  maHopDong: "",
+  nhaTroId: "",
+  phongId: "",
+  ngayBatDau: "",
+  ngayKetThuc: "",
   tienThue: 0,
   chuKyThanhToan: 1,
   tienDatCoc: 0,
-  ghiChu: '',
-  giuongId: '',
-  nguoiThueId: '',
-  trangThai: 'active',
-})
+  ghiChu: "",
+  giuongId: "",
+  nguoiThueId: "",
+  trangThai: "active",
+});
 
 const hoaDonForm = ref({
-  maHoaDon: '',
-  thangThanhToan: '',
+  maHoaDon: "",
+  thangThanhToan: "",
   tongTien: 0,
-  trangThai: 'chua_thanh_toan',
-  hopDongId: '',
-})
+  trangThai: "chua_thanh_toan",
+  ghiChu: "",
+  hopDongId: "",
+});
 
 const hopDongGiuongOptions = computed(() => {
-  const nhaTroId = hopDongForm.value.nhaTroId
-
+  const nhaTroId = hopDongForm.value.nhaTroId;
+  const phongId = hopDongForm.value.phongId;
   // Chưa chọn nhà trọ
   if (!nhaTroId) {
-    return []
+    return [];
   }
 
   // Lấy ID các giường đã được sử dụng trong hợp đồng
   const usedGiuongIds = hopDongs.value
-    .filter(item => {
+    .filter((item) => {
       // Khi sửa hợp đồng, cho phép giữ lại chính giường hiện tại
       if (item.id === editingHopDongId.value) {
-        return false
+        return false;
       }
 
-      return !!item.giuong?.id
+      return !!item.giuong?.id;
     })
-    .map(item => item.giuong.id)
+    .map((item) => item.giuong.id);
 
   // Chỉ lấy giường:
   // 1. Thuộc nhà trọ đang chọn
   // 2. Chưa được sử dụng trong hợp đồng khác
-  return giuongs.value.filter(item => {
-    const itemNhaTroId =
-      item.phong?.nhaTro?.id
+  return giuongs.value.filter((item) => {
+    const itemNhaTroId = item.phong?.nhaTro?.id;
+    const itemPhongId = item.phong?.id;
 
     if (itemNhaTroId !== nhaTroId) {
-      return false
+      return false;
+    }
+
+    if (phongId && itemPhongId !== phongId) {
+      return false;
     }
 
     if (usedGiuongIds.includes(item.id)) {
-      return false
+      return false;
     }
 
-    return true
-  })
-})
+    return true;
+  });
+});
 
+const hopDongPhongOptions = computed(() => {
+  const nhaTroId = hopDongForm.value.nhaTroId;
+
+  if (!nhaTroId) {
+    return [];
+  }
+
+  return phongs.value.filter((item) => item.nhaTro?.id === nhaTroId);
+});
 function handleNhaTroChangeForHopDong() {
   // Mỗi khi đổi nhà trọ phải xóa giường đang chọn
-  hopDongForm.value.giuongId = ''
-
+  hopDongForm.value.giuongId = "";
+  hopDongForm.value.giuongId = "";
   // Xóa mã hợp đồng cũ vì mã hợp đồng phụ thuộc vào giường
-  hopDongForm.value.maHopDong = ''
+  hopDongForm.value.maHopDong = "";
 }
 
-const editingNhaTroId = ref<string | null>(null)
-const editingPhongId = ref<string | null>(null)
-const editingGiuongId = ref<string | null>(null)
-const editingNguoiThueId = ref<string | null>(null)
-const cccdMatTruocInput = ref<HTMLInputElement | null>(null)
-const cccdMatSauInput = ref<HTMLInputElement | null>(null)
-const giaGiuongDisplay = ref('')
-const tienThueDisplay = ref('')
-const tienDatCocDisplay = ref('')
-const editingHopDongId = ref<string | null>(null)
-const editingHoaDonId = ref<string | null>(null)
-const showDeleteHopDongModal = ref(false)
+function handlePhongChangeForHopDong() {
+  // Đổi phòng -> reset giường
+  hopDongForm.value.giuongId = "";
+
+  // Mã hợp đồng phụ thuộc vào giường
+  hopDongForm.value.maHopDong = "";
+}
+
+const editingNhaTroId = ref<string | null>(null);
+const editingPhongId = ref<string | null>(null);
+const editingGiuongId = ref<string | null>(null);
+const editingNguoiThueId = ref<string | null>(null);
+const cccdMatTruocInput = ref<HTMLInputElement | null>(null);
+const cccdMatSauInput = ref<HTMLInputElement | null>(null);
+const giaGiuongDisplay = ref("");
+const tienThueDisplay = ref("");
+const tienDatCocDisplay = ref("");
+const editingHopDongId = ref<string | null>(null);
+const editingHoaDonId = ref<string | null>(null);
+const showDeleteHoaDonModal = ref(false);
+
+const deleteHoaDonInfo = ref({
+  id: "",
+  maHoaDon: "",
+});
+
+const deleteHoaDonErrorMessage = ref("");
 
 const deleteHopDongInfo = ref({
-  id: '',
-  maHopDong: '',
-})
+  id: "",
+  maHopDong: "",
+});
 
-const deleteHopDongErrorMessage = ref('')
+function requestDeleteHoaDon(item: any) {
+  deleteHoaDonInfo.value = {
+    id: item.id,
+    maHoaDon: item.maHoaDon ?? "Hóa đơn",
+  };
+
+  deleteHoaDonErrorMessage.value = "";
+  showDeleteHoaDonModal.value = true;
+}
+
+function closeDeleteHoaDonModal() {
+  showDeleteHoaDonModal.value = false;
+  deleteHoaDonErrorMessage.value = "";
+}
+
+async function confirmDeleteHoaDon() {
+  const id = deleteHoaDonInfo.value.id;
+
+  if (!id) {
+    return;
+  }
+
+  try {
+    deleteHoaDonErrorMessage.value = "";
+
+    await api.delete(`/hoa-don/${id}`);
+
+    closeDeleteHoaDonModal();
+
+    if (editingHoaDonId.value === id) {
+      resetHoaDonForm();
+    }
+
+    await loadData();
+  } catch (error: any) {
+    console.error("Không thể xóa hóa đơn:", error);
+
+    deleteHoaDonErrorMessage.value =
+      error?.response?.data?.message ??
+      "Không thể xóa hóa đơn. Vui lòng thử lại.";
+  }
+}
+
+const deleteHopDongErrorMessage = ref("");
 
 const giuongOptions = computed(() => {
   // Danh sách tối đa 8 giường
-  const allOptions = Array.from(
-    { length: 8 },
-    (_, index) => String(index + 1)
-  )
+  const allOptions = Array.from({ length: 8 }, (_, index) => String(index + 1));
 
   // Chưa chọn tầng
   if (!giuongForm.value.phongId) {
-    return allOptions
+    return allOptions;
   }
 
   // Lấy các giường đã được sử dụng trong phòng đang chọn
@@ -283,213 +346,224 @@ const giuongOptions = computed(() => {
     .filter(
       (item) =>
         item.phong?.id === giuongForm.value.phongId &&
-        item.id !== editingGiuongId.value
+        item.id !== editingGiuongId.value,
     )
-    .map((item) => String(item.giuongSo))
+    .map((item) => String(item.giuongSo));
 
   // Chỉ hiển thị những giường chưa được sử dụng
   const availableGiuongSo = allOptions.filter(
-    (so) => !existingGiuongSo.includes(so)
-  )
+    (so) => !existingGiuongSo.includes(so),
+  );
 
   // Khi sửa giường:
   // giữ lại Giường số hiện tại của bản ghi đang sửa
-  const currentGiuongSo = String(
-    giuongForm.value.giuongSo ?? ''
-  )
+  const currentGiuongSo = String(giuongForm.value.giuongSo ?? "");
 
   if (
     editingGiuongId.value &&
     currentGiuongSo &&
     !availableGiuongSo.includes(currentGiuongSo)
   ) {
-    availableGiuongSo.push(currentGiuongSo)
+    availableGiuongSo.push(currentGiuongSo);
   }
 
-  return availableGiuongSo.sort(
-    (a, b) => Number(a) - Number(b)
-  )
-})
+  return availableGiuongSo.sort((a, b) => Number(a) - Number(b));
+});
 
-const requiredLabel = (label: string) => `${label} *`
+const requiredLabel = (label: string) => `${label} *`;
 
 function getStatusText(status: string) {
   const map: Record<string, string> = {
-    trong: 'Trống',
-    da_thue: 'Đã thuê',
-    bao_tri: 'Bảo trì',
-    sap_tra_tro: 'Sắp trả trọ',
-    active: 'Có hiệu lực',
-    expired: 'Hết hiệu lực',
-    chua_thanh_toan: 'Chưa thanh toán',
-    da_thanh_toan: 'Đã thanh toán',
-  }
-  return map[status] ?? status
+    trong: "Trống",
+    da_thue: "Đã thuê",
+    bao_tri: "Bảo trì",
+    sap_tra_tro: "Sắp trả trọ",
+    active: "Có hiệu lực",
+    expired: "Hết hiệu lực",
+    chua_thanh_toan: "Chưa thanh toán",
+    da_thanh_toan: "Đã thanh toán",
+  };
+  return map[status] ?? status;
 }
 
 async function loadData() {
   try {
-    const [nhaTroResponse, phongResponse, giuongResponse, nguoiThueResponse, hopDongResponse, hoaDonResponse, dashboardResponse] =
-      await Promise.all([
-        api.get('/nha-tro'),
-        api.get('/phong'),
-        api.get('/giuong'),
-        api.get('/nguoi-thue'),
-        api.get('/hop-dong'),
-        api.get('/hoa-don'),
-        api.get('/dashboard/summary'),
-      ])
+    const [
+      nhaTroResponse,
+      phongResponse,
+      giuongResponse,
+      nguoiThueResponse,
+      hopDongResponse,
+      hoaDonResponse,
+      dashboardResponse,
+    ] = await Promise.all([
+      api.get("/nha-tro"),
+      api.get("/phong"),
+      api.get("/giuong"),
+      api.get("/nguoi-thue"),
+      api.get("/hop-dong"),
+      api.get("/hoa-don"),
+      api.get("/dashboard/summary"),
+    ]);
 
-    nhaTros.value = nhaTroResponse.data
-    phongs.value = phongResponse.data
-    giuongs.value = giuongResponse.data
-    nguoiThues.value = nguoiThueResponse.data
-    hopDongs.value = hopDongResponse.data
-    hoaDons.value = hoaDonResponse.data
-    summary.value = dashboardResponse.data
+    nhaTros.value = nhaTroResponse.data;
+    phongs.value = phongResponse.data;
+    giuongs.value = giuongResponse.data;
+    nguoiThues.value = nguoiThueResponse.data;
+    hopDongs.value = hopDongResponse.data;
+    hoaDons.value = hoaDonResponse.data;
+    summary.value = dashboardResponse.data;
   } catch (error) {
-    console.error('Không thể nạp dữ liệu:', error)
+    console.error("Không thể nạp dữ liệu:", error);
   }
 }
 
 function resetNhaTroForm() {
-  nhaTroForm.value = { maNhaTro: '',tenNhaTro: '', diaChi: '', soTang: 1, moTa: '' }
-  editingNhaTroId.value = null
+  nhaTroForm.value = {
+    maNhaTro: "",
+    tenNhaTro: "",
+    diaChi: "",
+    soTang: 1,
+    moTa: "",
+  };
+  editingNhaTroId.value = null;
 }
 
 function resetPhongForm() {
   phongForm.value = {
-    maPhong: '',
-    tangSo: '',
+    maPhong: "",
+    tangSo: "",
     soGiuongToiDa: 8,
-    loaiPhong: 'phong_tieu_chuan',
+    loaiPhong: "phong_tieu_chuan",
     dienTich: 25,
-    nhaTroId: '',
-  }
-  editingPhongId.value = null
+    nhaTroId: "",
+  };
+  editingPhongId.value = null;
 }
 
 function handleNhaTroChange() {
-  phongForm.value.tangSo = ''
-  phongForm.value.maPhong = ''
+  phongForm.value.tangSo = "";
+  phongForm.value.maPhong = "";
 }
 
 function resetGiuongForm() {
   giuongForm.value = {
-    nhaTroId: '',
-    phongId: '',
-    giuongSo: '',
+    nhaTroId: "",
+    phongId: "",
+    giuongSo: "",
     giaGiuong: 0,
-    trangThai: 'trong',
-  }
+    trangThai: "trong",
+  };
 
-  giaGiuongDisplay.value = ''
+  giaGiuongDisplay.value = "";
 
-  editingGiuongId.value = null
+  editingGiuongId.value = null;
 }
 
 function handleGiaGiuongInput(event: Event) {
-  const input = event.target as HTMLInputElement
+  const input = event.target as HTMLInputElement;
 
-  const rawValue = input.value.replace(/\D/g, '')
+  const rawValue = input.value.replace(/\D/g, "");
 
-  giuongForm.value.giaGiuong = Number(rawValue || 0)
+  giuongForm.value.giaGiuong = Number(rawValue || 0);
 
   giaGiuongDisplay.value = rawValue
-    ? Number(rawValue).toLocaleString('en-US')
-    : ''
+    ? Number(rawValue).toLocaleString("en-US")
+    : "";
 }
 
 function handleTienDatCocInput(event: Event) {
-  const input = event.target as HTMLInputElement
+  const input = event.target as HTMLInputElement;
 
-  const rawValue = input.value.replace(/\D/g, '')
+  const rawValue = input.value.replace(/\D/g, "");
 
-  hopDongForm.value.tienDatCoc = Number(rawValue || 0)
+  hopDongForm.value.tienDatCoc = Number(rawValue || 0);
 
   tienDatCocDisplay.value = rawValue
-    ? Number(rawValue).toLocaleString('en-US')
-    : ''
+    ? Number(rawValue).toLocaleString("en-US")
+    : "";
 }
 
 function resetNguoiThueForm() {
   nguoiThueForm.value = {
-    hoTen: '',
-    cccd: '',
-    sdt: '',
-    email: '',
-    diaChi: '',
-    ngaySinh: '',
-    bienSoXe: '',
+    hoTen: "",
+    cccd: "",
+    sdt: "",
+    email: "",
+    diaChi: "",
+    ngaySinh: "",
+    bienSoXe: "",
     cccdMatTruoc: null,
     cccdMatSau: null,
 
-    cccdMatTruocUrl: '',
-    cccdMatSauUrl: '',
-  }
+    cccdMatTruocUrl: "",
+    cccdMatSauUrl: "",
+  };
 
-  editingNguoiThueId.value = null
+  editingNguoiThueId.value = null;
 
   if (cccdMatTruocInput.value) {
-    cccdMatTruocInput.value.value = ''
+    cccdMatTruocInput.value.value = "";
   }
 
   if (cccdMatSauInput.value) {
-    cccdMatSauInput.value.value = ''
+    cccdMatSauInput.value.value = "";
   }
 
   if (cccdMatTruocPreviewUrl.value) {
-  URL.revokeObjectURL(cccdMatTruocPreviewUrl.value)
-  cccdMatTruocPreviewUrl.value = ''
-}
+    URL.revokeObjectURL(cccdMatTruocPreviewUrl.value);
+    cccdMatTruocPreviewUrl.value = "";
+  }
 
-if (cccdMatSauPreviewUrl.value) {
-  URL.revokeObjectURL(cccdMatSauPreviewUrl.value)
-  cccdMatSauPreviewUrl.value = ''
-}
+  if (cccdMatSauPreviewUrl.value) {
+    URL.revokeObjectURL(cccdMatSauPreviewUrl.value);
+    cccdMatSauPreviewUrl.value = "";
+  }
 }
 
 function resetHopDongForm() {
   hopDongForm.value = {
-    maHopDong: '',
-    nhaTroId: '',
-    ngayBatDau: '',
-    ngayKetThuc: '',
+    maHopDong: "",
+    nhaTroId: "",
+    phongId: "",
+    ngayBatDau: "",
+    ngayKetThuc: "",
     tienThue: 0,
     chuKyThanhToan: 1,
     tienDatCoc: 0,
-    ghiChu: '',
-    giuongId: '',
-    nguoiThueId: '',
-    trangThai: 'active',
-  }
+    ghiChu: "",
+    giuongId: "",
+    nguoiThueId: "",
+    trangThai: "active",
+  };
 
-  tienThueDisplay.value = ''
-  tienDatCocDisplay.value = ''
+  tienThueDisplay.value = "";
+  tienDatCocDisplay.value = "";
 
-  editingHopDongId.value = null
+  editingHopDongId.value = null;
 }
 
 function resetHoaDonForm() {
   hoaDonForm.value = {
-    maHoaDon: '',
-    thangThanhToan: '',
+    maHoaDon: "",
+    thangThanhToan: "",
     tongTien: 0,
-    trangThai: 'chua_thanh_toan',
-    hopDongId: '',
-  }
-  editingHoaDonId.value = null
+    trangThai: "chua_thanh_toan",
+    ghiChu: "",
+    hopDongId: "",
+  };
+  editingHoaDonId.value = null;
 }
 
 async function saveNhaTro() {
-  const payload = { ...nhaTroForm.value }
+  const payload = { ...nhaTroForm.value };
   if (editingNhaTroId.value) {
-    await api.patch(`/nha-tro/${editingNhaTroId.value}`, payload)
+    await api.patch(`/nha-tro/${editingNhaTroId.value}`, payload);
   } else {
-    await api.post('/nha-tro', payload)
+    await api.post("/nha-tro", payload);
   }
-  resetNhaTroForm()
-  await loadData()
+  resetNhaTroForm();
+  await loadData();
 }
 
 async function savePhong() {
@@ -501,387 +575,340 @@ async function savePhong() {
     nhaTro: {
       id: phongForm.value.nhaTroId,
     },
-  }
+  };
 
   try {
     if (editingPhongId.value) {
-      await api.patch(
-        `/phong/${editingPhongId.value}`,
-        payload,
-      )
+      await api.patch(`/phong/${editingPhongId.value}`, payload);
     } else {
-      await api.post('/phong', payload)
+      await api.post("/phong", payload);
     }
 
-    resetPhongForm()
-    await loadData()
+    resetPhongForm();
+    await loadData();
   } catch (error: any) {
-    console.error('Không thể lưu phòng:', error)
+    console.error("Không thể lưu phòng:", error);
 
     alert(
       error?.response?.data?.message ??
-      'Không thể lưu phòng. Vui lòng thử lại.',
-    )
+        "Không thể lưu phòng. Vui lòng thử lại.",
+    );
   }
 }
 
 function requestDeletePhong(item: any) {
   deletePhongInfo.value = {
     id: item.id,
-    maPhong: item.maPhong ?? 'Phòng',
-    tenNhaTro: item.nhaTro?.tenNhaTro ?? '',
-    soGiuong: Array.isArray(item.giuongs)
-      ? item.giuongs.length
-      : 0,
-  }
+    maPhong: item.maPhong ?? "Phòng",
+    tenNhaTro: item.nhaTro?.tenNhaTro ?? "",
+    soGiuong: Array.isArray(item.giuongs) ? item.giuongs.length : 0,
+  };
 
-  deletePhongErrorMessage.value = ''
-  showDeletePhongModal.value = true
+  deletePhongErrorMessage.value = "";
+  showDeletePhongModal.value = true;
 }
 
 function closeDeletePhongModal() {
-  showDeletePhongModal.value = false
-  deletePhongErrorMessage.value = ''
+  showDeletePhongModal.value = false;
+  deletePhongErrorMessage.value = "";
 }
 
 function requestDeleteNguoiThue(item: any) {
   deleteNguoiThueInfo.value = {
     id: item.id,
-    hoTen: item.hoTen ?? 'Người thuê',
-    cccd: item.cccd ?? '',
-  }
+    hoTen: item.hoTen ?? "Người thuê",
+    cccd: item.cccd ?? "",
+  };
 
-  deleteNguoiThueErrorMessage.value = ''
+  deleteNguoiThueErrorMessage.value = "";
 
-  showDeleteNguoiThueModal.value = true
+  showDeleteNguoiThueModal.value = true;
 }
 
 function closeDeleteNguoiThueModal() {
-  showDeleteNguoiThueModal.value = false
-  deleteNguoiThueErrorMessage.value = ''
+  showDeleteNguoiThueModal.value = false;
+  deleteNguoiThueErrorMessage.value = "";
 }
 
 async function confirmDeletePhong() {
-  const id = deletePhongInfo.value.id
+  const id = deletePhongInfo.value.id;
 
   if (!id) {
-    return
+    return;
   }
 
   try {
-    deletePhongErrorMessage.value = ''
+    deletePhongErrorMessage.value = "";
 
-    await api.delete(`/phong/${id}`)
+    await api.delete(`/phong/${id}`);
 
-    closeDeletePhongModal()
+    closeDeletePhongModal();
 
     if (editingPhongId.value === id) {
-      resetPhongForm()
+      resetPhongForm();
     }
 
-    await loadData()
+    await loadData();
   } catch (error: any) {
-    console.error('Không thể xóa phòng:', error)
+    console.error("Không thể xóa phòng:", error);
 
     deletePhongErrorMessage.value =
       error?.response?.data?.message ??
-      'Không thể xóa phòng. Vui lòng thử lại.'
+      "Không thể xóa phòng. Vui lòng thử lại.";
   }
 }
 
 async function confirmDeleteNguoiThue() {
-  const id = deleteNguoiThueInfo.value.id
+  const id = deleteNguoiThueInfo.value.id;
 
   if (!id) {
-    return
+    return;
   }
 
   try {
-    deleteNguoiThueErrorMessage.value = ''
+    deleteNguoiThueErrorMessage.value = "";
 
-    await api.delete(`/nguoi-thue/${id}`)
+    await api.delete(`/nguoi-thue/${id}`);
 
-    closeDeleteNguoiThueModal()
+    closeDeleteNguoiThueModal();
 
     if (editingNguoiThueId.value === id) {
-      resetNguoiThueForm()
+      resetNguoiThueForm();
     }
 
-    await loadData()
+    await loadData();
   } catch (error: any) {
-    console.error('Không thể xóa người thuê:', error)
+    console.error("Không thể xóa người thuê:", error);
 
     deleteNguoiThueErrorMessage.value =
       error?.response?.data?.message ??
-      'Không thể xóa người thuê. Vui lòng thử lại.'
+      "Không thể xóa người thuê. Vui lòng thử lại.";
   }
 }
 
 function requestDeleteHopDong(item: any) {
   deleteHopDongInfo.value = {
     id: item.id,
-    maHopDong: item.maHopDong ?? 'Hợp đồng',
-  }
+    maHopDong: item.maHopDong ?? "Hợp đồng",
+  };
 
-  deleteHopDongErrorMessage.value = ''
-  showDeleteHopDongModal.value = true
+  deleteHopDongErrorMessage.value = "";
+  showDeleteHopDongModal.value = true;
 }
 
 function closeDeleteHopDongModal() {
-  showDeleteHopDongModal.value = false
-  deleteHopDongErrorMessage.value = ''
+  showDeleteHopDongModal.value = false;
+  deleteHopDongErrorMessage.value = "";
 }
 
 async function confirmDeleteHopDong() {
-  const id = deleteHopDongInfo.value.id
+  const id = deleteHopDongInfo.value.id;
 
   if (!id) {
-    return
+    return;
   }
 
   try {
-    deleteHopDongErrorMessage.value = ''
+    deleteHopDongErrorMessage.value = "";
 
-    await api.delete(`/hop-dong/${id}`)
+    await api.delete(`/hop-dong/${id}`);
 
-    closeDeleteHopDongModal()
+    closeDeleteHopDongModal();
 
     if (editingHopDongId.value === id) {
-      resetHopDongForm()
+      resetHopDongForm();
     }
 
-    await loadData()
+    await loadData();
   } catch (error: any) {
-    console.error('Không thể xóa hợp đồng:', error)
+    console.error("Không thể xóa hợp đồng:", error);
 
     deleteHopDongErrorMessage.value =
       error?.response?.data?.message ??
-      'Không thể xóa hợp đồng. Vui lòng thử lại.'
+      "Không thể xóa hợp đồng. Vui lòng thử lại.";
   }
 }
 
 async function saveGiuong() {
   const payload = {
-  giuongSo: Number(giuongForm.value.giuongSo),
-  giaGiuong: Number(giuongForm.value.giaGiuong || 0),
-  trangThai: giuongForm.value.trangThai,
-  phong: {
-    id: giuongForm.value.phongId,
-  },
-}
+    giuongSo: Number(giuongForm.value.giuongSo),
+    giaGiuong: Number(giuongForm.value.giaGiuong || 0),
+    trangThai: giuongForm.value.trangThai,
+    phong: {
+      id: giuongForm.value.phongId,
+    },
+  };
 
   try {
     if (editingGiuongId.value) {
-      await api.patch(`/giuong/${editingGiuongId.value}`, payload)
+      await api.patch(`/giuong/${editingGiuongId.value}`, payload);
     } else {
-      await api.post('/giuong', payload)
+      await api.post("/giuong", payload);
     }
 
-    resetGiuongForm()
-    await loadData()
+    resetGiuongForm();
+    await loadData();
   } catch (error: any) {
-    console.error('Không thể lưu giường:', error)
+    console.error("Không thể lưu giường:", error);
 
     alert(
       error?.response?.data?.message ??
-      'Không thể lưu giường. Vui lòng thử lại.'
-    )
+        "Không thể lưu giường. Vui lòng thử lại.",
+    );
   }
 }
 
 function requestDeleteGiuong(item: any) {
   deleteGiuongInfo.value = {
     id: item.id,
-    maGiuong: String(item.maGiuong ?? ''),
-    maPhong: item.phong?.maPhong ?? '',
-  }
+    maGiuong: String(item.maGiuong ?? ""),
+    maPhong: item.phong?.maPhong ?? "",
+  };
 
-  deleteGiuongErrorMessage.value = ''
-  showDeleteGiuongModal.value = true
+  deleteGiuongErrorMessage.value = "";
+  showDeleteGiuongModal.value = true;
 }
 
 function closeDeleteGiuongModal() {
-  showDeleteGiuongModal.value = false
-  deleteGiuongErrorMessage.value = ''
+  showDeleteGiuongModal.value = false;
+  deleteGiuongErrorMessage.value = "";
 }
 
 async function confirmDeleteGiuong() {
-  const id = deleteGiuongInfo.value.id
+  const id = deleteGiuongInfo.value.id;
 
   if (!id) {
-    return
+    return;
   }
 
   try {
-    deleteGiuongErrorMessage.value = ''
+    deleteGiuongErrorMessage.value = "";
 
-    await api.delete(`/giuong/${id}`)
+    await api.delete(`/giuong/${id}`);
 
-    closeDeleteGiuongModal()
+    closeDeleteGiuongModal();
 
     if (editingGiuongId.value === id) {
-      resetGiuongForm()
+      resetGiuongForm();
     }
 
-    await loadData()
+    await loadData();
   } catch (error: any) {
-    console.error('Không thể xóa giường:', error)
+    console.error("Không thể xóa giường:", error);
 
     deleteGiuongErrorMessage.value =
       error?.response?.data?.message ??
-      'Không thể xóa giường. Vui lòng thử lại.'
+      "Không thể xóa giường. Vui lòng thử lại.";
   }
 }
 
 function handleCccdMatTruocChange(event: Event) {
-  const target = event.target as HTMLInputElement
-  const file = target.files?.[0] ?? null
+  const target = event.target as HTMLInputElement;
+  const file = target.files?.[0] ?? null;
 
   if (cccdMatTruocPreviewUrl.value) {
-    URL.revokeObjectURL(cccdMatTruocPreviewUrl.value)
+    URL.revokeObjectURL(cccdMatTruocPreviewUrl.value);
   }
 
-  nguoiThueForm.value.cccdMatTruoc = file
+  nguoiThueForm.value.cccdMatTruoc = file;
 
   if (file) {
-    cccdMatTruocPreviewUrl.value = URL.createObjectURL(file)
+    cccdMatTruocPreviewUrl.value = URL.createObjectURL(file);
   } else {
-    cccdMatTruocPreviewUrl.value = ''
+    cccdMatTruocPreviewUrl.value = "";
   }
 }
 
 function handleCccdMatSauChange(event: Event) {
-  const target = event.target as HTMLInputElement
-  const file = target.files?.[0] ?? null
+  const target = event.target as HTMLInputElement;
+  const file = target.files?.[0] ?? null;
 
   if (cccdMatSauPreviewUrl.value) {
-    URL.revokeObjectURL(cccdMatSauPreviewUrl.value)
+    URL.revokeObjectURL(cccdMatSauPreviewUrl.value);
   }
 
-  nguoiThueForm.value.cccdMatSau = file
+  nguoiThueForm.value.cccdMatSau = file;
 
   if (file) {
-    cccdMatSauPreviewUrl.value = URL.createObjectURL(file)
+    cccdMatSauPreviewUrl.value = URL.createObjectURL(file);
   } else {
-    cccdMatSauPreviewUrl.value = ''
+    cccdMatSauPreviewUrl.value = "";
   }
 }
 
 async function saveNguoiThue() {
-  const formData = new FormData()
+  const formData = new FormData();
 
-  formData.append(
-    'hoTen',
-    nguoiThueForm.value.hoTen,
-  )
+  formData.append("hoTen", nguoiThueForm.value.hoTen);
 
-  formData.append(
-    'cccd',
-    nguoiThueForm.value.cccd,
-  )
+  formData.append("cccd", nguoiThueForm.value.cccd);
 
-  formData.append(
-    'sdt',
-    nguoiThueForm.value.sdt,
-  )
+  formData.append("sdt", nguoiThueForm.value.sdt);
 
-  formData.append(
-    'email',
-    nguoiThueForm.value.email,
-  )
+  formData.append("email", nguoiThueForm.value.email);
 
-  formData.append(
-    'diaChi',
-    nguoiThueForm.value.diaChi,
-  )
+  formData.append("diaChi", nguoiThueForm.value.diaChi);
 
-  formData.append(
-    'ngaySinh',
-    nguoiThueForm.value.ngaySinh,
-  )
+  formData.append("ngaySinh", nguoiThueForm.value.ngaySinh);
 
-  formData.append(
-    'bienSoXe',
-    nguoiThueForm.value.bienSoXe,
-  )
+  formData.append("bienSoXe", nguoiThueForm.value.bienSoXe);
 
   if (nguoiThueForm.value.cccdMatTruoc) {
-    formData.append(
-      'cccdMatTruoc',
-      nguoiThueForm.value.cccdMatTruoc,
-    )
+    formData.append("cccdMatTruoc", nguoiThueForm.value.cccdMatTruoc);
   }
 
   if (nguoiThueForm.value.cccdMatSau) {
-    formData.append(
-      'cccdMatSau',
-      nguoiThueForm.value.cccdMatSau,
-    )
+    formData.append("cccdMatSau", nguoiThueForm.value.cccdMatSau);
   }
 
   try {
     if (editingNguoiThueId.value) {
-      await api.patch(
-        `/nguoi-thue/${editingNguoiThueId.value}`,
-        formData,
-      )
+      await api.patch(`/nguoi-thue/${editingNguoiThueId.value}`, formData);
     } else {
-      await api.post(
-        '/nguoi-thue',
-        formData,
-      )
+      await api.post("/nguoi-thue", formData);
     }
 
     // Lưu thành công -> clear toàn bộ form,
     // bao gồm cả 2 input file
-    resetNguoiThueForm()
+    resetNguoiThueForm();
 
-    await loadData()
+    await loadData();
   } catch (error: any) {
-    console.error(
-      'Không thể lưu người thuê:',
-      error,
-    )
+    console.error("Không thể lưu người thuê:", error);
 
     alert(
       error?.response?.data?.message ??
-      'Không thể lưu thông tin người thuê. Vui lòng thử lại.',
-    )
+        "Không thể lưu thông tin người thuê. Vui lòng thử lại.",
+    );
   }
 }
 
 async function saveHopDong() {
   if (!hopDongForm.value.ngayBatDau) {
-  alert('Vui lòng nhập ngày bắt đầu.')
-  return
-}
+    alert("Vui lòng nhập ngày bắt đầu.");
+    return;
+  }
 
-if (!hopDongForm.value.ngayKetThuc) {
-  alert('Vui lòng nhập ngày kết thúc.')
-  return
-}
+  if (!hopDongForm.value.ngayKetThuc) {
+    alert("Vui lòng nhập ngày kết thúc.");
+    return;
+  }
 
-if (!validateNgayHopDong()) {
-  return
-}
+  if (!validateNgayHopDong()) {
+    return;
+  }
   if (!hopDongForm.value.maHopDong) {
-    syncHopDongCode()
+    syncHopDongCode();
   }
 
   const payload = {
     maHopDong: hopDongForm.value.maHopDong,
     ngayBatDau:
-      hopDongForm.value.ngayBatDau ||
-      new Date().toISOString().slice(0, 10),
-    ngayKetThuc:
-      hopDongForm.value.ngayKetThuc || null,
+      hopDongForm.value.ngayBatDau || new Date().toISOString().slice(0, 10),
+    ngayKetThuc: hopDongForm.value.ngayKetThuc || null,
     tienThue: Number(hopDongForm.value.tienThue || 0),
-    chuKyThanhToan: Number(
-      hopDongForm.value.chuKyThanhToan || 1,
-    ),
-    tienDatCoc: Number(
-      hopDongForm.value.tienDatCoc || 0,
-    ),
+    chuKyThanhToan: Number(hopDongForm.value.chuKyThanhToan || 1),
+    tienDatCoc: Number(hopDongForm.value.tienDatCoc || 0),
     ghiChu: hopDongForm.value.ghiChu || null,
     trangThai: hopDongForm.value.trangThai,
     giuong: {
@@ -890,249 +917,276 @@ if (!validateNgayHopDong()) {
     nguoiThue: {
       id: hopDongForm.value.nguoiThueId,
     },
-  }
+  };
 
   if (editingHopDongId.value) {
-    await api.patch(
-      `/hop-dong/${editingHopDongId.value}`,
-      payload,
-    )
+    await api.patch(`/hop-dong/${editingHopDongId.value}`, payload);
   } else {
-    await api.post('/hop-dong', payload)
+    await api.post("/hop-dong", payload);
   }
 
-  resetHopDongForm()
-  await loadData()
+  resetHopDongForm();
+  await loadData();
 }
 
 async function saveHoaDon() {
-  if (!hoaDonForm.value.maHoaDon) {
-    syncHoaDonCode()
-  }
+  try {
+    if (!hoaDonForm.value.hopDongId) {
+      alert("Vui lòng chọn hợp đồng.");
+      return;
+    }
 
-  const payload = {
-    ...hoaDonForm.value,
-    thangThanhToan: hoaDonForm.value.thangThanhToan || new Date().toISOString().slice(0, 10),
-    hopDong: { id: hoaDonForm.value.hopDongId },
-  }
+    if (!hoaDonForm.value.thangThanhToan) {
+      alert("Vui lòng chọn tháng thanh toán.");
+      return;
+    }
 
-  if (editingHoaDonId.value) {
-    await api.patch(`/hoa-don/${editingHoaDonId.value}`, payload)
-  } else {
-    await api.post('/hoa-don', payload)
+    /*
+     * Khi thêm mới:
+     *   luôn sinh mã hóa đơn mới.
+     *
+     * Khi sửa:
+     *   chỉ sinh lại mã nếu Hợp đồng hoặc
+     *   Tháng thanh toán đã thay đổi.
+     */
+    if (!editingHoaDonId.value) {
+      hoaDonForm.value.maHoaDon = generateHoaDonCode(
+        hoaDonForm.value.hopDongId,
+        hoaDonForm.value.thangThanhToan,
+      );
+    }
+
+    const payload = {
+      maHoaDon: hoaDonForm.value.maHoaDon,
+      thangThanhToan: hoaDonForm.value.thangThanhToan,
+      tongTien: Number(hoaDonForm.value.tongTien || 0),
+      trangThai: hoaDonForm.value.trangThai,
+      ghiChu: hoaDonForm.value.ghiChu || null,
+      hopDong: {
+        id: hoaDonForm.value.hopDongId,
+      },
+    };
+
+    if (editingHoaDonId.value) {
+      await api.patch(`/hoa-don/${editingHoaDonId.value}`, payload);
+    } else {
+      await api.post("/hoa-don", payload);
+    }
+
+    resetHoaDonForm();
+    await loadData();
+  } catch (error: any) {
+    console.error("Không thể lưu hóa đơn:", error);
+
+    alert(
+      error?.response?.data?.message ??
+        "Không thể cập nhật hóa đơn. Vui lòng thử lại.",
+    );
   }
-  resetHoaDonForm()
-  await loadData()
 }
 
-const showDeleteNhaTroModal = ref(false)
-const showDeleteGiuongModal = ref(false)
-const showDeletePhongModal = ref(false)
+const showDeleteNhaTroModal = ref(false);
+const showDeleteGiuongModal = ref(false);
+const showDeletePhongModal = ref(false);
 
 const deleteGiuongInfo = ref({
-  id: '',
-  maGiuong: '',
-  maPhong: '',
-})
-const showDeleteNguoiThueModal = ref(false)
+  id: "",
+  maGiuong: "",
+  maPhong: "",
+});
+const showDeleteNguoiThueModal = ref(false);
 
 const deleteNguoiThueInfo = ref({
-  id: '',
-  hoTen: '',
-  cccd: '',
-})
+  id: "",
+  hoTen: "",
+  cccd: "",
+});
 
-const deleteNguoiThueErrorMessage = ref('')
-const deleteGiuongErrorMessage = ref('')
+const deleteNguoiThueErrorMessage = ref("");
+const deleteGiuongErrorMessage = ref("");
 
 const deletePhongInfo = ref({
-  id: '',
-  maPhong: '',
-  tenNhaTro: '',
+  id: "",
+  maPhong: "",
+  tenNhaTro: "",
   soGiuong: 0,
-})
+});
 
-const deletePhongErrorMessage = ref('')
+const deletePhongErrorMessage = ref("");
 const deleteNhaTroInfo = ref({
-  id: '',
-  tenNhaTro: '',
+  id: "",
+  tenNhaTro: "",
   soPhong: 0,
   soGiuong: 0,
   soHopDong: 0,
   soHoaDon: 0,
-})
+});
 
-const deleteErrorMessage = ref('')
+const deleteErrorMessage = ref("");
 
 function closeDeleteNhaTroModal() {
-  showDeleteNhaTroModal.value = false
-  deleteErrorMessage.value = ''
+  showDeleteNhaTroModal.value = false;
+  deleteErrorMessage.value = "";
 }
 
 async function deleteNhaTro(id: string) {
   try {
-    deleteErrorMessage.value = ''
+    deleteErrorMessage.value = "";
 
-    const nhaTro = nhaTros.value.find((item) => item.id === id)
+    const nhaTro = nhaTros.value.find((item) => item.id === id);
 
     deleteNhaTroInfo.value = {
       id,
-      tenNhaTro: nhaTro?.tenNhaTro ?? 'Nhà trọ',
+      tenNhaTro: nhaTro?.tenNhaTro ?? "Nhà trọ",
       soPhong: 0,
       soGiuong: 0,
       soHopDong: 0,
       soHoaDon: 0,
-    }
+    };
 
-    await api.delete(`/nha-tro/${id}`)
+    await api.delete(`/nha-tro/${id}`);
 
-    closeDeleteNhaTroModal()
+    closeDeleteNhaTroModal();
 
     if (editingNhaTroId.value === id) {
-      resetNhaTroForm()
+      resetNhaTroForm();
     }
 
-    await loadData()
+    await loadData();
   } catch (error: any) {
     if (error.response?.status === 409) {
-      const responseData = error.response?.data
+      const responseData = error.response?.data;
 
-      const data = responseData?.data ?? {}
+      const data = responseData?.data ?? {};
 
       deleteNhaTroInfo.value = {
         id,
         tenNhaTro:
           data.tenNhaTro ??
           nhaTros.value.find((item) => item.id === id)?.tenNhaTro ??
-          'Nhà trọ',
+          "Nhà trọ",
         soPhong: Number(data.soPhong ?? 0),
         soGiuong: Number(data.soGiuong ?? 0),
         soHopDong: Number(data.soHopDong ?? 0),
         soHoaDon: Number(data.soHoaDon ?? 0),
-      }
+      };
 
       deleteErrorMessage.value =
         responseData?.message ??
-        'Không thể xóa nhà trọ vì đang có dữ liệu liên quan.'
+        "Không thể xóa nhà trọ vì đang có dữ liệu liên quan.";
 
-      showDeleteNhaTroModal.value = true
+      showDeleteNhaTroModal.value = true;
 
-      return
+      return;
     }
 
-    console.error('Không thể xóa nhà trọ:', error)
+    console.error("Không thể xóa nhà trọ:", error);
 
     deleteErrorMessage.value =
-      error.response?.data?.message ??
-      'Có lỗi xảy ra khi xóa nhà trọ.'
+      error.response?.data?.message ?? "Có lỗi xảy ra khi xóa nhà trọ.";
 
-    showDeleteNhaTroModal.value = true
+    showDeleteNhaTroModal.value = true;
   }
 }
 
 function requestDeleteNhaTro(item: any) {
   deleteNhaTroInfo.value = {
     id: item.id,
-    tenNhaTro: item.tenNhaTro ?? 'Nhà trọ',
+    tenNhaTro: item.tenNhaTro ?? "Nhà trọ",
     soPhong: 0,
     soGiuong: 0,
     soHopDong: 0,
     soHoaDon: 0,
-  }
+  };
 
-  deleteErrorMessage.value = ''
-  showDeleteNhaTroModal.value = true
+  deleteErrorMessage.value = "";
+  showDeleteNhaTroModal.value = true;
 }
 
 async function confirmDeleteNhaTro() {
-  const id = deleteNhaTroInfo.value.id
+  const id = deleteNhaTroInfo.value.id;
 
   if (!id) {
-    return
+    return;
   }
 
-  await deleteNhaTro(id)
+  await deleteNhaTro(id);
 }
 
 function editNhaTro(item: any) {
-  editingNhaTroId.value = item.id
+  editingNhaTroId.value = item.id;
   nhaTroForm.value = {
-    maNhaTro: item.maNhaTro ?? '',
-    tenNhaTro: item.tenNhaTro ?? '',
-    diaChi: item.diaChi ?? '',
+    maNhaTro: item.maNhaTro ?? "",
+    tenNhaTro: item.tenNhaTro ?? "",
+    diaChi: item.diaChi ?? "",
     soTang: item.soTang ?? 1,
-    moTa: item.moTa ?? '',
-  }
-  currentTab.value = 'nhaTro'
+    moTa: item.moTa ?? "",
+  };
+  currentTab.value = "nhaTro";
 }
 
 function editPhong(item: any) {
-  editingPhongId.value = item.id
+  editingPhongId.value = item.id;
   phongForm.value = {
-    maPhong: item.maPhong ?? '',
-    tangSo: item.tangSo ?? '',
+    maPhong: item.maPhong ?? "",
+    tangSo: item.tangSo ?? "",
     soGiuongToiDa: item.soGiuongToiDa ?? 8,
-    loaiPhong: item.loaiPhong ?? 'phong_tieu_chuan',
+    loaiPhong: item.loaiPhong ?? "phong_tieu_chuan",
     dienTich: item.dienTich ?? 25,
-    nhaTroId: item.nhaTro?.id ?? '',
-  }
-  currentTab.value = 'phong'
+    nhaTroId: item.nhaTro?.id ?? "",
+  };
+  currentTab.value = "phong";
 }
 
 function updateMaPhongByTang() {
   if (!phongForm.value.nhaTroId || !phongForm.value.tangSo) {
-    phongForm.value.maPhong = ''
-    return
+    phongForm.value.maPhong = "";
+    return;
   }
 
   const nhaTro = nhaTros.value.find(
-    item => item.id === phongForm.value.nhaTroId
-  )
+    (item) => item.id === phongForm.value.nhaTroId,
+  );
 
   if (!nhaTro?.maNhaTro) {
-    phongForm.value.maPhong = ''
-    return
+    phongForm.value.maPhong = "";
+    return;
   }
 
-  phongForm.value.maPhong =
-    `${nhaTro.maNhaTro}_T${phongForm.value.tangSo}`
+  phongForm.value.maPhong = `${nhaTro.maNhaTro}_T${phongForm.value.tangSo}`;
 }
 
 function editGiuong(item: any) {
-  editingGiuongId.value = item.id
+  editingGiuongId.value = item.id;
 
-  const giaGiuong = Number(item.giaGiuong ?? 0)
+  const giaGiuong = Number(item.giaGiuong ?? 0);
 
   giuongForm.value = {
-    nhaTroId: item.phong?.nhaTro?.id ?? '',
-    phongId: item.phong?.id ?? '',
-    giuongSo: item.giuongSo != null
-      ? String(item.giuongSo)
-      : '',
+    nhaTroId: item.phong?.nhaTro?.id ?? "",
+    phongId: item.phong?.id ?? "",
+    giuongSo: item.giuongSo != null ? String(item.giuongSo) : "",
     giaGiuong,
-    trangThai: item.trangThai ?? 'trong',
-  }
+    trangThai: item.trangThai ?? "trong",
+  };
 
-  giaGiuongDisplay.value = giaGiuong
-    ? giaGiuong.toLocaleString('en-US')
-    : ''
+  giaGiuongDisplay.value = giaGiuong ? giaGiuong.toLocaleString("en-US") : "";
 
-  currentTab.value = 'giuong'
+  currentTab.value = "giuong";
 }
 
 function editNguoiThue(item: any) {
-  editingNguoiThueId.value = item.id
+  editingNguoiThueId.value = item.id;
 
   nguoiThueForm.value = {
-    hoTen: item.hoTen ?? '',
-    cccd: item.cccd ?? '',
-    sdt: item.sdt ?? '',
-    email: item.email ?? '',
-    diaChi: item.diaChi ?? '',
+    hoTen: item.hoTen ?? "",
+    cccd: item.cccd ?? "",
+    sdt: item.sdt ?? "",
+    email: item.email ?? "",
+    diaChi: item.diaChi ?? "",
     ngaySinh: item.ngaySinh
       ? new Date(item.ngaySinh).toISOString().slice(0, 10)
-      : '',
-    bienSoXe: item.bienSoXe ?? '',
+      : "",
+    bienSoXe: item.bienSoXe ?? "",
 
     // File mới, chưa chọn
     cccdMatTruoc: null,
@@ -1141,147 +1195,191 @@ function editNguoiThue(item: any) {
     // Giữ lại URL ảnh đã upload
     cccdMatTruocUrl: getImageUrl(item.cccdMatTruoc),
     cccdMatSauUrl: getImageUrl(item.cccdMatSau),
-  }
+  };
 
   if (cccdMatTruocInput.value) {
-    cccdMatTruocInput.value.value = ''
+    cccdMatTruocInput.value.value = "";
   }
 
   if (cccdMatSauInput.value) {
-    cccdMatSauInput.value.value = ''
+    cccdMatSauInput.value.value = "";
   }
 
-  currentTab.value = 'nguoiThue'
+  currentTab.value = "nguoiThue";
 }
 
 function editHopDong(item: any) {
-  editingHopDongId.value = item.id
+  editingHopDongId.value = item.id;
 
-  const nhaTroId =
-    item.giuong?.phong?.nhaTro?.id ?? ''
+  const nhaTroId = item.giuong?.phong?.nhaTro?.id ?? "";
+  const phongId = item.giuong?.phong?.id ?? "";
 
   hopDongForm.value = {
-    maHopDong: item.maHopDong ?? '',
+    maHopDong: item.maHopDong ?? "",
 
     nhaTroId,
+    phongId,
 
     ngayBatDau: item.ngayBatDau
-      ? new Date(item.ngayBatDau)
-          .toISOString()
-          .slice(0, 10)
-      : '',
+      ? new Date(item.ngayBatDau).toISOString().slice(0, 10)
+      : "",
 
     ngayKetThuc: item.ngayKetThuc
-      ? new Date(item.ngayKetThuc)
-          .toISOString()
-          .slice(0, 10)
-      : '',
+      ? new Date(item.ngayKetThuc).toISOString().slice(0, 10)
+      : "",
 
-    tienThue: Number(
-      item.tienThue ?? 0
-    ),
+    tienThue: Number(item.tienThue ?? 0),
 
-    chuKyThanhToan: Number(
-      item.chuKyThanhToan ?? 1
-    ),
+    chuKyThanhToan: Number(item.chuKyThanhToan ?? 1),
 
-    tienDatCoc: Number(
-      item.tienDatCoc ?? 0
-    ),
+    tienDatCoc: Number(item.tienDatCoc ?? 0),
 
-    ghiChu: item.ghiChu ?? '',
+    ghiChu: item.ghiChu ?? "",
 
-    giuongId: item.giuong?.id ?? '',
+    giuongId: item.giuong?.id ?? "",
 
-    nguoiThueId:
-      item.nguoiThue?.id ?? '',
+    nguoiThueId: item.nguoiThue?.id ?? "",
 
-    trangThai:
-      item.trangThai ?? 'active',
-  }
+    trangThai: item.trangThai ?? "active",
+  };
 
-  currentTab.value = 'hopDong'
+  currentTab.value = "hopDong";
 }
 
 function editHoaDon(item: any) {
-  editingHoaDonId.value = item.id
+  editingHoaDonId.value = item.id;
   hoaDonForm.value = {
-    maHoaDon: item.maHoaDon ?? '',
-    thangThanhToan: item.thangThanhToan ? new Date(item.thangThanhToan).toISOString().slice(0, 10) : '',
+    maHoaDon: item.maHoaDon ?? "",
+    thangThanhToan: item.thangThanhToan
+      ? new Date(item.thangThanhToan).toISOString().slice(0, 10)
+      : "",
     tongTien: item.tongTien ?? 0,
-    trangThai: item.trangThai ?? 'chua_thanh_toan',
-    hopDongId: item.hopDong?.id ?? '',
-  }
-  currentTab.value = 'hoaDon'
+    trangThai: item.trangThai ?? "chua_thanh_toan",
+    ghiChu: item.ghiChu ?? "",
+    hopDongId: item.hopDong?.id ?? "",
+  };
+  currentTab.value = "hoaDon";
 }
 
 function formatCurrency(value: number | string | undefined) {
-  const numberValue = Number(value ?? 0)
-  return new Intl.NumberFormat('vi-VN', {
-    style: 'currency',
-    currency: 'VND',
+  const numberValue = Number(value ?? 0);
+  return new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
     maximumFractionDigits: 0,
-  }).format(numberValue)
+  }).format(numberValue);
 }
 
 const filteredPhongsByNhaTro = computed(() => {
-  if (!giuongForm.value.nhaTroId) return []
-  return phongs.value.filter((item) => item.nhaTro?.id === giuongForm.value.nhaTroId)
-})
+  if (!giuongForm.value.nhaTroId) return [];
+  return phongs.value.filter(
+    (item) => item.nhaTro?.id === giuongForm.value.nhaTroId,
+  );
+});
 
 function handleNhaTroChangeForGiuong() {
-  giuongForm.value.phongId = ''
-  giuongForm.value.giuongSo = ''
+  giuongForm.value.phongId = "";
+  giuongForm.value.giuongSo = "";
 }
 
 function normalizeCodePart(value: string) {
-  return (value ?? '')
+  return (value ?? "")
     .toString()
     .trim()
-    .replace(/\s+/g, '_')
-    .replace(/[^a-zA-Z0-9_]/g, '')
-    .replace(/_+/g, '_')
-    .replace(/^_|_$/g, '')
+    .replace(/\s+/g, "_")
+    .replace(/[^a-zA-Z0-9_]/g, "")
+    .replace(/_+/g, "_")
+    .replace(/^_|_$/g, "");
 }
 
 function generateHopDongCode(giuongId: string) {
-  const giuong = giuongs.value.find(
-    item => item.id === giuongId
-  )
+  const giuong = giuongs.value.find((item) => item.id === giuongId);
 
   if (!giuong?.maGiuong) {
-    return ''
+    return "";
   }
 
-  return giuong.maGiuong
+  return giuong.maGiuong;
 }
 
-function generateHoaDonCode(hopDongId: string, thangThanhToan: string) {
-  const hopDong = hopDongs.value.find((item) => item.id === hopDongId)
-  if (!hopDong?.maHopDong) return ''
-  const month = thangThanhToan ? new Date(thangThanhToan).toISOString().slice(0, 7) : new Date().toISOString().slice(0, 7)
-  return `${hopDong.maHopDong}_${month}`
+function generateHoaDonCode(
+  hopDongId: string,
+  thangThanhToan: string,
+  excludeHoaDonId?: string,
+) {
+  const hopDong = hopDongs.value.find((item) => item.id === hopDongId);
+
+  if (!hopDong?.maHopDong) {
+    return "";
+  }
+
+  const date = thangThanhToan
+    ? new Date(`${thangThanhToan}T00:00:00`)
+    : new Date();
+
+  const month = date.getMonth() + 1;
+  const year = date.getFullYear();
+
+  // Phần mã chung của hóa đơn
+  // Ví dụ: CG_T2_G3_TH3/2026
+  const baseCode = `${hopDong.maHopDong}_TH${month}/${year}`;
+
+  // Lấy các hóa đơn đã tồn tại cùng hợp đồng + cùng tháng/năm
+  const existingCodes = hoaDons.value
+    .filter((item) => item.id !== excludeHoaDonId)
+    .map((item) => item.maHoaDon)
+    .filter(
+      (code): code is string =>
+        typeof code === "string" && code.startsWith(`${baseCode}_`),
+    );
+
+  // Tìm số thứ tự lớn nhất
+  let maxSequence = 0;
+
+  for (const code of existingCodes) {
+    const match = code.match(
+      new RegExp(`^${baseCode.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}_(\\d+)$`),
+    );
+
+    if (match) {
+      const sequence = Number(match[1]);
+
+      if (sequence > maxSequence) {
+        maxSequence = sequence;
+      }
+    }
+  }
+
+  // Tăng số thứ tự và luôn hiển thị 2 chữ số
+  const nextSequence = String(maxSequence + 1).padStart(2, "0");
+
+  return `${baseCode}_${nextSequence}`;
 }
 
 function syncHopDongCode() {
   if (!hopDongForm.value.giuongId) {
-    hopDongForm.value.maHopDong = ''
-    return
+    hopDongForm.value.maHopDong = "";
+    return;
   }
-  hopDongForm.value.maHopDong = generateHopDongCode(hopDongForm.value.giuongId)
+  hopDongForm.value.maHopDong = generateHopDongCode(hopDongForm.value.giuongId);
 }
 
 function syncHoaDonCode() {
   if (!hoaDonForm.value.hopDongId) {
-    hoaDonForm.value.maHoaDon = ''
-    return
+    hoaDonForm.value.maHoaDon = "";
+    return;
   }
-  hoaDonForm.value.maHoaDon = generateHoaDonCode(hoaDonForm.value.hopDongId, hoaDonForm.value.thangThanhToan)
+
+  hoaDonForm.value.maHoaDon = generateHoaDonCode(
+    hoaDonForm.value.hopDongId,
+    hoaDonForm.value.thangThanhToan,
+    editingHoaDonId.value ?? undefined,
+  );
 }
 
 onMounted(() => {
-  loadData()
-})
+  loadData();
+});
 </script>
 
 <template>
@@ -1302,7 +1400,21 @@ onMounted(() => {
           :class="['nav-item', { active: currentTab === tab }]"
           @click="currentTab = tab"
         >
-          {{ tab === 'dashboard' ? 'Tổng quan' : tab === 'nhaTro' ? 'Nhà trọ' : tab === 'phong' ? 'Phòng' : tab === 'giuong' ? 'Giường' : tab === 'nguoiThue' ? 'Người thuê' : tab === 'hopDong' ? 'Hợp đồng' : 'Hóa đơn' }}
+          {{
+            tab === "dashboard"
+              ? "Tổng quan"
+              : tab === "nhaTro"
+                ? "Nhà trọ"
+                : tab === "phong"
+                  ? "Phòng"
+                  : tab === "giuong"
+                    ? "Giường"
+                    : tab === "nguoiThue"
+                      ? "Người thuê"
+                      : tab === "hopDong"
+                        ? "Hợp đồng"
+                        : "Hóa đơn"
+          }}
         </button>
       </nav>
     </aside>
@@ -1356,35 +1468,57 @@ onMounted(() => {
 
       <section v-else-if="currentTab === 'nhaTro'" class="panel-grid">
         <div class="panel">
-          <h3>{{ editingNhaTroId ? 'Sửa nhà trọ' : 'Thêm nhà trọ' }}</h3>
+          <h3>{{ editingNhaTroId ? "Sửa nhà trọ" : "Thêm nhà trọ" }}</h3>
           <form @submit.prevent="saveNhaTro" class="form-grid">
             <label>
-  {{ requiredLabel('Mã nhà trọ') }}
-  <input
-    v-model="nhaTroForm.maNhaTro"
-    placeholder="Ví dụ: CG"
-    required
-  />
-</label>
-            <label>
-              {{ requiredLabel('Tên nhà trọ') }}
-              <input v-model="nhaTroForm.tenNhaTro" placeholder="Tên nhà trọ" required />
+              {{ requiredLabel("Mã nhà trọ") }}
+              <input
+                v-model="nhaTroForm.maNhaTro"
+                placeholder="Ví dụ: CG"
+                required
+              />
             </label>
             <label>
-              {{ requiredLabel('Địa chỉ') }}
-              <input v-model="nhaTroForm.diaChi" placeholder="Địa chỉ" required />
+              {{ requiredLabel("Tên nhà trọ") }}
+              <input
+                v-model="nhaTroForm.tenNhaTro"
+                placeholder="Tên nhà trọ"
+                required
+              />
             </label>
             <label>
-              {{ requiredLabel('Số tầng') }}
-              <input v-model.number="nhaTroForm.soTang" type="number" min="1" placeholder="Số tầng" required />
+              {{ requiredLabel("Địa chỉ") }}
+              <input
+                v-model="nhaTroForm.diaChi"
+                placeholder="Địa chỉ"
+                required
+              />
             </label>
             <label>
-              {{ requiredLabel('Mô tả') }}
-              <textarea v-model="nhaTroForm.moTa" placeholder="Mô tả" rows="3"></textarea>
+              {{ requiredLabel("Số tầng") }}
+              <input
+                v-model.number="nhaTroForm.soTang"
+                type="number"
+                min="1"
+                placeholder="Số tầng"
+                required
+              />
+            </label>
+            <label>
+              {{ requiredLabel("Mô tả") }}
+              <textarea
+                v-model="nhaTroForm.moTa"
+                placeholder="Mô tả"
+                rows="3"
+              ></textarea>
             </label>
             <div class="actions">
-              <button class="primary" type="submit">{{ editingNhaTroId ? 'Cập nhật' : 'Lưu' }}</button>
-              <button class="secondary" type="button" @click="resetNhaTroForm">Hủy</button>
+              <button class="primary" type="submit">
+                {{ editingNhaTroId ? "Cập nhật" : "Lưu" }}
+              </button>
+              <button class="secondary" type="button" @click="resetNhaTroForm">
+                Hủy
+              </button>
             </div>
           </form>
         </div>
@@ -1408,13 +1542,15 @@ onMounted(() => {
                 <td>{{ item.diaChi }}</td>
                 <td>{{ item.soTang }}</td>
                 <td class="row-actions">
-                  <button class="table-btn edit" @click="editNhaTro(item)">Sửa</button>
+                  <button class="table-btn edit" @click="editNhaTro(item)">
+                    Sửa
+                  </button>
                   <button
-  class="table-btn delete"
-  @click="requestDeleteNhaTro(item)"
->
-  Xóa
-</button>
+                    class="table-btn delete"
+                    @click="requestDeleteNhaTro(item)"
+                  >
+                    Xóa
+                  </button>
                 </td>
               </tr>
             </tbody>
@@ -1424,63 +1560,78 @@ onMounted(() => {
 
       <section v-else-if="currentTab === 'phong'" class="panel-grid">
         <div class="panel">
-          <h3>{{ editingPhongId ? 'Sửa phòng' : 'Thêm phòng' }}</h3>
+          <h3>{{ editingPhongId ? "Sửa phòng" : "Thêm phòng" }}</h3>
           <form @submit.prevent="savePhong" class="form-grid">
             <label>
-  {{ requiredLabel('Nhà trọ') }}
-  <select
-    v-model="phongForm.nhaTroId"
-    @change="handleNhaTroChange"
-    required
-  >
-    <option value="">Chọn nhà trọ</option>
-    <option
-      v-for="item in nhaTros"
-      :key="item.id"
-      :value="item.id"
-    >
-      {{ item.tenNhaTro }}
-    </option>
-  </select>
-</label>
+              {{ requiredLabel("Nhà trọ") }}
+              <select
+                v-model="phongForm.nhaTroId"
+                @change="handleNhaTroChange"
+                required
+              >
+                <option value="">Chọn nhà trọ</option>
+                <option v-for="item in nhaTros" :key="item.id" :value="item.id">
+                  {{ item.tenNhaTro }}
+                </option>
+              </select>
+            </label>
 
-<label>
-  {{ requiredLabel('Tầng số') }}
-
-  <select
-    v-model="phongForm.tangSo"
-    @change="updateMaPhongByTang"
-    required
-    :disabled="!phongForm.nhaTroId"
-  >
-    <option value="" disabled>
-      -- Chọn tầng --
-    </option>
-
-    <option
-      v-for="floor in tangSoOptions"
-      :key="floor"
-      :value="floor"
-    >
-      Tầng {{ floor }}
-    </option>
-  </select>
-</label>
             <label>
-              {{ requiredLabel('Số giường tối đa') }}
-              <input v-model.number="phongForm.soGiuongToiDa" type="number" min="1" max="8" placeholder="Số giường tối đa" required />
+              {{ requiredLabel("Tầng số") }}
+
+              <select
+                v-model="phongForm.tangSo"
+                @change="updateMaPhongByTang"
+                required
+                :disabled="!phongForm.nhaTroId"
+              >
+                <option value="" disabled>-- Chọn tầng --</option>
+
+                <option
+                  v-for="floor in tangSoOptions"
+                  :key="floor"
+                  :value="floor"
+                >
+                  Tầng {{ floor }}
+                </option>
+              </select>
             </label>
             <label>
-              {{ requiredLabel('Loại phòng') }}
-              <input v-model="phongForm.loaiPhong" placeholder="Loại phòng" required />
+              {{ requiredLabel("Số giường tối đa") }}
+              <input
+                v-model.number="phongForm.soGiuongToiDa"
+                type="number"
+                min="1"
+                max="8"
+                placeholder="Số giường tối đa"
+                required
+              />
             </label>
             <label>
-              {{ requiredLabel('Diện tích') }}
-              <input v-model.number="phongForm.dienTich" type="number" min="1" placeholder="Diện tích" required />
+              {{ requiredLabel("Loại phòng") }}
+              <input
+                v-model="phongForm.loaiPhong"
+                placeholder="Loại phòng"
+                required
+              />
+            </label>
+            <label>
+              {{ requiredLabel("Diện tích") }}
+              <input
+                v-model.number="phongForm.dienTich"
+                type="number"
+                min="1"
+                placeholder="Diện tích"
+                required
+              />
             </label>
             <div class="actions">
-              <button class="primary" type="submit">{{ editingPhongId ? 'Cập nhật' : 'Lưu' }}</button>
-              <button class="secondary" type="button" @click="resetPhongForm">Hủy</button>
+              <button class="primary" type="submit">
+                {{ editingPhongId ? "Cập nhật" : "Lưu" }}
+              </button>
+              <button class="secondary" type="button" @click="resetPhongForm">
+                Hủy
+              </button>
             </div>
           </form>
         </div>
@@ -1500,25 +1651,27 @@ onMounted(() => {
             </thead>
             <tbody>
               <tr v-for="item in phongs" :key="item.id">
-                    <td>
-      {{ item.maPhong }}
-    </td>
+                <td>
+                  {{ item.maPhong }}
+                </td>
 
-    <td>
-      {{ item.nhaTro?.tenNhaTro || item.nhaTro?.maNhaTro}}
-    </td>
+                <td>
+                  {{ item.nhaTro?.tenNhaTro || item.nhaTro?.maNhaTro }}
+                </td>
                 <td>{{ item.tangSo }}</td>
                 <td>{{ item.loaiPhong }}</td>
                 <td>{{ item.soGiuongToiDa }}</td>
                 <td class="row-actions">
-                  <button class="table-btn edit" @click="editPhong(item)">Sửa</button>
+                  <button class="table-btn edit" @click="editPhong(item)">
+                    Sửa
+                  </button>
                   <button
-  type="button"
-  class="table-btn delete"
-  @click.stop="requestDeletePhong(item)"
->
-  Xóa
-</button>
+                    type="button"
+                    class="table-btn delete"
+                    @click.stop="requestDeletePhong(item)"
+                  >
+                    Xóa
+                  </button>
                 </td>
               </tr>
             </tbody>
@@ -1528,66 +1681,67 @@ onMounted(() => {
 
       <section v-else-if="currentTab === 'giuong'" class="panel-grid">
         <div class="panel">
-          <h3>{{ editingGiuongId ? 'Sửa giường' : 'Thêm giường' }}</h3>
+          <h3>{{ editingGiuongId ? "Sửa giường" : "Thêm giường" }}</h3>
           <form @submit.prevent="saveGiuong" class="form-grid">
             <label>
-              {{ requiredLabel('Nhà trọ:') }}
-              <select v-model="giuongForm.nhaTroId" @change="handleNhaTroChangeForGiuong" required>
+              {{ requiredLabel("Nhà trọ:") }}
+              <select
+                v-model="giuongForm.nhaTroId"
+                @change="handleNhaTroChangeForGiuong"
+                required
+              >
                 <option value="">Chọn nhà trọ</option>
-                <option v-for="item in nhaTros" :key="item.id" :value="item.id">{{ item.tenNhaTro }}</option>
+                <option v-for="item in nhaTros" :key="item.id" :value="item.id">
+                  {{ item.tenNhaTro }}
+                </option>
               </select>
             </label>
             <label>
-              {{ requiredLabel('Chọn tầng:') }}
-              <select v-model="giuongForm.phongId" 
-              :disabled="!giuongForm.nhaTroId" 
-              @change="giuongForm.giuongSo = ''" 
-              required>
+              {{ requiredLabel("Chọn tầng:") }}
+              <select
+                v-model="giuongForm.phongId"
+                :disabled="!giuongForm.nhaTroId"
+                @change="giuongForm.giuongSo = ''"
+                required
+              >
                 <option value="">Chọn tầng số</option>
                 <option
-  v-for="item in filteredPhongsByNhaTro"
-  :key="item.id"
-  :value="item.id"
->
-  Tầng {{ item.tangSo }}
-</option>
+                  v-for="item in filteredPhongsByNhaTro"
+                  :key="item.id"
+                  :value="item.id"
+                >
+                  Tầng {{ item.tangSo }}
+                </option>
               </select>
             </label>
             <label>
-              {{ requiredLabel('Giường số:') }}
-              <select
-  v-model="giuongForm.giuongSo"
-  required
->
-  <option value="">Chọn giường</option>
+              {{ requiredLabel("Giường số:") }}
+              <select v-model="giuongForm.giuongSo" required>
+                <option value="">Chọn giường</option>
 
-  <option
-    v-for="item in giuongOptions"
-    :key="item"
-    :value="item"
-  >
-    Giường {{ item }}
-  </option>
-</select>
+                <option v-for="item in giuongOptions" :key="item" :value="item">
+                  Giường {{ item }}
+                </option>
+              </select>
             </label>
             <label>
-  {{ requiredLabel('Giá giường:') }}
+              {{ requiredLabel("Giá giường:") }}
 
-  <div class="money-input">
-    <input
-      :value="giaGiuongDisplay"
-      type="text"
-      inputmode="numeric"
-      placeholder="1,000,000"
-      @input="handleGiaGiuongInput"
-      required
-    />
+              <div class="money-input">
+                <input
+                  :value="giaGiuongDisplay"
+                  type="text"
+                  inputmode="numeric"
+                  placeholder="1,000,000"
+                  @input="handleGiaGiuongInput"
+                  required
+                />
 
-    <span>VND</span>
-  </div>
-</label>
+                <span>VND</span>
+              </div>
+            </label>
             <label>
-              {{ requiredLabel('Trạng thái') }}
+              {{ requiredLabel("Trạng thái") }}
               <select v-model="giuongForm.trangThai">
                 <option value="trong">Trống</option>
                 <option value="da_thue">Đã thuê</option>
@@ -1596,8 +1750,12 @@ onMounted(() => {
               </select>
             </label>
             <div class="actions">
-              <button class="primary" type="submit">{{ editingGiuongId ? 'Cập nhật' : 'Lưu' }}</button>
-              <button class="secondary" type="button" @click="resetGiuongForm">Hủy</button>
+              <button class="primary" type="submit">
+                {{ editingGiuongId ? "Cập nhật" : "Lưu" }}
+              </button>
+              <button class="secondary" type="button" @click="resetGiuongForm">
+                Hủy
+              </button>
             </div>
           </form>
         </div>
@@ -1623,14 +1781,16 @@ onMounted(() => {
                 <td>{{ formatCurrency(item.giaGiuong) }}</td>
                 <td>{{ getStatusText(item.trangThai) }}</td>
                 <td class="row-actions">
-                  <button class="table-btn edit" @click="editGiuong(item)">Sửa</button>
+                  <button class="table-btn edit" @click="editGiuong(item)">
+                    Sửa
+                  </button>
                   <button
-  type="button"
-  class="table-btn delete"
-  @click.stop="requestDeleteGiuong(item)"
->
-  Xóa
-</button>
+                    type="button"
+                    class="table-btn delete"
+                    @click.stop="requestDeleteGiuong(item)"
+                  >
+                    Xóa
+                  </button>
                 </td>
               </tr>
             </tbody>
@@ -1640,119 +1800,153 @@ onMounted(() => {
 
       <section v-else-if="currentTab === 'nguoiThue'" class="panel-grid">
         <div class="panel">
-          <h3>{{ editingNguoiThueId ? 'Sửa người thuê' : 'Thêm người thuê' }}</h3>
+          <h3>
+            {{ editingNguoiThueId ? "Sửa người thuê" : "Thêm người thuê" }}
+          </h3>
           <form @submit.prevent="saveNguoiThue" class="form-grid">
             <label>
-              {{ requiredLabel('Họ tên') }}
-              <input v-model="nguoiThueForm.hoTen" placeholder="Họ tên" required />
+              {{ requiredLabel("Họ tên") }}
+              <input
+                v-model="nguoiThueForm.hoTen"
+                placeholder="Họ tên"
+                required
+              />
             </label>
             <label>
-              {{ requiredLabel('CCCD') }}
-              <input v-model="nguoiThueForm.cccd" placeholder="CCCD" required pattern="[0-9]{9,12}" />
+              {{ requiredLabel("CCCD") }}
+              <input
+                v-model="nguoiThueForm.cccd"
+                placeholder="CCCD"
+                required
+                pattern="[0-9]{9,12}"
+              />
             </label>
             <label>
-              {{ requiredLabel('Số điện thoại') }}
-              <input v-model="nguoiThueForm.sdt" placeholder="Số điện thoại" type="tel" required pattern="[0-9]{10,11}" />
+              {{ requiredLabel("Số điện thoại") }}
+              <input
+                v-model="nguoiThueForm.sdt"
+                placeholder="Số điện thoại"
+                type="tel"
+                required
+                pattern="[0-9]{10,11}"
+              />
             </label>
             <label>
-              {{ requiredLabel('Email') }}
-              <input v-model="nguoiThueForm.email" type="email" placeholder="Email" required />
+              {{ requiredLabel("Email") }}
+              <input
+                v-model="nguoiThueForm.email"
+                type="email"
+                placeholder="Email"
+                required
+              />
             </label>
             <label>
-              {{ requiredLabel('Địa chỉ') }}
-              <input v-model="nguoiThueForm.diaChi" placeholder="Địa chỉ" required />
+              {{ requiredLabel("Địa chỉ") }}
+              <input
+                v-model="nguoiThueForm.diaChi"
+                placeholder="Địa chỉ"
+                required
+              />
             </label>
             <label>
-              {{ requiredLabel('Ngày sinh') }}
+              {{ requiredLabel("Ngày sinh") }}
               <input v-model="nguoiThueForm.ngaySinh" type="date" required />
             </label>
             <label>
-  Biển số xe
-  <input
-    v-model="nguoiThueForm.bienSoXe"
-    type="text"
-    placeholder="Ví dụ: 29A-123.45"
-  />
-</label>
+              Biển số xe
+              <input
+                v-model="nguoiThueForm.bienSoXe"
+                type="text"
+                placeholder="Ví dụ: 29A-123.45"
+              />
+            </label>
 
-<label>
-  CCCD mặt trước
+            <label>
+              CCCD mặt trước
 
-  <input
-    ref="cccdMatTruocInput"
-    type="file"
-    accept="image/*"
-    @change="handleCccdMatTruocChange"
-  />
+              <input
+                ref="cccdMatTruocInput"
+                type="file"
+                accept="image/*"
+                @change="handleCccdMatTruocChange"
+              />
 
-<div
-  v-if="editingNguoiThueId && nguoiThueForm.cccdMatTruocUrl"
-  class="cccd-current"
->
-  <span>Ảnh hiện tại:</span>
+              <div
+                v-if="editingNguoiThueId && nguoiThueForm.cccdMatTruocUrl"
+                class="cccd-current"
+              >
+                <span>Ảnh hiện tại:</span>
 
-  <a
-    :href="nguoiThueForm.cccdMatTruocUrl"
-    target="_blank"
-    rel="noopener noreferrer"
-  >
-    Xem CCCD mặt trước
-  </a>
-</div>
+                <a
+                  :href="nguoiThueForm.cccdMatTruocUrl"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Xem CCCD mặt trước
+                </a>
+              </div>
 
-<div v-if="cccdMatTruocPreviewUrl" class="cccd-current">
-  <span>Ảnh mới:</span>
+              <div v-if="cccdMatTruocPreviewUrl" class="cccd-current">
+                <span>Ảnh mới:</span>
 
-  <a
-    :href="cccdMatTruocPreviewUrl"
-    target="_blank"
-    rel="noopener noreferrer"
-  >
-    Xem CCCD mặt trước
-  </a>
-</div>
-</label>
+                <a
+                  :href="cccdMatTruocPreviewUrl"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Xem CCCD mặt trước
+                </a>
+              </div>
+            </label>
 
-<label>
-  CCCD mặt sau
+            <label>
+              CCCD mặt sau
 
-  <input
-    ref="cccdMatSauInput"
-    type="file"
-    accept="image/*"
-    @change="handleCccdMatSauChange"
-  />
+              <input
+                ref="cccdMatSauInput"
+                type="file"
+                accept="image/*"
+                @change="handleCccdMatSauChange"
+              />
 
-<div
-  v-if="editingNguoiThueId && nguoiThueForm.cccdMatSauUrl"
-  class="cccd-current"
->
-  <span>Ảnh hiện tại:</span>
+              <div
+                v-if="editingNguoiThueId && nguoiThueForm.cccdMatSauUrl"
+                class="cccd-current"
+              >
+                <span>Ảnh hiện tại:</span>
 
-  <a
-    :href="nguoiThueForm.cccdMatSauUrl"
-    target="_blank"
-    rel="noopener noreferrer"
-  >
-    Xem CCCD mặt sau
-  </a>
-</div>
+                <a
+                  :href="nguoiThueForm.cccdMatSauUrl"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Xem CCCD mặt sau
+                </a>
+              </div>
 
-<div v-if="cccdMatSauPreviewUrl" class="cccd-current">
-  <span>Ảnh mới:</span>
+              <div v-if="cccdMatSauPreviewUrl" class="cccd-current">
+                <span>Ảnh mới:</span>
 
-  <a
-    :href="cccdMatSauPreviewUrl"
-    target="_blank"
-    rel="noopener noreferrer"
-  >
-    Xem CCCD mặt sau
-  </a>
-</div>
-</label>
+                <a
+                  :href="cccdMatSauPreviewUrl"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Xem CCCD mặt sau
+                </a>
+              </div>
+            </label>
             <div class="actions">
-              <button class="primary" type="submit">{{ editingNguoiThueId ? 'Cập nhật' : 'Lưu' }}</button>
-              <button class="secondary" type="button" @click="resetNguoiThueForm">Hủy</button>
+              <button class="primary" type="submit">
+                {{ editingNguoiThueId ? "Cập nhật" : "Lưu" }}
+              </button>
+              <button
+                class="secondary"
+                type="button"
+                @click="resetNguoiThueForm"
+              >
+                Hủy
+              </button>
             </div>
           </form>
         </div>
@@ -1774,8 +1968,15 @@ onMounted(() => {
                 <td>{{ item.cccd }}</td>
                 <td>{{ item.sdt }}</td>
                 <td class="row-actions">
-                  <button class="table-btn edit" @click="editNguoiThue(item)">Sửa</button>
-                  <button class="table-btn delete" @click="requestDeleteNguoiThue(item)">Xóa</button>
+                  <button class="table-btn edit" @click="editNguoiThue(item)">
+                    Sửa
+                  </button>
+                  <button
+                    class="table-btn delete"
+                    @click="requestDeleteNguoiThue(item)"
+                  >
+                    Xóa
+                  </button>
                 </td>
               </tr>
             </tbody>
@@ -1785,311 +1986,382 @@ onMounted(() => {
 
       <section v-else-if="currentTab === 'hopDong'" class="panel-grid">
         <div class="panel">
-          <h3>{{ editingHopDongId ? 'Sửa hợp đồng' : 'Thêm hợp đồng' }}</h3>
+          <h3>{{ editingHopDongId ? "Sửa hợp đồng" : "Thêm hợp đồng" }}</h3>
           <form @submit.prevent="saveHopDong" class="form-grid">
             <label>
-  {{ requiredLabel('Nhà trọ') }}
+              {{ requiredLabel("Nhà trọ") }}
 
-  <select
-    v-model="hopDongForm.nhaTroId"
-    @change="handleNhaTroChangeForHopDong"
-    required
-  >
-    <option value="">
-      Chọn nhà trọ
-    </option>
+              <select
+                v-model="hopDongForm.nhaTroId"
+                @change="handleNhaTroChangeForHopDong"
+                required
+              >
+                <option value="">Chọn nhà trọ</option>
 
-    <option
-      v-for="item in nhaTros"
-      :key="item.id"
-      :value="item.id"
-    >
-      {{ item.maNhaTro }} - {{ item.tenNhaTro }}
-    </option>
-  </select>
-</label>
+                <option v-for="item in nhaTros" :key="item.id" :value="item.id">
+                  {{ item.maNhaTro }} - {{ item.tenNhaTro }}
+                </option>
+              </select>
+            </label>
+            <label v-if="hopDongForm.nhaTroId">
+              {{ requiredLabel("Phòng") }}
 
-<label v-if="hopDongForm.nhaTroId">
-  {{ requiredLabel('Giường') }}
+              <select
+                v-model="hopDongForm.phongId"
+                @change="handlePhongChangeForHopDong"
+                required
+              >
+                <option value="">Chọn phòng</option>
 
-  <select
-    v-model="hopDongForm.giuongId"
-    @change="syncHopDongCode"
-    required
-  >
-    <option value="">
-      Chọn giường
-    </option>
+                <option
+                  v-for="item in hopDongPhongOptions"
+                  :key="item.id"
+                  :value="item.id"
+                >
+                  {{ item.maPhong }} - Tầng {{ item.tangSo }}
+                </option>
+              </select>
 
-    <option
-      v-for="item in hopDongGiuongOptions"
-      :key="item.id"
-      :value="item.id"
-    >
-      {{ item.maGiuong }} - Giường {{ item.giuongSo }}
-    </option>
-  </select>
+              <small v-if="hopDongPhongOptions.length === 0" class="form-hint">
+                Nhà trọ này chưa có phòng.
+              </small>
+            </label>
+            <label v-if="hopDongForm.phongId">
+              {{ requiredLabel("Giường") }}
 
-  <small
-    v-if="hopDongGiuongOptions.length === 0"
-    class="form-hint"
-  >
-    Nhà trọ này không còn giường trống để lập hợp đồng.
-  </small>
-</label>
+              <select
+                v-model="hopDongForm.giuongId"
+                @change="syncHopDongCode"
+                required
+              >
+                <option value="">Chọn giường</option>
+
+                <option
+                  v-for="item in hopDongGiuongOptions"
+                  :key="item.id"
+                  :value="item.id"
+                >
+                  {{ item.maGiuong }} - Giường {{ item.giuongSo }}
+                </option>
+              </select>
+
+              <small v-if="hopDongGiuongOptions.length === 0" class="form-hint">
+                Nhà trọ này không còn giường trống để lập hợp đồng.
+              </small>
+            </label>
             <label>
-              {{ requiredLabel('Người thuê') }}
+              {{ requiredLabel("Người thuê") }}
               <select v-model="hopDongForm.nguoiThueId" required>
                 <option value="">Chọn người thuê</option>
-                <option v-for="item in nguoiThues" :key="item.id" :value="item.id">{{ item.hoTen }}</option>
+                <option
+                  v-for="item in nguoiThues"
+                  :key="item.id"
+                  :value="item.id"
+                >
+                  {{ item.hoTen }}
+                </option>
               </select>
             </label>
             <label>
-  {{ requiredLabel('Ngày bắt đầu') }}
-  <input
-    v-model="hopDongForm.ngayBatDau"
-    type="date"
-    required
-  />
-</label>
+              {{ requiredLabel("Ngày bắt đầu") }}
+              <input v-model="hopDongForm.ngayBatDau" type="date" required />
+            </label>
 
-<label>
-  Ngày kết thúc
-  <input
-    v-model="hopDongForm.ngayKetThuc"
-    type="date"
-    :min="hopDongForm.ngayBatDau || undefined"
-    @change="validateNgayHopDong"
-  />
-</label>
+            <label>
+              Ngày kết thúc
+              <input
+                v-model="hopDongForm.ngayKetThuc"
+                type="date"
+                :min="hopDongForm.ngayBatDau || undefined"
+                @change="validateNgayHopDong"
+              />
+            </label>
 
-<label>
-  {{ requiredLabel('Giá thuê') }}
-  <div class="currency-input">
-    <input
-      v-model.number="hopDongForm.tienThue"
-      type="number"
-      min="0"
-      step="1000"
-      placeholder="Giá thuê"
-      required
-    />
-    <span>VND</span>
-  </div>
-</label>
+            <label>
+              {{ requiredLabel("Giá thuê") }}
+              <div class="currency-input">
+                <input
+                  v-model.number="hopDongForm.tienThue"
+                  type="number"
+                  min="0"
+                  step="1000"
+                  placeholder="Giá thuê"
+                  required
+                />
+                <span>VND</span>
+              </div>
+            </label>
 
-<label>
-  {{ requiredLabel('Chu kỳ thanh toán') }}
-  <select
-    v-model.number="hopDongForm.chuKyThanhToan"
-    required
-  >
-    <option :value="1">Hàng tháng</option>
-    <option :value="3">3 tháng</option>
-    <option :value="6">6 tháng</option>
-    <option :value="12">12 tháng</option>
-  </select>
-</label>
+            <label>
+              {{ requiredLabel("Chu kỳ thanh toán") }}
+              <select v-model.number="hopDongForm.chuKyThanhToan" required>
+                <option :value="1">Hàng tháng</option>
+                <option :value="3">3 tháng</option>
+                <option :value="6">6 tháng</option>
+                <option :value="12">12 tháng</option>
+              </select>
+            </label>
 
-<label>
-  Đặt cọc
-  <div class="currency-input">
-    <input
-      v-model.number="hopDongForm.tienDatCoc"
-      type="number"
-      min="0"
-      step="1000"
-      placeholder="Số tiền đặt cọc"
-    />
-    <span>VND</span>
-  </div>
-</label>
+            <label>
+              Đặt cọc
+              <div class="currency-input">
+                <input
+                  v-model.number="hopDongForm.tienDatCoc"
+                  type="number"
+                  min="0"
+                  step="1000"
+                  placeholder="Số tiền đặt cọc"
+                />
+                <span>VND</span>
+              </div>
+            </label>
 
-<label>
-  {{ requiredLabel('Trạng thái') }}
-  <select v-model="hopDongForm.trangThai">
-<option value="active">
-  Có hiệu lực
-</option>
+            <label>
+              {{ requiredLabel("Trạng thái") }}
+              <select v-model="hopDongForm.trangThai">
+                <option value="active">Có hiệu lực</option>
 
-<option value="sap_het_han">
-  Sắp hết hiệu lực
-</option>
+                <option value="sap_het_han">Sắp hết hiệu lực</option>
 
-<option value="expired">
-  Hết hiệu lực
-</option>
-  </select>
-</label>
+                <option value="expired">Hết hiệu lực</option>
+              </select>
+            </label>
 
-<label class="full-width">
-  Ghi chú
-  <textarea
-    v-model="hopDongForm.ghiChu"
-    rows="3"
-    placeholder="Nhập ghi chú cho hợp đồng..."
-  ></textarea>
-</label>
+            <label class="full-width">
+              Ghi chú
+              <textarea
+                v-model="hopDongForm.ghiChu"
+                rows="3"
+                placeholder="Nhập ghi chú cho hợp đồng..."
+              ></textarea>
+            </label>
             <div class="actions">
-              <button class="primary" type="submit">{{ editingHopDongId ? 'Cập nhật' : 'Lưu' }}</button>
-              <button class="secondary" type="button" @click="resetHopDongForm">Hủy</button>
+              <button class="primary" type="submit">
+                {{ editingHopDongId ? "Cập nhật" : "Lưu" }}
+              </button>
+              <button class="secondary" type="button" @click="resetHopDongForm">
+                Hủy
+              </button>
             </div>
           </form>
         </div>
 
         <div class="panel">
           <h3>Danh sách hợp đồng</h3>
-<table>
-  <thead>
-    <tr>
-      <th>Mã HĐ(Giường)</th>
-      <th>Người thuê</th>
-      <th>Ngày bắt đầu</th>
-      <th>Ngày kết thúc</th>
-      <th>Giá thuê</th>
-      <th>Trạng thái</th>
-      <th>Hành động</th>
-    </tr>
-  </thead>
+          <table>
+            <thead>
+              <tr>
+                <th>Mã HĐ(Giường)</th>
+                <th>Người thuê</th>
+                <th>Ngày bắt đầu</th>
+                <th>Ngày kết thúc</th>
+                <th>Giá thuê</th>
+                <th>Trạng thái</th>
+                <th>Hành động</th>
+              </tr>
+            </thead>
 
-  <tbody>
-    <tr
-      v-for="item in hopDongs"
-      :key="item.id"
-    >
-      <td>
-        {{ item.maHopDong }}
-      </td>
+            <tbody>
+              <tr v-for="item in hopDongs" :key="item.id">
+                <td>
+                  {{ item.maHopDong }}
+                </td>
 
-      <td>
-        {{ item.nguoiThue?.hoTen }}
-      </td>
+                <td>
+                  {{ item.nguoiThue?.hoTen }}
+                </td>
 
-      <td>
-        {{
-          item.ngayBatDau
-            ? new Date(
-                item.ngayBatDau
-              ).toLocaleDateString('vi-VN')
-            : ''
-        }}
-      </td>
+                <td>
+                  {{
+                    item.ngayBatDau
+                      ? new Date(item.ngayBatDau).toLocaleDateString("vi-VN")
+                      : ""
+                  }}
+                </td>
 
-      <td>
-        {{
-          item.ngayKetThuc
-            ? new Date(
-                item.ngayKetThuc
-              ).toLocaleDateString('vi-VN')
-            : 'Không xác định'
-        }}
-      </td>
+                <td>
+                  {{
+                    item.ngayKetThuc
+                      ? new Date(item.ngayKetThuc).toLocaleDateString("vi-VN")
+                      : "Không xác định"
+                  }}
+                </td>
 
-      <td>
-        {{ formatCurrency(item.tienThue) }}
-      </td>
+                <td>
+                  {{ formatCurrency(item.tienThue) }}
+                </td>
 
-      <td>
-        <span
-          :class="[
-            'status-badge',
-            item.trangThai
-          ]"
-        >
-          {{
-            item.trangThai === 'active'
-              ? 'Có hiệu lực'
-              : item.trangThai === 'expired'
-                ? 'Hết hiệu lực'
-                : item.trangThai === 'sap_het_han'
-                  ? 'Sắp hết hiệu lực'
-                  : item.trangThai
-          }}
-        </span>
-      </td>
+                <td>
+                  <span :class="['status-badge', item.trangThai]">
+                    {{
+                      item.trangThai === "active"
+                        ? "Có hiệu lực"
+                        : item.trangThai === "expired"
+                          ? "Hết hiệu lực"
+                          : item.trangThai === "sap_het_han"
+                            ? "Sắp hết hiệu lực"
+                            : item.trangThai
+                    }}
+                  </span>
+                </td>
 
-      <td class="row-actions">
-        <button
-          class="table-btn edit"
-          @click="editHopDong(item)"
-        >
-          Sửa
-        </button>
+                <td class="row-actions">
+                  <button class="table-btn edit" @click="editHopDong(item)">
+                    Sửa
+                  </button>
 
-        <button
-  type="button"
-  class="table-btn delete"
-  @click.stop="requestDeleteHopDong(item)"
->
-  Xóa
-</button>
-      </td>
-    </tr>
-  </tbody>
-</table>
+                  <button
+                    type="button"
+                    class="table-btn delete"
+                    @click.stop="requestDeleteHopDong(item)"
+                  >
+                    Xóa
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </section>
 
       <section v-else-if="currentTab === 'hoaDon'" class="panel-grid">
         <div class="panel">
-          <h3>{{ editingHoaDonId ? 'Sửa hóa đơn' : 'Thêm hóa đơn' }}</h3>
+          <h3>{{ editingHoaDonId ? "Sửa hóa đơn" : "Thêm hóa đơn" }}</h3>
           <form @submit.prevent="saveHoaDon" class="form-grid">
             <label>
-              {{ requiredLabel('Hợp đồng') }}
-              <select v-model="hoaDonForm.hopDongId" @change="syncHoaDonCode" required>
+              {{ requiredLabel("Hợp đồng") }}
+              <select
+                v-model="hoaDonForm.hopDongId"
+                @change="syncHoaDonCode"
+                required
+              >
                 <option value="">Chọn hợp đồng</option>
-                <option v-for="item in hopDongs" :key="item.id" :value="item.id">{{ item.maHopDong }}</option>
+                <option
+                  v-for="item in hopDongs"
+                  :key="item.id"
+                  :value="item.id"
+                >
+                  {{ item.maHopDong }}
+                </option>
               </select>
             </label>
             <label>
-              {{ requiredLabel('Tháng thanh toán') }}
-              <input v-model="hoaDonForm.thangThanhToan" type="date" @change="syncHoaDonCode" required />
+              {{ requiredLabel("Tháng thanh toán") }}
+              <input
+                v-model="hoaDonForm.thangThanhToan"
+                type="date"
+                @change="syncHoaDonCode"
+                required
+              />
             </label>
             <label>
-              {{ requiredLabel('Tổng tiền') }}
-              <input v-model.number="hoaDonForm.tongTien" type="number" min="0" placeholder="Tổng tiền" required />
+              {{ requiredLabel("Tổng tiền") }}
+              <input
+                v-model.number="hoaDonForm.tongTien"
+                type="number"
+                min="0"
+                placeholder="Tổng tiền"
+                required
+              />
             </label>
             <label>
-              {{ requiredLabel('Trạng thái') }}
+              {{ requiredLabel("Trạng thái") }}
               <select v-model="hoaDonForm.trangThai">
                 <option value="chua_thanh_toan">Chưa thanh toán</option>
                 <option value="da_thanh_toan">Đã thanh toán</option>
               </select>
             </label>
+            <label class="full-width">
+              Ghi chú
+              <textarea
+                v-model="hoaDonForm.ghiChu"
+                rows="3"
+                placeholder="Nhập ghi chú cho hóa đơn..."
+              ></textarea>
+            </label>
             <div class="actions">
-              <button class="primary" type="submit">{{ editingHoaDonId ? 'Cập nhật' : 'Lưu' }}</button>
-              <button class="secondary" type="button" @click="resetHoaDonForm">Hủy</button>
+              <button class="primary" type="submit">
+                {{ editingHoaDonId ? "Cập nhật" : "Lưu" }}
+              </button>
+              <button class="secondary" type="button" @click="resetHoaDonForm">
+                Hủy
+              </button>
             </div>
           </form>
         </div>
 
         <div class="panel">
           <h3>Danh sách hóa đơn</h3>
+
           <table>
             <thead>
               <tr>
-                <th>Mã hóa đơn</th>
-                <th>Tháng</th>
-                <th>Hợp đồng</th>
+                <th>Mã HĐ</th>
+                <th>Người thuê</th>
                 <th>Tổng tiền</th>
+                <th>Trạng thái</th>
+                <th>Ngày nộp</th>
                 <th>Hành động</th>
               </tr>
             </thead>
+
             <tbody>
               <tr v-for="item in hoaDons" :key="item.id">
-                <td>{{ item.maHoaDon }}</td>
-                <td>{{ item.thangThanhToan ? new Date(item.thangThanhToan).toISOString().slice(0, 7) : '' }}</td>
-                <td>{{ item.hopDong?.maHopDong }}</td>
-                <td>{{ formatCurrency(item.tongTien) }}</td>
+                <!-- Mã hóa đơn -->
+                <td>
+                  {{ item.maHoaDon }}
+                </td>
+
+                <!-- Người thuê -->
+                <td>
+                  {{ item.hopDong?.nguoiThue?.hoTen ?? "" }}
+                </td>
+
+                <!-- Tổng tiền -->
+                <td>
+                  {{ formatCurrency(item.tongTien) }}
+                </td>
+
+                <!-- Trạng thái -->
+                <td>
+                  <span
+                    :class="[
+                      'status-badge',
+                      item.trangThai === 'da_thanh_toan'
+                        ? 'status-paid'
+                        : 'status-unpaid',
+                    ]"
+                  >
+                    {{
+                      item.trangThai === "da_thanh_toan"
+                        ? "Đã thanh toán"
+                        : "Chưa thanh toán"
+                    }}
+                  </span>
+                </td>
+
+                <!-- Ngày nộp -->
+                <td>
+                  {{
+                    item.trangThai === "da_thanh_toan" && item.ngayNop
+                      ? new Date(item.ngayNop).toLocaleDateString("vi-VN")
+                      : ""
+                  }}
+                </td>
+
+                <!-- Hành động -->
                 <td class="row-actions">
-                  <button class="table-btn edit" @click="editHoaDon(item)">Sửa</button>
+                  <button class="table-btn edit" @click="editHoaDon(item)">
+                    Sửa
+                  </button>
+
                   <button
-  type="button"
-  class="table-btn delete"
-  @click.stop="requestDeleteHopDong(item)"
->
-  Xóa
-</button>
+                    type="button"
+                    class="table-btn delete"
+                    @click.stop="requestDeleteHoaDon(item)"
+                  >
+                    Xóa
+                  </button>
                 </td>
               </tr>
             </tbody>
@@ -2097,7 +2369,7 @@ onMounted(() => {
         </div>
       </section>
     </main>
-        <!-- Modal xóa nhà trọ -->
+    <!-- Modal xóa nhà trọ -->
     <div
       v-if="showDeleteNhaTroModal"
       class="modal-overlay"
@@ -2105,14 +2377,10 @@ onMounted(() => {
     >
       <div class="delete-modal">
         <div class="delete-modal-header">
-          <div class="warning-icon">
-            ⚠
-          </div>
+          <div class="warning-icon">⚠</div>
 
           <div>
-            <h3>
-              Xác nhận xóa nhà trọ
-            </h3>
+            <h3>Xác nhận xóa nhà trọ</h3>
 
             <p>
               {{ deleteNhaTroInfo.tenNhaTro }}
@@ -2133,8 +2401,8 @@ onMounted(() => {
               <strong>Không thể xóa nhà trọ này!</strong>
 
               <p>
-                Nhà trọ đang có dữ liệu liên quan.
-                Bạn cần xử lý các dữ liệu này trước khi xóa.
+                Nhà trọ đang có dữ liệu liên quan. Bạn cần xử lý các dữ liệu này
+                trước khi xóa.
               </p>
             </div>
 
@@ -2161,21 +2429,20 @@ onMounted(() => {
             </div>
 
             <p class="delete-modal-note">
-              Việc xóa nhà trọ có thể ảnh hưởng đến các dữ liệu
-              liên quan. Hãy xóa hoặc xử lý các dữ liệu liên quan
-              trước khi thực hiện thao tác này.
+              Việc xóa nhà trọ có thể ảnh hưởng đến các dữ liệu liên quan. Hãy
+              xóa hoặc xử lý các dữ liệu liên quan trước khi thực hiện thao tác
+              này.
             </p>
           </template>
 
           <template v-else>
             <p class="confirm-message">
               Bạn có chắc chắn muốn xóa nhà trọ
-              <strong>{{ deleteNhaTroInfo.tenNhaTro }}</strong>?
+              <strong>{{ deleteNhaTroInfo.tenNhaTro }}</strong
+              >?
             </p>
 
-            <p class="delete-modal-note">
-              Thao tác này không thể hoàn tác.
-            </p>
+            <p class="delete-modal-note">Thao tác này không thể hoàn tác.</p>
           </template>
 
           <p
@@ -2212,324 +2479,295 @@ onMounted(() => {
       </div>
     </div>
     <!-- Modal xóa phòng -->
-<div
-  v-if="showDeletePhongModal"
-  class="modal-overlay"
-  @click.self="closeDeletePhongModal"
->
-  <div class="delete-modal">
-    <!-- Header -->
-    <div class="delete-modal-header">
-      <div class="warning-icon">
-        ⚠
-      </div>
+    <div
+      v-if="showDeletePhongModal"
+      class="modal-overlay"
+      @click.self="closeDeletePhongModal"
+    >
+      <div class="delete-modal">
+        <!-- Header -->
+        <div class="delete-modal-header">
+          <div class="warning-icon">⚠</div>
 
-      <div>
-        <h3>
-          Xác nhận xóa phòng
-        </h3>
+          <div>
+            <h3>Xác nhận xóa phòng</h3>
 
-        <p>
-          {{ deletePhongInfo.maPhong }}
-          <span v-if="deletePhongInfo.tenNhaTro">
-            - {{ deletePhongInfo.tenNhaTro }}
-          </span>
-        </p>
-      </div>
-    </div>
+            <p>
+              {{ deletePhongInfo.maPhong }}
+              <span v-if="deletePhongInfo.tenNhaTro">
+                - {{ deletePhongInfo.tenNhaTro }}
+              </span>
+            </p>
+          </div>
+        </div>
 
-    <!-- Body -->
-    <div class="delete-modal-body">
+        <!-- Body -->
+        <div class="delete-modal-body">
+          <template v-if="deletePhongInfo.soGiuong > 0">
+            <div class="warning-message">
+              <strong>Không thể xóa phòng này!</strong>
 
-      <template v-if="deletePhongInfo.soGiuong > 0">
+              <p>
+                Phòng đang có dữ liệu giường liên quan. Bạn cần xử lý các dữ
+                liệu này trước khi xóa.
+              </p>
+            </div>
 
-        <div class="warning-message">
-          <strong>Không thể xóa phòng này!</strong>
+            <div class="related-data">
+              <div class="related-item">
+                <span>Giường</span>
 
-          <p>
-            Phòng đang có dữ liệu giường liên quan.
-            Bạn cần xử lý các dữ liệu này trước khi xóa.
+                <strong>
+                  {{ deletePhongInfo.soGiuong }}
+                </strong>
+              </div>
+            </div>
+
+            <p class="delete-modal-note">
+              Hãy xóa hoặc xử lý các giường thuộc phòng trước khi thực hiện thao
+              tác này.
+            </p>
+          </template>
+
+          <template v-else>
+            <p class="confirm-message">
+              Bạn có chắc chắn muốn xóa phòng
+              <strong>
+                {{ deletePhongInfo.maPhong }}
+              </strong>
+              không?
+            </p>
+
+            <p class="delete-modal-note">Thao tác này không thể hoàn tác.</p>
+          </template>
+
+          <p v-if="deletePhongErrorMessage" class="error-message">
+            {{ deletePhongErrorMessage }}
           </p>
         </div>
 
-        <div class="related-data">
+        <!-- Footer -->
+        <div class="delete-modal-actions">
+          <button
+            class="secondary"
+            type="button"
+            @click="closeDeletePhongModal"
+          >
+            Đóng
+          </button>
 
-          <div class="related-item">
-            <span>Giường</span>
+          <button
+            v-if="deletePhongInfo.soGiuong === 0"
+            class="danger-button"
+            type="button"
+            @click="confirmDeletePhong"
+          >
+            Xác nhận xóa
+          </button>
+        </div>
+      </div>
+    </div>
 
-            <strong>
-              {{ deletePhongInfo.soGiuong }}
-            </strong>
-          </div>
+    <div
+      v-if="showDeleteHopDongModal"
+      class="modal-overlay"
+      @click.self="closeDeleteHopDongModal"
+    >
+      <div class="modal">
+        <div class="modal-header">
+          <h3>Xác nhận xóa hợp đồng</h3>
 
+          <button
+            type="button"
+            class="modal-close"
+            @click="closeDeleteHopDongModal"
+          >
+            ×
+          </button>
         </div>
 
-        <p class="delete-modal-note">
-          Hãy xóa hoặc xử lý các giường thuộc phòng
-          trước khi thực hiện thao tác này.
-        </p>
+        <div class="modal-body">
+          <p>
+            Bạn có chắc chắn muốn xóa hợp đồng
+            <strong>
+              {{ deleteHopDongInfo.maHopDong }}
+            </strong>
+            không?
+          </p>
 
-      </template>
+          <p v-if="deleteHopDongErrorMessage" class="error-message">
+            {{ deleteHopDongErrorMessage }}
+          </p>
+        </div>
 
-      <template v-else>
+        <div class="modal-actions">
+          <button
+            type="button"
+            class="secondary"
+            @click="closeDeleteHopDongModal"
+          >
+            Hủy
+          </button>
 
-        <p class="confirm-message">
-          Bạn có chắc chắn muốn xóa phòng
-          <strong>
-            {{ deletePhongInfo.maPhong }}
-          </strong>
+          <button type="button" class="danger" @click="confirmDeleteHopDong">
+            Xóa
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal xóa giường -->
+    <div
+      v-if="showDeleteGiuongModal"
+      class="modal-overlay"
+      @click.self="closeDeleteGiuongModal"
+    >
+      <div class="delete-modal">
+        <!-- Header -->
+        <div class="delete-modal-header">
+          <div class="warning-icon">⚠</div>
+
+          <div>
+            <h3>Xác nhận xóa giường</h3>
+
+            <p>
+              {{ deleteGiuongInfo.maGiuong }}
+              <span v-if="deleteGiuongInfo.maPhong">
+                - Phòng {{ deleteGiuongInfo.maPhong }}
+              </span>
+            </p>
+          </div>
+        </div>
+
+        <!-- Body -->
+        <div class="delete-modal-body">
+          <p class="confirm-message">
+            Bạn có chắc chắn muốn xóa giường
+            <strong>
+              {{ deleteGiuongInfo.maGiuong }}
+            </strong>
+
+            <span v-if="deleteGiuongInfo.maPhong">
+              của phòng
+              <strong>
+                {{ deleteGiuongInfo.maPhong }}
+              </strong>
+            </span>
+
+            không?
+          </p>
+
+          <p class="delete-modal-note">Thao tác này không thể hoàn tác.</p>
+
+          <p v-if="deleteGiuongErrorMessage" class="error-message">
+            {{ deleteGiuongErrorMessage }}
+          </p>
+        </div>
+
+        <!-- Footer -->
+        <div class="delete-modal-actions">
+          <button
+            class="secondary"
+            type="button"
+            @click="closeDeleteGiuongModal"
+          >
+            Đóng
+          </button>
+
+          <button
+            class="danger-button"
+            type="button"
+            @click="confirmDeleteGiuong"
+          >
+            Xác nhận xóa
+          </button>
+        </div>
+      </div>
+    </div>
+    <!-- Modal xóa người thuê -->
+    <div
+      v-if="showDeleteNguoiThueModal"
+      class="modal-overlay"
+      @click.self="closeDeleteNguoiThueModal"
+    >
+      <div class="delete-modal">
+        <div class="delete-modal-header">
+          <div class="warning-icon">⚠</div>
+
+          <div>
+            <h3>Xác nhận xóa người thuê</h3>
+
+            <p>
+              {{ deleteNguoiThueInfo.hoTen }}
+              <span v-if="deleteNguoiThueInfo.cccd">
+                - CCCD: {{ deleteNguoiThueInfo.cccd }}
+              </span>
+            </p>
+          </div>
+        </div>
+
+        <div class="delete-modal-body">
+          <p class="confirm-message">
+            Bạn có chắc chắn muốn xóa người thuê
+            <strong>
+              {{ deleteNguoiThueInfo.hoTen }}
+            </strong>
+            không?
+          </p>
+
+          <p class="delete-modal-note">Thao tác này không thể hoàn tác.</p>
+
+          <p v-if="deleteNguoiThueErrorMessage" class="error-message">
+            {{ deleteNguoiThueErrorMessage }}
+          </p>
+        </div>
+
+        <div class="delete-modal-actions">
+          <button
+            class="secondary"
+            type="button"
+            @click="closeDeleteNguoiThueModal"
+          >
+            Đóng
+          </button>
+
+          <button
+            class="danger-button"
+            type="button"
+            @click="confirmDeleteNguoiThue"
+          >
+            Xác nhận xóa
+          </button>
+        </div>
+      </div>
+    </div>
+    <div
+      v-if="showDeleteHoaDonModal"
+      class="modal-backdrop"
+      @click.self="closeDeleteHoaDonModal"
+    >
+      <div class="modal">
+        <h3>Xóa hóa đơn</h3>
+
+        <p>
+          Bạn có chắc chắn muốn xóa hóa đơn
+          <strong>{{ deleteHoaDonInfo.maHoaDon }}</strong>
           không?
         </p>
 
-        <p class="delete-modal-note">
-          Thao tác này không thể hoàn tác.
+        <p v-if="deleteHoaDonErrorMessage" class="error-message">
+          {{ deleteHoaDonErrorMessage }}
         </p>
 
-      </template>
+        <div class="modal-actions">
+          <button type="button" @click="closeDeleteHoaDonModal">Hủy</button>
 
-      <p
-        v-if="deletePhongErrorMessage"
-        class="error-message"
-      >
-        {{ deletePhongErrorMessage }}
-      </p>
-
-    </div>
-
-    <!-- Footer -->
-    <div class="delete-modal-actions">
-
-      <button
-        class="secondary"
-        type="button"
-        @click="closeDeletePhongModal"
-      >
-        Đóng
-      </button>
-
-      <button
-        v-if="deletePhongInfo.soGiuong === 0"
-        class="danger-button"
-        type="button"
-        @click="confirmDeletePhong"
-      >
-        Xác nhận xóa
-      </button>
-
-    </div>
-  </div>
-</div>
-
-<div
-  v-if="showDeleteHopDongModal"
-  class="modal-overlay"
-  @click.self="closeDeleteHopDongModal"
->
-  <div class="modal">
-    <div class="modal-header">
-      <h3>Xác nhận xóa hợp đồng</h3>
-
-      <button
-        type="button"
-        class="modal-close"
-        @click="closeDeleteHopDongModal"
-      >
-        ×
-      </button>
-    </div>
-
-    <div class="modal-body">
-      <p>
-        Bạn có chắc chắn muốn xóa hợp đồng
-        <strong>
-          {{ deleteHopDongInfo.maHopDong }}
-        </strong>
-        không?
-      </p>
-
-      <p
-        v-if="deleteHopDongErrorMessage"
-        class="error-message"
-      >
-        {{ deleteHopDongErrorMessage }}
-      </p>
-    </div>
-
-    <div class="modal-actions">
-      <button
-        type="button"
-        class="secondary"
-        @click="closeDeleteHopDongModal"
-      >
-        Hủy
-      </button>
-
-      <button
-        type="button"
-        class="danger"
-        @click="confirmDeleteHopDong"
-      >
-        Xóa
-      </button>
-    </div>
-  </div>
-</div>
-
-<!-- Modal xóa giường -->
-<div
-  v-if="showDeleteGiuongModal"
-  class="modal-overlay"
-  @click.self="closeDeleteGiuongModal"
->
-  <div class="delete-modal">
-
-    <!-- Header -->
-    <div class="delete-modal-header">
-      <div class="warning-icon">
-        ⚠
-      </div>
-
-      <div>
-        <h3>
-          Xác nhận xóa giường
-        </h3>
-
-        <p>
-          {{ deleteGiuongInfo.maGiuong }}
-          <span v-if="deleteGiuongInfo.maPhong">
-            - Phòng {{ deleteGiuongInfo.maPhong }}
-          </span>
-        </p>
+          <button type="button" class="btn danger" @click="confirmDeleteHoaDon">
+            Xóa
+          </button>
+        </div>
       </div>
     </div>
-
-    <!-- Body -->
-    <div class="delete-modal-body">
-
-      <p class="confirm-message">
-        Bạn có chắc chắn muốn xóa giường
-        <strong>
-          {{ deleteGiuongInfo.maGiuong }}
-        </strong>
-
-        <span v-if="deleteGiuongInfo.maPhong">
-          của phòng
-          <strong>
-            {{ deleteGiuongInfo.maPhong }}
-          </strong>
-        </span>
-
-        không?
-      </p>
-
-      <p class="delete-modal-note">
-        Thao tác này không thể hoàn tác.
-      </p>
-
-      <p
-        v-if="deleteGiuongErrorMessage"
-        class="error-message"
-      >
-        {{ deleteGiuongErrorMessage }}
-      </p>
-
-    </div>
-
-    <!-- Footer -->
-    <div class="delete-modal-actions">
-
-      <button
-        class="secondary"
-        type="button"
-        @click="closeDeleteGiuongModal"
-      >
-        Đóng
-      </button>
-
-      <button
-        class="danger-button"
-        type="button"
-        @click="confirmDeleteGiuong"
-      >
-        Xác nhận xóa
-      </button>
-
-    </div>
-
-  </div>
-</div>
-<!-- Modal xóa người thuê -->
-<div
-  v-if="showDeleteNguoiThueModal"
-  class="modal-overlay"
-  @click.self="closeDeleteNguoiThueModal"
->
-  <div class="delete-modal">
-
-    <div class="delete-modal-header">
-      <div class="warning-icon">
-        ⚠
-      </div>
-
-      <div>
-        <h3>
-          Xác nhận xóa người thuê
-        </h3>
-
-        <p>
-          {{ deleteNguoiThueInfo.hoTen }}
-          <span v-if="deleteNguoiThueInfo.cccd">
-            - CCCD: {{ deleteNguoiThueInfo.cccd }}
-          </span>
-        </p>
-      </div>
-    </div>
-
-    <div class="delete-modal-body">
-
-      <p class="confirm-message">
-        Bạn có chắc chắn muốn xóa người thuê
-        <strong>
-          {{ deleteNguoiThueInfo.hoTen }}
-        </strong>
-        không?
-      </p>
-
-      <p class="delete-modal-note">
-        Thao tác này không thể hoàn tác.
-      </p>
-
-      <p
-        v-if="deleteNguoiThueErrorMessage"
-        class="error-message"
-      >
-        {{ deleteNguoiThueErrorMessage }}
-      </p>
-
-    </div>
-
-    <div class="delete-modal-actions">
-
-      <button
-        class="secondary"
-        type="button"
-        @click="closeDeleteNguoiThueModal"
-      >
-        Đóng
-      </button>
-
-      <button
-        class="danger-button"
-        type="button"
-        @click="confirmDeleteNguoiThue"
-      >
-        Xác nhận xóa
-      </button>
-
-    </div>
-
-  </div>
-</div>
   </div>
 </template>
 
@@ -2537,7 +2775,7 @@ onMounted(() => {
 :global(body) {
   margin: 0;
   background: linear-gradient(135deg, #f8fafc, #e2e8f0);
-  font-family: Inter, 'Segoe UI', sans-serif;
+  font-family: Inter, "Segoe UI", sans-serif;
   color: #0f172a;
 }
 
@@ -2705,7 +2943,11 @@ textarea {
 .metric-card .metric-overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(255,255,255,0.0), rgba(255,255,255,0.0));
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0),
+    rgba(255, 255, 255, 0)
+  );
   z-index: 1;
 }
 
@@ -2731,23 +2973,53 @@ textarea {
 }
 
 .metric-card.metric-nhatro .metric-decor {
-  background-image: linear-gradient(135deg, #eff6ff, #dbeafe), repeating-linear-gradient(90deg, rgba(255,255,255,0.06) 0 2px, transparent 2px 10px);
+  background-image:
+    linear-gradient(135deg, #eff6ff, #dbeafe),
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.06) 0 2px,
+      transparent 2px 10px
+    );
 }
 
 .metric-card.metric-phong .metric-decor {
-  background-image: linear-gradient(135deg, #fff7ed, #ffedd5), repeating-linear-gradient(180deg, rgba(0,0,0,0.03) 0 1px, transparent 1px 8px);
+  background-image:
+    linear-gradient(135deg, #fff7ed, #ffedd5),
+    repeating-linear-gradient(
+      180deg,
+      rgba(0, 0, 0, 0.03) 0 1px,
+      transparent 1px 8px
+    );
 }
 
 .metric-card.metric-giuong .metric-decor {
-  background-image: linear-gradient(135deg, #f0fdf4, #bbf7d0), repeating-linear-gradient(90deg, rgba(255,255,255,0.06) 0 2px, transparent 2px 12px);
+  background-image:
+    linear-gradient(135deg, #f0fdf4, #bbf7d0),
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.06) 0 2px,
+      transparent 2px 12px
+    );
 }
 
 .metric-card.metric-hopdong .metric-decor {
-  background-image: linear-gradient(135deg, #fff1f2, #fed7e2), repeating-linear-gradient(180deg, rgba(0,0,0,0.03) 0 1px, transparent 1px 6px);
+  background-image:
+    linear-gradient(135deg, #fff1f2, #fed7e2),
+    repeating-linear-gradient(
+      180deg,
+      rgba(0, 0, 0, 0.03) 0 1px,
+      transparent 1px 6px
+    );
 }
 
 .metric-card.metric-hoadon .metric-decor {
-  background-image: linear-gradient(135deg, #f8fafc, #e6eef8), repeating-linear-gradient(90deg, rgba(255,255,255,0.06) 0 2px, transparent 2px 10px);
+  background-image:
+    linear-gradient(135deg, #f8fafc, #e6eef8),
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.06) 0 2px,
+      transparent 2px 10px
+    );
 }
 
 .full-width {
@@ -2761,7 +3033,11 @@ textarea {
 }
 
 .nha-tro-card {
-  background: linear-gradient(180deg, rgba(255,255,255,0.9), rgba(255,255,255,0.9));
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.9),
+    rgba(255, 255, 255, 0.9)
+  );
   border: 1px solid rgba(148, 163, 184, 0.12);
   padding: 12px;
   border-radius: 12px;
@@ -3264,6 +3540,211 @@ td {
   color: #b91c1c;
 
   font-size: 14px;
+}
+
+/* =========================================
+   MODAL XÁC NHẬN XÓA HÓA ĐƠN
+   ========================================= */
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 100vw;
+  height: 100vh;
+
+  padding: 20px;
+
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(4px);
+}
+
+/* Hộp thông báo */
+.modal-backdrop .modal {
+  width: min(460px, calc(100vw - 40px));
+  max-width: 460px;
+
+  margin: 0;
+
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+
+  box-shadow:
+    0 25px 50px rgba(15, 23, 42, 0.25),
+    0 8px 20px rgba(15, 23, 42, 0.12);
+
+  overflow: hidden;
+
+  animation: delete-modal-show 0.2s ease-out;
+}
+
+@keyframes delete-modal-show {
+  from {
+    opacity: 0;
+    transform: translateY(-12px) scale(0.97);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Tiêu đề */
+.modal-backdrop .modal h3 {
+  margin: 0;
+  padding: 20px 22px;
+
+  font-size: 1.2rem;
+  font-weight: 700;
+
+  color: #0f172a;
+
+  border-bottom: 1px solid #e2e8f0;
+}
+
+/* Nội dung */
+.modal-backdrop .modal > p {
+  margin: 0;
+  padding: 20px 22px;
+
+  color: #475569;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.modal-backdrop .modal > p strong {
+  color: #dc2626;
+  font-weight: 700;
+}
+
+/* Thông báo lỗi */
+.modal-backdrop .modal .error-message {
+  margin: -6px 22px 16px !important;
+  padding: 10px 12px;
+
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+
+  background: #fef2f2;
+  color: #b91c1c;
+
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+/* Khu vực nút */
+.modal-backdrop .modal .modal-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+
+  gap: 10px;
+
+  padding: 16px 22px;
+
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+}
+
+/* Tất cả button trong modal */
+.modal-backdrop .modal .modal-actions button {
+  min-width: 88px;
+  height: 40px;
+
+  padding: 0 18px;
+
+  border: none;
+  border-radius: 9px;
+
+  font-size: 0.9rem;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition:
+    background-color 0.2s ease,
+    transform 0.15s ease,
+    box-shadow 0.2s ease;
+}
+
+/* Nút Hủy */
+.modal-backdrop .modal .modal-actions button:first-child {
+  background: #e2e8f0;
+  color: #334155;
+}
+
+.modal-backdrop .modal .modal-actions button:first-child:hover {
+  background: #cbd5e1;
+}
+
+.modal-backdrop .modal .modal-actions button:first-child:active {
+  transform: translateY(1px);
+}
+
+/* Nút Xóa */
+.modal-backdrop .modal .modal-actions .danger {
+  background: #dc2626;
+  color: #ffffff;
+
+  box-shadow: 0 3px 8px rgba(220, 38, 38, 0.25);
+}
+
+.modal-backdrop .modal .modal-actions .danger:hover {
+  background: #b91c1c;
+
+  box-shadow: 0 5px 12px rgba(220, 38, 38, 0.3);
+
+  transform: translateY(-1px);
+}
+
+.modal-backdrop .modal .modal-actions .danger:active {
+  background: #991b1b;
+  transform: translateY(1px);
+}
+
+/* Trạng thái đang disabled */
+.modal-backdrop .modal .modal-actions button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Mobile */
+@media (max-width: 600px) {
+  .modal-backdrop {
+    padding: 16px;
+  }
+
+  .modal-backdrop .modal {
+    width: 100%;
+    max-width: none;
+    border-radius: 14px;
+  }
+
+  .modal-backdrop .modal h3 {
+    padding: 18px;
+  }
+
+  .modal-backdrop .modal > p {
+    padding: 18px;
+  }
+
+  .modal-backdrop .modal .modal-actions {
+    padding: 14px 18px;
+  }
+
+  .modal-backdrop .modal .modal-actions button {
+    flex: 1;
+    min-width: 0;
+  }
 }
 
 @media (max-width: 600px) {
