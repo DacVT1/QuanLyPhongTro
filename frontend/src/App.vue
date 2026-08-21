@@ -1,20 +1,11 @@
 <script setup lang="ts">
-import {
-  Chart as ChartJS,
-  ArcElement,
-  Tooltip,
-  Legend,
-} from "chart.js";
+import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
 
 import { Doughnut } from "vue-chartjs";
 import { computed, onMounted, ref } from "vue";
 import api from "./services/api";
 import { getImageUrl } from "./utils/image";
-ChartJS.register(
-  ArcElement,
-  Tooltip,
-  Legend,
-);
+ChartJS.register(ArcElement, Tooltip, Legend);
 const cccdMatTruocPreviewUrl = ref("");
 const cccdMatSauPreviewUrl = ref("");
 const tabs = [
@@ -39,26 +30,16 @@ const tienDichVuKhacError = ref("");
 
 function getPhongChartData(house: any) {
   return {
-    labels: [
-      "Phòng có người ở",
-      "Phòng còn trống",
-    ],
+    labels: ["Phòng có người ở", "Phòng còn trống"],
 
     datasets: [
       {
         data: [
           house.totalPhongCoNguoi,
-          Math.max(
-            house.totalPhong -
-              house.totalPhongCoNguoi,
-            0,
-          ),
+          Math.max(house.totalPhong - house.totalPhongCoNguoi, 0),
         ],
 
-        backgroundColor: [
-          "#2563eb",
-          "#e5e7eb",
-        ],
+        backgroundColor: ["#2563eb", "#e5e7eb"],
 
         borderWidth: 0,
       },
@@ -68,26 +49,16 @@ function getPhongChartData(house: any) {
 
 function getGiuongChartData(house: any) {
   return {
-    labels: [
-      "Giường có người ở",
-      "Giường còn trống",
-    ],
+    labels: ["Giường có người ở", "Giường còn trống"],
 
     datasets: [
       {
         data: [
           house.totalGiuongCoNguoi,
-          Math.max(
-            house.totalGiuong -
-              house.totalGiuongCoNguoi,
-            0,
-          ),
+          Math.max(house.totalGiuong - house.totalGiuongCoNguoi, 0),
         ],
 
-        backgroundColor: [
-          "#7c3aed",
-          "#e5e7eb",
-        ],
+        backgroundColor: ["#7c3aed", "#e5e7eb"],
 
         borderWidth: 0,
       },
@@ -97,26 +68,16 @@ function getGiuongChartData(house: any) {
 
 function getThanhToanChartData(house: any) {
   return {
-    labels: [
-      "Đã thanh toán",
-      "Chưa thanh toán",
-    ],
+    labels: ["Đã thanh toán", "Chưa thanh toán"],
 
     datasets: [
       {
         data: [
           house.totalGiuongDaThanhToan,
-          Math.max(
-            house.totalGiuong -
-              house.totalGiuongDaThanhToan,
-            0,
-          ),
+          Math.max(house.totalGiuong - house.totalGiuongDaThanhToan, 0),
         ],
 
-        backgroundColor: [
-          "#16a34a",
-          "#e5e7eb",
-        ],
+        backgroundColor: ["#16a34a", "#e5e7eb"],
 
         borderWidth: 0,
       },
@@ -148,16 +109,14 @@ const doughnutCenterTextPlugin = {
   afterDraw(chart: any) {
     const { ctx } = chart;
 
-    const dataset =
-      chart.data.datasets[0];
+    const dataset = chart.data.datasets[0];
 
     if (!dataset?.data?.length) {
       return;
     }
 
     const total = dataset.data.reduce(
-      (sum: number, value: number) =>
-        sum + Number(value),
+      (sum: number, value: number) => sum + Number(value),
       0,
     );
 
@@ -165,17 +124,13 @@ const doughnutCenterTextPlugin = {
       return;
     }
 
-    const currentValue =
-      Number(dataset.data[0]);
+    const currentValue = Number(dataset.data[0]);
 
-    const percent =
-      (currentValue / total) * 100;
+    const percent = (currentValue / total) * 100;
 
-    const text =
-      `${percent.toFixed(2).replace(/\.00$/, "")}%`;
+    const text = `${percent.toFixed(2).replace(/\.00$/, "")}%`;
 
-    const meta =
-      chart.getDatasetMeta(0);
+    const meta = chart.getDatasetMeta(0);
 
     if (!meta?.data?.length) {
       return;
@@ -186,20 +141,14 @@ const doughnutCenterTextPlugin = {
 
     ctx.save();
 
-    ctx.font =
-      "800 28px Arial";
+    ctx.font = "800 28px Arial";
 
-    ctx.fillStyle =
-      "#172033";
+    ctx.fillStyle = "#172033";
 
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
 
-    ctx.fillText(
-      text,
-      x,
-      y,
-    );
+    ctx.fillText(text, x, y);
 
     ctx.restore();
   },
@@ -254,8 +203,7 @@ function handleTienDichVuKhacInput(event: Event) {
   const value = input.value;
 
   if (!/^\d*$/.test(value.replace(/,/g, ""))) {
-    tienDichVuKhacError.value =
-      "Tiền dịch vụ khác chỉ được nhập số.";
+    tienDichVuKhacError.value = "Tiền dịch vụ khác chỉ được nhập số.";
     return;
   }
 
@@ -263,8 +211,7 @@ function handleTienDichVuKhacInput(event: Event) {
 
   const rawValue = value.replace(/,/g, "");
 
-  hoaDonForm.value.tienDichVuKhac =
-    Number(rawValue || 0);
+  hoaDonForm.value.tienDichVuKhac = Number(rawValue || 0);
 
   tienDichVuKhacDisplay.value = rawValue
     ? Number(rawValue).toLocaleString("en-US")
@@ -409,84 +356,57 @@ const hoaDons = ref<any[]>([]);
 const nhaTroDashboard = computed(() => {
   return nhaTros.value.map((nhaTro) => {
     const rooms = phongs.value.filter(
-      (phong) =>
-        phong.nhaTro?.id === nhaTro.id,
+      (phong) => phong.nhaTro?.id === nhaTro.id,
     );
 
     const beds = giuongs.value.filter(
-      (giuong) =>
-        giuong.phong?.nhaTro?.id === nhaTro.id,
+      (giuong) => giuong.phong?.nhaTro?.id === nhaTro.id,
     );
 
-    const activeContracts =
-      hopDongs.value.filter(
-        (hopDong) =>
-          hopDong.trangThai === "active" &&
-          hopDong.giuong?.phong?.nhaTro?.id ===
-            nhaTro.id,
-      );
+    const activeContracts = hopDongs.value.filter(
+      (hopDong) =>
+        hopDong.trangThai === "active" &&
+        hopDong.giuong?.phong?.nhaTro?.id === nhaTro.id,
+    );
 
     const occupiedRoomIds = new Set(
       activeContracts
-        .map(
-          (hopDong) =>
-            hopDong.giuong?.phong?.id,
-        )
+        .map((hopDong) => hopDong.giuong?.phong?.id)
         .filter(Boolean),
     );
 
     const occupiedBedIds = new Set(
-      activeContracts
-        .map(
-          (hopDong) =>
-            hopDong.giuong?.id,
-        )
-        .filter(Boolean),
+      activeContracts.map((hopDong) => hopDong.giuong?.id).filter(Boolean),
     );
 
     const paidContracts = hoaDons.value.filter(
       (hoaDon) =>
-        hoaDon.trangThai ===
-          "DA_THANH_TOAN" &&
-        hoaDon.hopDong?.giuong?.phong?.nhaTro
-          ?.id === nhaTro.id,
+        hoaDon.trangThai === "DA_THANH_TOAN" &&
+        hoaDon.hopDong?.giuong?.phong?.nhaTro?.id === nhaTro.id,
     );
 
     const paidBedIds = new Set(
-      paidContracts
-        .map(
-          (hoaDon) =>
-            hoaDon.hopDong?.giuong?.id,
-        )
-        .filter(Boolean),
+      paidContracts.map((hoaDon) => hoaDon.hopDong?.giuong?.id).filter(Boolean),
     );
 
     return {
       id: nhaTro.id,
 
-      maNhaTro:
-        nhaTro.maNhaTro ?? "",
+      maNhaTro: nhaTro.maNhaTro ?? "",
 
-      tenNhaTro:
-        nhaTro.tenNhaTro ?? "",
+      tenNhaTro: nhaTro.tenNhaTro ?? "",
 
-      soTang:
-        Number(nhaTro.soTang ?? 0),
+      soTang: Number(nhaTro.soTang ?? 0),
 
-      totalPhong:
-        rooms.length,
+      totalPhong: rooms.length,
 
-      totalPhongCoNguoi:
-        occupiedRoomIds.size,
+      totalPhongCoNguoi: occupiedRoomIds.size,
 
-      totalGiuong:
-        beds.length,
+      totalGiuong: beds.length,
 
-      totalGiuongCoNguoi:
-        occupiedBedIds.size,
+      totalGiuongCoNguoi: occupiedBedIds.size,
 
-      totalGiuongDaThanhToan:
-        paidBedIds.size,
+      totalGiuongDaThanhToan: paidBedIds.size,
     };
   });
 });
@@ -1808,23 +1728,15 @@ function editHoaDon(item: any) {
     tienDien,
     tienNuoc,
     tienDichVuKhac,
-    tongTien:
-      tienPhong +
-      tienDien +
-      tienNuoc +
-      tienDichVuKhac,
+    tongTien: tienPhong + tienDien + tienNuoc + tienDichVuKhac,
     trangThai: item.trangThai ?? "chua_thanh_toan",
     ghiChu: item.ghiChu ?? "",
     hopDongId: item.hopDong?.id ?? "",
   };
   // Cập nhật giá trị hiển thị, KHÔNG tạo ref mới
-  tienDienDisplay.value = tienDien
-    ? tienDien.toLocaleString("en-US")
-    : "0";
+  tienDienDisplay.value = tienDien ? tienDien.toLocaleString("en-US") : "0";
 
-  tienNuocDisplay.value = tienNuoc
-    ? tienNuoc.toLocaleString("en-US")
-    : "0";
+  tienNuocDisplay.value = tienNuoc ? tienNuoc.toLocaleString("en-US") : "0";
 
   tienDichVuKhacDisplay.value = tienDichVuKhac
     ? tienDichVuKhac.toLocaleString("en-US")
@@ -2151,126 +2063,131 @@ onMounted(() => {
             <strong>{{ summary.totalHoaDon }}</strong>
           </div>
         </div>
-        <div class="dashboard-chart-card">
+        <div
+          v-for="house in nhaTroDashboard"
+          :key="house.id"
+          class="dashboard-house-card"
+        >
+          <!-- =====================================================
+       THÔNG TIN NHÀ TRỌ
+       ===================================================== -->
 
-  <h4>
-    Tỷ lệ phòng có người ở
-  </h4>
-<div
-  v-for="house in nhaTroDashboard"
-  :key="house.id"
->
-  <div class="chart-container">
-  
-    <Doughnut
-      :data="getPhongChartData(house)"
-      :options="doughnutOptions"
-      :plugins="[doughnutCenterTextPlugin]"
-    />
+          <div class="dashboard-house-header">
+            <div>
+              <h3>
+                {{ house.tenNhaTro }}
 
-  </div>
+                <span v-if="house.maNhaTro"> ({{ house.maNhaTro }}) </span>
+              </h3>
 
-  <div class="chart-value">
-    <strong>
-      {{ house.totalPhongCoNguoi }}/{{ house.totalPhong }}
-    </strong>
+              <p>Tổng số tầng: {{ house.soTang }} tầng</p>
+            </div>
+          </div>
 
-    <span>phòng</span>
-  </div>
+          <!-- =====================================================
+       3 BIỂU ĐỒ
+       ===================================================== -->
 
-  <div class="chart-description">
+          <div class="dashboard-chart-grid">
+            <!-- =================================================
+         BIỂU ĐỒ 1
+         ================================================= -->
 
-    <div class="description-icon">
-      👥
-    </div>
+            <div class="dashboard-chart-card">
+              <h4>Tỷ lệ phòng có người ở</h4>
 
-    <p>
-      Tỷ lệ phòng đang có người ở
-      so với tổng số phòng của nhà trọ.
-    </p>
+              <div class="chart-container">
+                <Doughnut
+                  :data="getPhongChartData(house)"
+                  :options="doughnutOptions"
+                  :plugins="[doughnutCenterTextPlugin]"
+                />
+              </div>
 
-  </div>
+              <div class="chart-value">
+                <strong>
+                  {{ house.totalPhongCoNguoi }}/{{ house.totalPhong }}
+                </strong>
 
-</div>
+                <span> phòng </span>
+              </div>
 
+              <div class="chart-description">
+                <div class="description-icon">👥</div>
 
-<div class="dashboard-chart-card">
+                <p>
+                  Tỷ lệ phòng đang có người ở so với tổng số phòng của nhà trọ.
+                </p>
+              </div>
+            </div>
 
-  <h4>
-    Tỷ lệ số giường có người ở
-  </h4>
+            <!-- =================================================
+         BIỂU ĐỒ 2
+         ================================================= -->
 
-  <div class="chart-container">
+            <div class="dashboard-chart-card">
+              <h4>Tỷ lệ số giường có người ở</h4>
 
-    <Doughnut
-      :data="getGiuongChartData(house)"
-      :options="doughnutOptions"
-      :plugins="[doughnutCenterTextPlugin]"
-    />
+              <div class="chart-container">
+                <Doughnut
+                  :data="getGiuongChartData(house)"
+                  :options="doughnutOptions"
+                  :plugins="[doughnutCenterTextPlugin]"
+                />
+              </div>
 
-  </div>
+              <div class="chart-value">
+                <strong>
+                  {{ house.totalGiuongCoNguoi }}/{{ house.totalGiuong }}
+                </strong>
 
-  <div class="chart-value">
-    <strong>
-      {{ house.totalGiuongCoNguoi }}/{{ house.totalGiuong }}
-    </strong>
+                <span> giường </span>
+              </div>
 
-    <span>giường</span>
-  </div>
+              <div class="chart-description">
+                <div class="description-icon">🛏️</div>
 
-  <div class="chart-description">
+                <p>
+                  Tỷ lệ số giường đang có người ở so với tổng số giường của nhà
+                  trọ.
+                </p>
+              </div>
+            </div>
 
-    <div class="description-icon">
-      🛏️
-    </div>
+            <!-- =================================================
+         BIỂU ĐỒ 3
+         ================================================= -->
 
-    <p>
-      Tỷ lệ số giường đang có người ở
-      so với tổng số giường của nhà trọ.
-    </p>
+            <div class="dashboard-chart-card">
+              <h4>Tỷ lệ giường đã thanh toán hóa đơn</h4>
 
-  </div>
+              <div class="chart-container">
+                <Doughnut
+                  :data="getThanhToanChartData(house)"
+                  :options="doughnutOptions"
+                  :plugins="[doughnutCenterTextPlugin]"
+                />
+              </div>
 
-</div>
+              <div class="chart-value">
+                <strong>
+                  {{ house.totalGiuongDaThanhToan }}/{{ house.totalGiuong }}
+                </strong>
 
-<div class="dashboard-chart-card">
+                <span> hóa đơn </span>
+              </div>
 
-  <h4>
-    Tỷ lệ giường đã thanh toán hóa đơn
-  </h4>
+              <div class="chart-description">
+                <div class="description-icon">🧾</div>
 
-  <div class="chart-container">
-
-    <Doughnut
-      :data="getThanhToanChartData(house)"
-      :options="doughnutOptions"
-      :plugins="[doughnutCenterTextPlugin]"
-    />
-
-  </div>
-
-  <div class="chart-value">
-    <strong>
-      {{ house.totalGiuongDaThanhToan }}/{{ house.totalGiuong }}
-    </strong>
-
-    <span>hóa đơn</span>
-  </div>
-
-  <div class="chart-description">
-
-    <div class="description-icon">
-      🧾
-    </div>
-
-    <p>
-      Tỷ lệ giường đã thanh toán hóa đơn
-      so với tổng số giường của nhà trọ.
-    </p>
-
-  </div>
-</div>
-</div>
+                <p>
+                  Tỷ lệ giường đã thanh toán hóa đơn so với tổng số giường của
+                  nhà trọ.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
       </section>
 
       <!-- ===================================================
@@ -5194,8 +5111,7 @@ tbody tr:hover {
 }
 .dashboard-chart-grid {
   display: grid;
-  grid-template-columns:
-    repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 20px;
   margin-top: 24px;
 }
@@ -5298,8 +5214,7 @@ tbody tr:hover {
 
 @media (max-width: 1200px) {
   .dashboard-chart-grid {
-    grid-template-columns:
-      repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
