@@ -248,8 +248,16 @@ const hopDongPhongOptions = computed(() => {
 function handleNhaTroChangeForHopDong() {
   // Mỗi khi đổi nhà trọ phải xóa giường đang chọn
   hopDongForm.value.giuongId = "";
-  hopDongForm.value.giuongId = ''
+  hopDongForm.value.giuongId = "";
   // Xóa mã hợp đồng cũ vì mã hợp đồng phụ thuộc vào giường
+  hopDongForm.value.maHopDong = "";
+}
+
+function handlePhongChangeForHopDong() {
+  // Đổi phòng -> reset giường
+  hopDongForm.value.giuongId = "";
+
+  // Mã hợp đồng phụ thuộc vào giường
   hopDongForm.value.maHopDong = "";
 }
 
@@ -466,6 +474,7 @@ function resetHopDongForm() {
   hopDongForm.value = {
     maHopDong: "",
     nhaTroId: "",
+    phongId: "",
     ngayBatDau: "",
     ngayKetThuc: "",
     tienThue: 0,
@@ -1116,11 +1125,13 @@ function editHopDong(item: any) {
   editingHopDongId.value = item.id;
 
   const nhaTroId = item.giuong?.phong?.nhaTro?.id ?? "";
+  const phongId = item.giuong?.phong?.id ?? "";
 
   hopDongForm.value = {
     maHopDong: item.maHopDong ?? "",
 
     nhaTroId,
+    phongId,
 
     ngayBatDau: item.ngayBatDau
       ? new Date(item.ngayBatDau).toISOString().slice(0, 10)
@@ -1857,8 +1868,33 @@ onMounted(() => {
                 </option>
               </select>
             </label>
-
             <label v-if="hopDongForm.nhaTroId">
+  {{ requiredLabel("Phòng") }}
+
+  <select
+    v-model="hopDongForm.phongId"
+    @change="handlePhongChangeForHopDong"
+    required
+  >
+    <option value="">Chọn phòng</option>
+
+    <option
+      v-for="item in hopDongPhongOptions"
+      :key="item.id"
+      :value="item.id"
+    >
+      {{ item.maPhong }} - Tầng {{ item.tangSo }}
+    </option>
+  </select>
+
+  <small
+    v-if="hopDongPhongOptions.length === 0"
+    class="form-hint"
+  >
+    Nhà trọ này chưa có phòng.
+  </small>
+</label>
+            <label v-if="hopDongForm.phongId">
               {{ requiredLabel("Giường") }}
 
               <select
