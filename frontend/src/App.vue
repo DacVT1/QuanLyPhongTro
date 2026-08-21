@@ -273,7 +273,9 @@ const tienThueDisplay = ref("");
 const tienDatCocDisplay = ref("");
 const editingHopDongId = ref<string | null>(null);
 const editingHoaDonId = ref<string | null>(null);
+
 const showDeleteHoaDonModal = ref(false);
+const showDeleteHopDongModal = ref(false);
 
 const deleteHoaDonInfo = ref({
   id: "",
@@ -286,6 +288,7 @@ const deleteHopDongInfo = ref({
   id: "",
   maHopDong: "",
 });
+
 
 function requestDeleteHoaDon(item: any) {
   deleteHoaDonInfo.value = {
