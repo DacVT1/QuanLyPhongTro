@@ -3349,11 +3349,39 @@ onMounted(() => {
 </template>
 
 <style scoped>
+/* =========================================================
+   RESET + GLOBAL
+   ========================================================= */
+
+:global(html) {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  min-height: 100%;
+}
+
 :global(body) {
   margin: 0;
+  padding: 0;
+  width: 100%;
+  min-height: 100vh;
+
   background: linear-gradient(135deg, #f8fafc, #e2e8f0);
-  font-family: Inter, "Segoe UI", sans-serif;
+
+  font-family:
+    Inter,
+    "Segoe UI",
+    Roboto,
+    Helvetica,
+    Arial,
+    sans-serif;
+
   color: #0f172a;
+}
+
+:global(#app) {
+  width: 100%;
+  min-height: 100vh;
 }
 
 * {
@@ -3367,267 +3395,925 @@ textarea {
   font: inherit;
 }
 
+
+/* =========================================================
+   APP LAYOUT
+   ========================================================= */
+
 .app-shell {
+  position: relative;
+
   display: grid;
-  grid-template-columns: 260px 1fr;
+
+  grid-template-columns: 260px minmax(0, 1fr);
+
+  grid-template-rows: minmax(100vh, auto);
+
+  width: 100%;
+  min-width: 0;
   min-height: 100vh;
+
+  overflow-x: hidden;
 }
 
+
+/* =========================================================
+   SIDEBAR
+   ========================================================= */
+
 .sidebar {
+  grid-column: 1;
+  grid-row: 1;
+
+  position: sticky;
+  top: 0;
+
+  width: 260px;
+  height: 100vh;
+
+  padding: 24px 16px;
+
   background: #0f172a;
   color: white;
-  padding: 28px 18px;
+
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  z-index: 1000;
+}
+
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  width: 100%;
+
+  margin-bottom: 28px;
 }
 
 .brand {
   display: flex;
   align-items: center;
-  gap: 14px;
-  margin-bottom: 30px;
+
+  gap: 12px;
+
+  min-width: 0;
 }
 
 .brand-mark {
+  flex: 0 0 42px;
+
   width: 42px;
   height: 42px;
+
   border-radius: 12px;
-  background: linear-gradient(135deg, #38bdf8, #2563eb);
+
+  background: linear-gradient(
+    135deg,
+    #38bdf8,
+    #2563eb
+  );
+
   display: grid;
   place-items: center;
+
+  font-size: 1rem;
   font-weight: 700;
+
+  box-shadow:
+    0 6px 16px rgba(37, 99, 235, 0.25);
 }
 
 .brand h1 {
   margin: 0;
-  font-size: 1.2rem;
+
+  color: white;
+
+  font-size: 1.15rem;
+  line-height: 1.2;
+
+  white-space: nowrap;
 }
 
 .brand small {
-  opacity: 0.7;
+  display: block;
+
+  margin-top: 2px;
+
+  color: #94a3b8;
+
+  font-size: 0.72rem;
 }
+
+
+/* =========================================================
+   MENU BUTTON
+   ========================================================= */
+
+.menu-toggle {
+  border: none;
+
+  display: grid;
+  place-items: center;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease;
+}
+
+.menu-toggle:hover {
+  transform: translateY(-1px);
+}
+
+.menu-open-button {
+  display: none;
+
+  position: fixed;
+
+  top: 16px;
+  left: 16px;
+
+  width: 42px;
+  height: 42px;
+
+  border-radius: 10px;
+
+  background: #0f172a;
+  color: white;
+
+  font-size: 1.2rem;
+
+  box-shadow:
+    0 8px 20px rgba(15, 23, 42, 0.2);
+
+  z-index: 1200;
+}
+
+.menu-close-button {
+  display: none;
+
+  flex: 0 0 34px;
+
+  width: 34px;
+  height: 34px;
+
+  border-radius: 8px;
+
+  background: rgba(255, 255, 255, 0.08);
+
+  color: white;
+
+  font-size: 1.2rem;
+}
+
+.menu-close-button:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+
+/* =========================================================
+   NAVIGATION
+   ========================================================= */
 
 .nav {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+
+  gap: 8px;
+
+  width: 100%;
 }
 
 .nav-item {
+  display: flex;
+  align-items: center;
+
+  width: 100%;
+  min-height: 44px;
+
   border: none;
   border-radius: 10px;
+
+  padding: 10px 12px;
+
   background: rgba(148, 163, 184, 0.08);
-  color: white;
-  padding: 12px 14px;
+
+  color: #e2e8f0;
+
   text-align: left;
+
   cursor: pointer;
-  transition: 0.2s ease;
+
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.nav-item:hover {
+  background: rgba(148, 163, 184, 0.15);
+
+  color: white;
+
+  transform: translateX(2px);
 }
 
 .nav-item.active {
-  background: linear-gradient(135deg, #38bdf8, #2563eb);
+  background: linear-gradient(
+    135deg,
+    #38bdf8,
+    #2563eb
+  );
+
+  color: white;
+
+  box-shadow:
+    0 5px 14px rgba(37, 99, 235, 0.25);
 }
 
-.content {
-  padding: 28px;
+.nav-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  flex: 0 0 28px;
+
+  width: 28px;
+
+  font-size: 0.95rem;
+
+  line-height: 1;
 }
+
+.nav-label {
+  min-width: 0;
+
+  font-size: 0.88rem;
+  font-weight: 500;
+
+  white-space: nowrap;
+}
+
+
+/* =========================================================
+   MENU OVERLAY
+   ========================================================= */
+
+.menu-overlay {
+  display: none;
+
+  position: fixed;
+
+  inset: 0;
+
+  background: rgba(15, 23, 42, 0.5);
+
+  backdrop-filter: blur(2px);
+
+  z-index: 900;
+}
+
+
+/* =========================================================
+   MAIN CONTENT
+   ========================================================= */
+
+.content {
+  grid-column: 2;
+  grid-row: 1;
+
+  min-width: 0;
+  width: 100%;
+
+  padding: 28px;
+
+  overflow-x: hidden;
+}
+
+
+/* =========================================================
+   TOP BAR
+   ========================================================= */
 
 .topbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 22px;
+
+  gap: 20px;
+
+  width: 100%;
+
+  margin-bottom: 24px;
+}
+
+.topbar > div {
+  min-width: 0;
 }
 
 .eyebrow {
   margin: 0;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  font-size: 0.7rem;
+
   color: #64748b;
+
+  letter-spacing: 0.08em;
+
+  text-transform: uppercase;
+
+  font-size: 0.7rem;
+  font-weight: 600;
 }
 
 .topbar h2 {
-  margin: 4px 0 0;
+  margin: 5px 0 0;
+
+  color: #0f172a;
+
   font-size: 2rem;
+  line-height: 1.2;
 }
+
+
+/* =========================================================
+   BUTTONS
+   ========================================================= */
 
 .primary,
 .secondary,
 .table-btn {
   border: none;
-  border-radius: 10px;
+
+  border-radius: 9px;
+
   padding: 10px 14px;
+
   cursor: pointer;
+
   font-weight: 600;
+
+  transition:
+    background 0.2s ease,
+    transform 0.15s ease,
+    box-shadow 0.2s ease;
 }
 
 .primary {
-  background: linear-gradient(135deg, #2563eb, #0ea5e9);
+  background: linear-gradient(
+    135deg,
+    #2563eb,
+    #0ea5e9
+  );
+
   color: white;
+
+  box-shadow:
+    0 4px 10px rgba(37, 99, 235, 0.2);
+}
+
+.primary:hover {
+  transform: translateY(-1px);
+
+  box-shadow:
+    0 6px 14px rgba(37, 99, 235, 0.25);
 }
 
 .secondary {
   background: #e2e8f0;
+
   color: #0f172a;
 }
 
+.secondary:hover {
+  background: #cbd5e1;
+}
+
+
+/* =========================================================
+   PANELS / GRID
+   ========================================================= */
+
 .panel-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 22px;
+
+  grid-template-columns:
+    repeat(
+      auto-fit,
+      minmax(280px, 1fr)
+    );
+
+  gap: 20px;
+
+  width: 100%;
+
+  min-width: 0;
 }
 
-.metric-card,
 .panel {
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  border-radius: 18px;
+  min-width: 0;
+
+  width: 100%;
+
   padding: 20px;
-  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.06);
+
+  background: rgba(255, 255, 255, 0.86);
+
+  border: 1px solid rgba(148, 163, 184, 0.2);
+
+  border-radius: 18px;
+
+  box-shadow:
+    0 12px 24px rgba(15, 23, 42, 0.06);
+
+  backdrop-filter: blur(10px);
+
+  overflow-x: auto;
 }
+
+.panel h3 {
+  margin: 0 0 18px;
+
+  color: #0f172a;
+
+  font-size: 1.1rem;
+}
+
+
+/* =========================================================
+   DASHBOARD METRIC CARD
+   ========================================================= */
 
 .metric-card {
+  position: relative;
+
+  min-height: 130px;
+
   display: flex;
   flex-direction: column;
+
+  justify-content: center;
+
   gap: 6px;
-  position: relative;
+
+  padding: 20px;
+
+  border: 1px solid rgba(148, 163, 184, 0.2);
+
+  border-radius: 18px;
+
   overflow: hidden;
-}
 
-.metric-card .metric-media {
-  position: absolute;
-  inset: 0;
-  display: block;
-}
+  box-shadow:
+    0 12px 24px rgba(15, 23, 42, 0.06);
 
-.metric-card .metric-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-  opacity: 0.12;
-  transform: scale(1.02);
-}
+  background: rgba(255, 255, 255, 0.8);
 
-.metric-card .metric-body {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  position: relative;
-  z-index: 2;
-}
-
-.metric-card .metric-overlay {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0),
-    rgba(255, 255, 255, 0)
-  );
-  z-index: 1;
+  backdrop-filter: blur(10px);
 }
 
 .metric-card.highlight {
-  background: linear-gradient(135deg, #eff6ff, #dbeafe);
+  background: linear-gradient(
+    135deg,
+    #eff6ff,
+    #dbeafe
+  );
+}
+
+.metric-card .metric-decor {
+  position: absolute;
+
+  inset: 0;
+
+  z-index: 1;
+
+  pointer-events: none;
+}
+
+.metric-card .metric-body {
+  position: relative;
+
+  z-index: 2;
+
+  display: flex;
+  flex-direction: column;
+
+  gap: 5px;
 }
 
 .metric-card span {
   color: #475569;
+
+  font-size: 0.88rem;
 }
 
 .metric-card strong {
+  color: #0f172a;
+
   font-size: 2rem;
+  line-height: 1.1;
 }
 
-/* Decorative colored blocks for metrics (no images) */
-.metric-card .metric-decor {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  opacity: 1;
-  background-size: cover;
-}
+
+/* =========================================================
+   METRIC COLORS
+   ========================================================= */
 
 .metric-card.metric-nhatro .metric-decor {
-  background-image:
-    linear-gradient(135deg, #eff6ff, #dbeafe),
-    repeating-linear-gradient(
-      90deg,
-      rgba(255, 255, 255, 0.06) 0 2px,
-      transparent 2px 10px
+  background:
+    linear-gradient(
+      135deg,
+      rgba(239, 246, 255, 0.95),
+      rgba(219, 234, 254, 0.95)
     );
 }
 
 .metric-card.metric-phong .metric-decor {
-  background-image:
-    linear-gradient(135deg, #fff7ed, #ffedd5),
-    repeating-linear-gradient(
-      180deg,
-      rgba(0, 0, 0, 0.03) 0 1px,
-      transparent 1px 8px
+  background:
+    linear-gradient(
+      135deg,
+      rgba(255, 247, 237, 0.95),
+      rgba(255, 237, 213, 0.95)
     );
 }
 
 .metric-card.metric-giuong .metric-decor {
-  background-image:
-    linear-gradient(135deg, #f0fdf4, #bbf7d0),
-    repeating-linear-gradient(
-      90deg,
-      rgba(255, 255, 255, 0.06) 0 2px,
-      transparent 2px 12px
+  background:
+    linear-gradient(
+      135deg,
+      rgba(240, 253, 244, 0.95),
+      rgba(187, 247, 208, 0.95)
     );
 }
 
 .metric-card.metric-hopdong .metric-decor {
-  background-image:
-    linear-gradient(135deg, #fff1f2, #fed7e2),
-    repeating-linear-gradient(
-      180deg,
-      rgba(0, 0, 0, 0.03) 0 1px,
-      transparent 1px 6px
+  background:
+    linear-gradient(
+      135deg,
+      rgba(255, 241, 242, 0.95),
+      rgba(254, 215, 226, 0.95)
     );
 }
 
 .metric-card.metric-hoadon .metric-decor {
-  background-image:
-    linear-gradient(135deg, #f8fafc, #e6eef8),
-    repeating-linear-gradient(
-      90deg,
-      rgba(255, 255, 255, 0.06) 0 2px,
-      transparent 2px 10px
+  background:
+    linear-gradient(
+      135deg,
+      rgba(248, 250, 252, 0.95),
+      rgba(226, 232, 240, 0.95)
     );
+}
+
+
+/* =========================================================
+   FORM
+   ========================================================= */
+
+.form-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      2,
+      minmax(0, 1fr)
+    );
+
+  gap: 16px;
+
+  width: 100%;
+}
+
+.form-grid label {
+  display: flex;
+  flex-direction: column;
+
+  min-width: 0;
+
+  gap: 7px;
+
+  color: #334155;
+
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  min-width: 0;
+
+  border: 1px solid #cbd5e1;
+
+  border-radius: 10px;
+
+  padding: 11px 12px;
+
+  background: white;
+
+  color: #0f172a;
+
+  outline: none;
+
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: #3b82f6;
+
+  box-shadow:
+    0 0 0 3px rgba(59, 130, 246, 0.12);
+}
+
+textarea {
+  resize: vertical;
+
+  min-height: 90px;
+}
+
+.form-hint {
+  display: block;
+
+  margin-top: 2px;
+
+  color: #64748b;
+
+  font-size: 0.78rem;
+
+  font-weight: 400;
+
+  line-height: 1.4;
 }
 
 .full-width {
   grid-column: 1 / -1;
 }
 
+
+/* =========================================================
+   FORM ACTIONS
+   ========================================================= */
+
+.actions {
+  grid-column: 1 / -1;
+
+  display: flex;
+  align-items: center;
+
+  gap: 10px;
+
+  margin-top: 4px;
+}
+
+
+/* =========================================================
+   CURRENCY INPUT
+   ========================================================= */
+
+.currency-input {
+  position: relative;
+
+  display: flex;
+  align-items: center;
+
+  width: 100%;
+}
+
+.currency-input input {
+  width: 100%;
+
+  padding-right: 60px;
+}
+
+.currency-input span {
+  position: absolute;
+
+  right: 12px;
+
+  color: #64748b;
+
+  font-size: 0.85rem;
+  font-weight: 600;
+
+  pointer-events: none;
+}
+
+.money-input {
+  display: flex;
+  align-items: center;
+
+  gap: 8px;
+
+  width: 100%;
+}
+
+.money-input input {
+  flex: 1;
+}
+
+.money-input span {
+  color: #475569;
+
+  font-weight: 600;
+
+  white-space: nowrap;
+}
+
+
+/* =========================================================
+   TABLE
+   ========================================================= */
+
+.table-responsive {
+  width: 100%;
+
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+
+  min-width: 650px;
+
+  margin-top: 10px;
+
+  border-collapse: collapse;
+
+  table-layout: auto;
+}
+
+th,
+td {
+  padding: 12px 10px;
+
+  border-bottom: 1px solid #e2e8f0;
+
+  text-align: left;
+
+  vertical-align: middle;
+
+  white-space: normal;
+
+  overflow-wrap: anywhere;
+
+  word-break: break-word;
+}
+
+th {
+  background: #f8fafc;
+
+  color: #475569;
+
+  font-size: 0.82rem;
+  font-weight: 700;
+
+  white-space: nowrap;
+}
+
+td {
+  color: #334155;
+
+  font-size: 0.88rem;
+}
+
+tbody tr:hover {
+  background: rgba(248, 250, 252, 0.8);
+}
+
+
+/* =========================================================
+   TABLE ACTIONS
+   ========================================================= */
+
+.row-actions {
+  display: flex;
+  align-items: center;
+
+  gap: 8px;
+
+  white-space: nowrap;
+}
+
+.table-btn {
+  padding: 8px 11px;
+
+  font-size: 0.82rem;
+}
+
+.table-btn.edit {
+  background: #dbeafe;
+
+  color: #1d4ed8;
+}
+
+.table-btn.edit:hover {
+  background: #bfdbfe;
+}
+
+.table-btn.delete {
+  background: #fee2e2;
+
+  color: #b91c1c;
+}
+
+.table-btn.delete:hover {
+  background: #fecaca;
+}
+
+
+/* =========================================================
+   STATUS
+   ========================================================= */
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  min-height: 28px;
+
+  padding: 5px 10px;
+
+  border-radius: 999px;
+
+  font-size: 0.78rem;
+  font-weight: 700;
+
+  white-space: nowrap;
+}
+
+.status-badge.active {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.status-badge.expired {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.status-badge.sap_het_han {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.status-paid {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.status-unpaid {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+
+/* =========================================================
+   NHÀ TRỌ
+   ========================================================= */
+
 .nha-tro-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+
+  grid-template-columns:
+    repeat(
+      auto-fit,
+      minmax(220px, 1fr)
+    );
+
   gap: 12px;
 }
 
 .nha-tro-card {
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.9),
-    rgba(255, 255, 255, 0.9)
-  );
+  padding: 14px;
+
+  background: rgba(255, 255, 255, 0.9);
+
   border: 1px solid rgba(148, 163, 184, 0.12);
-  padding: 12px;
+
   border-radius: 12px;
 }
 
 .nha-tro-row {
   display: flex;
+
   gap: 12px;
+
   margin-top: 8px;
+}
+
+.nha-tro-metric {
+  min-width: 0;
 }
 
 .nha-tro-metric small {
   display: block;
+
   color: #64748b;
 }
 
@@ -3635,119 +4321,103 @@ textarea {
   font-size: 1.25rem;
 }
 
-.panel h3 {
-  margin-top: 0;
-}
+
+/* =========================================================
+   RELATIONSHIP
+   ========================================================= */
 
 .relationship {
-  font-size: 1.04rem;
-  line-height: 1.7;
   margin: 0;
+
+  font-size: 1.04rem;
+
+  line-height: 1.7;
 }
 
-.form-grid {
-  display: grid;
-  gap: 12px;
-}
 
-input,
-select,
-textarea {
-  width: 100%;
-  border: 1px solid #cbd5e1;
-  border-radius: 10px;
-  padding: 11px 12px;
-  background: white;
-}
+/* =========================================================
+   CCCD
+   ========================================================= */
 
-textarea {
-  resize: vertical;
-}
-
-.actions {
+.cccd-current {
   display: flex;
-  gap: 10px;
-}
+  align-items: center;
+  flex-wrap: wrap;
 
-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 12px;
-  table-layout: fixed;
-}
-
-th,
-td {
-  padding: 12px 10px;
-  border-bottom: 1px solid #e2e8f0;
-  text-align: left;
-  white-space: normal;
-  overflow-wrap: anywhere;
-  word-break: break-word;
-}
-
-/* Make tables scroll horizontally when container is too small */
-.panel {
-  overflow-x: auto;
-}
-
-.table-responsive {
-  width: 100%;
-  overflow-x: auto;
-}
-
-.row-actions {
-  display: flex;
   gap: 8px;
+
+  margin-top: 5px;
+
+  padding: 8px 10px;
+
+  border-radius: 8px;
+
+  background: #f8fafc;
+
+  border: 1px solid #e2e8f0;
+
+  font-size: 0.82rem;
 }
 
-.table-btn.edit {
-  background: #dbeafe;
-  color: #1d4ed8;
+.cccd-current span {
+  color: #64748b;
+
+  font-weight: 600;
 }
 
-.table-btn.delete {
-  background: #fee2e2;
-  color: #b91c1c;
+.cccd-current a {
+  color: #2563eb;
+
+  text-decoration: none;
+
+  font-weight: 600;
 }
 
-@media (max-width: 900px) {
-  .app-shell {
-    grid-template-columns: 1fr;
-  }
-
-  .sidebar {
-    padding-bottom: 12px;
-  }
-
-  .content {
-    padding: 16px;
-  }
+.cccd-current a:hover {
+  text-decoration: underline;
 }
-/* ================================
-   MODAL XÓA NHÀ TRỌ
-================================ */
 
-.modal-overlay {
+
+/* =========================================================
+   DELETE MODAL - COMMON
+   ========================================================= */
+
+.modal-overlay,
+.modal-backdrop {
   position: fixed;
+
   inset: 0;
+
   z-index: 9999;
 
   display: flex;
   align-items: center;
   justify-content: center;
 
+  width: 100%;
+  height: 100%;
+
   padding: 20px;
 
   background: rgba(15, 23, 42, 0.55);
+
   backdrop-filter: blur(4px);
 }
 
-.delete-modal {
-  width: min(520px, 100%);
+.delete-modal,
+.modal-backdrop .modal,
+.modal-overlay > .modal {
+  width: min(520px, calc(100vw - 40px));
+
+  max-width: 520px;
+
+  margin: 0;
 
   background: white;
-  border-radius: 18px;
+
+  border: 1px solid #e2e8f0;
+
+  border-radius: 16px;
 
   box-shadow:
     0 25px 50px rgba(15, 23, 42, 0.25),
@@ -3761,21 +4431,33 @@ td {
 @keyframes modal-show {
   from {
     opacity: 0;
-    transform: translateY(-10px) scale(0.98);
+
+    transform:
+      translateY(-10px)
+      scale(0.98);
   }
 
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
+
+    transform:
+      translateY(0)
+      scale(1);
   }
 }
+
+
+/* =========================================================
+   DELETE MODAL HEADER
+   ========================================================= */
 
 .delete-modal-header {
   display: flex;
   align-items: center;
+
   gap: 14px;
 
-  padding: 22px;
+  padding: 20px 22px;
 
   border-bottom: 1px solid #e2e8f0;
 }
@@ -3783,22 +4465,25 @@ td {
 .delete-modal-header h3 {
   margin: 0;
 
-  font-size: 1.25rem;
   color: #0f172a;
+
+  font-size: 1.2rem;
+  font-weight: 700;
 }
 
 .delete-modal-header p {
   margin: 5px 0 0;
 
   color: #64748b;
-  font-size: 0.95rem;
+
+  font-size: 0.9rem;
 }
 
 .warning-icon {
+  flex: 0 0 46px;
+
   width: 46px;
   height: 46px;
-
-  flex-shrink: 0;
 
   display: grid;
   place-items: center;
@@ -3806,11 +4491,17 @@ td {
   border-radius: 50%;
 
   background: #fef3c7;
+
   color: #d97706;
 
-  font-size: 1.5rem;
+  font-size: 1.45rem;
   font-weight: 700;
 }
+
+
+/* =========================================================
+   DELETE MODAL BODY
+   ========================================================= */
 
 .delete-modal-body {
   padding: 22px;
@@ -3819,10 +4510,11 @@ td {
 .warning-message {
   padding: 14px 16px;
 
+  border: 1px solid #fed7aa;
+
   border-radius: 12px;
 
   background: #fff7ed;
-  border: 1px solid #fed7aa;
 
   color: #9a3412;
 }
@@ -3842,7 +4534,11 @@ td {
 .related-data {
   display: grid;
 
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns:
+    repeat(
+      2,
+      minmax(0, 1fr)
+    );
 
   gap: 12px;
 
@@ -3851,16 +4547,18 @@ td {
 
 .related-item {
   display: flex;
-
   align-items: center;
   justify-content: space-between;
 
-  padding: 13px 15px;
+  min-width: 0;
+
+  padding: 12px 14px;
+
+  border: 1px solid #e2e8f0;
 
   border-radius: 10px;
 
   background: #f8fafc;
-  border: 1px solid #e2e8f0;
 }
 
 .related-item span {
@@ -3870,25 +4568,20 @@ td {
 .related-item strong {
   min-width: 32px;
 
+  color: #dc2626;
+
   text-align: center;
 
-  color: #dc2626;
-  font-size: 1.1rem;
-}
-
-.delete-modal-note {
-  margin: 16px 0 0;
-
-  color: #64748b;
-
-  font-size: 0.9rem;
-  line-height: 1.5;
+  font-size: 1.05rem;
 }
 
 .confirm-message {
   margin: 0;
 
-  font-size: 1rem;
+  color: #334155;
+
+  font-size: 0.95rem;
+
   line-height: 1.6;
 }
 
@@ -3896,10 +4589,22 @@ td {
   color: #dc2626;
 }
 
+.delete-modal-note {
+  margin: 15px 0 0;
+
+  color: #64748b;
+
+  font-size: 0.88rem;
+
+  line-height: 1.5;
+}
+
 .error-message {
-  margin-top: 14px;
+  margin-top: 14px !important;
 
   padding: 10px 12px;
+
+  border: 1px solid #fecaca;
 
   border-radius: 8px;
 
@@ -3907,12 +4612,20 @@ td {
 
   color: #b91c1c;
 
-  font-size: 0.9rem;
+  font-size: 0.88rem;
+
+  line-height: 1.4;
 }
 
-.delete-modal-actions {
-  display: flex;
 
+/* =========================================================
+   DELETE MODAL ACTIONS
+   ========================================================= */
+
+.delete-modal-actions,
+.modal-actions {
+  display: flex;
+  align-items: center;
   justify-content: flex-end;
 
   gap: 10px;
@@ -3924,99 +4637,43 @@ td {
   background: #f8fafc;
 }
 
-.danger-button {
+.danger-button,
+.modal-actions .danger,
+.modal-actions .btn.danger {
+  min-height: 40px;
+
+  padding: 0 16px;
+
   border: none;
 
-  border-radius: 10px;
+  border-radius: 9px;
 
-  padding: 10px 16px;
+  background: #dc2626;
+
+  color: white;
 
   cursor: pointer;
 
+  font-size: 0.88rem;
   font-weight: 600;
 
-  background: #dc2626;
-  color: white;
-
-  transition: 0.2s ease;
+  transition:
+    background 0.2s ease,
+    transform 0.15s ease;
 }
 
-.danger-button:hover {
+.danger-button:hover,
+.modal-actions .danger:hover,
+.modal-actions .btn.danger:hover {
   background: #b91c1c;
+
+  transform: translateY(-1px);
 }
 
-.currency-input {
-  display: flex;
-  align-items: center;
-  position: relative;
-}
 
-.currency-input input {
-  width: 100%;
-  padding-right: 55px;
-}
-
-.currency-input span {
-  position: absolute;
-  right: 12px;
-  color: #64748b;
-  font-size: 0.9rem;
-  font-weight: 600;
-  pointer-events: none;
-}
-
-.full-width {
-  grid-column: 1 / -1;
-}
-
-.full-width textarea {
-  width: 100%;
-  resize: vertical;
-  min-height: 90px;
-}
-
-.money-input {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.money-input input {
-  flex: 1;
-}
-
-.money-input span {
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-/* =========================
-   Modal xác nhận xóa
-   ========================= */
-
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 1000;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  background: rgba(0, 0, 0, 0.5);
-}
-
-.modal {
-  width: 100%;
-  max-width: 500px;
-
-  background: #ffffff;
-  border-radius: 8px;
-
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-
-  overflow: hidden;
-}
+/* =========================================================
+   STANDARD MODAL
+   ========================================================= */
 
 .modal-header {
   display: flex;
@@ -4037,18 +4694,22 @@ td {
 
 .modal-close {
   border: none;
+
   background: transparent;
 
+  color: #475569;
+
+  padding: 4px 8px;
+
   font-size: 24px;
+
   line-height: 1;
 
   cursor: pointer;
-
-  padding: 4px 8px;
 }
 
 .modal-close:hover {
-  opacity: 0.7;
+  color: #0f172a;
 }
 
 .modal-body {
@@ -4057,276 +4718,199 @@ td {
 
 .modal-body p {
   margin: 0;
+
+  color: #475569;
+
   line-height: 1.6;
 }
 
 .modal-body strong {
-  font-weight: 600;
-}
-
-.modal-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-
-  padding: 16px 20px;
-
-  border-top: 1px solid #e5e7eb;
-}
-
-.modal-actions button {
-  min-width: 80px;
-
-  padding: 8px 16px;
-
-  border: none;
-  border-radius: 6px;
-
-  cursor: pointer;
-
-  font-size: 14px;
-  font-weight: 500;
-}
-
-.modal-actions .secondary {
-  background: #e5e7eb;
-  color: #374151;
-}
-
-.modal-actions .secondary:hover {
-  background: #d1d5db;
-}
-
-.modal-actions .danger {
-  background: #dc2626;
-  color: #ffffff;
-}
-
-.modal-actions .danger:hover {
-  background: #b91c1c;
-}
-
-.error-message {
-  margin-top: 12px !important;
-
-  padding: 10px 12px;
-
-  border-radius: 6px;
-
-  background: #fee2e2;
-  color: #b91c1c;
-
-  font-size: 14px;
-}
-
-/* =========================================
-   MODAL XÁC NHẬN XÓA HÓA ĐƠN
-   ========================================= */
-
-.modal-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 99999;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  width: 100vw;
-  height: 100vh;
-
-  padding: 20px;
-
-  background: rgba(15, 23, 42, 0.55);
-  backdrop-filter: blur(4px);
-}
-
-/* Hộp thông báo */
-.modal-backdrop .modal {
-  width: min(460px, calc(100vw - 40px));
-  max-width: 460px;
-
-  margin: 0;
-
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 16px;
-
-  box-shadow:
-    0 25px 50px rgba(15, 23, 42, 0.25),
-    0 8px 20px rgba(15, 23, 42, 0.12);
-
-  overflow: hidden;
-
-  animation: delete-modal-show 0.2s ease-out;
-}
-
-@keyframes delete-modal-show {
-  from {
-    opacity: 0;
-    transform: translateY(-12px) scale(0.97);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-/* Tiêu đề */
-.modal-backdrop .modal h3 {
-  margin: 0;
-  padding: 20px 22px;
-
-  font-size: 1.2rem;
-  font-weight: 700;
-
   color: #0f172a;
 
-  border-bottom: 1px solid #e2e8f0;
-}
-
-/* Nội dung */
-.modal-backdrop .modal > p {
-  margin: 0;
-  padding: 20px 22px;
-
-  color: #475569;
-  font-size: 0.95rem;
-  line-height: 1.6;
-}
-
-.modal-backdrop .modal > p strong {
-  color: #dc2626;
   font-weight: 700;
 }
 
-/* Thông báo lỗi */
-.modal-backdrop .modal .error-message {
-  margin: -6px 22px 16px !important;
-  padding: 10px 12px;
 
-  border: 1px solid #fecaca;
-  border-radius: 8px;
+/* =========================================================
+   MOBILE
+   ========================================================= */
 
-  background: #fef2f2;
-  color: #b91c1c;
+@media (max-width: 900px) {
+  .app-shell {
+    display: block;
 
-  font-size: 0.9rem;
-  line-height: 1.4;
-}
-
-/* Khu vực nút */
-.modal-backdrop .modal .modal-actions {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-
-  gap: 10px;
-
-  padding: 16px 22px;
-
-  background: #f8fafc;
-  border-top: 1px solid #e2e8f0;
-}
-
-/* Tất cả button trong modal */
-.modal-backdrop .modal .modal-actions button {
-  min-width: 88px;
-  height: 40px;
-
-  padding: 0 18px;
-
-  border: none;
-  border-radius: 9px;
-
-  font-size: 0.9rem;
-  font-weight: 600;
-
-  cursor: pointer;
-
-  transition:
-    background-color 0.2s ease,
-    transform 0.15s ease,
-    box-shadow 0.2s ease;
-}
-
-/* Nút Hủy */
-.modal-backdrop .modal .modal-actions button:first-child {
-  background: #e2e8f0;
-  color: #334155;
-}
-
-.modal-backdrop .modal .modal-actions button:first-child:hover {
-  background: #cbd5e1;
-}
-
-.modal-backdrop .modal .modal-actions button:first-child:active {
-  transform: translateY(1px);
-}
-
-/* Nút Xóa */
-.modal-backdrop .modal .modal-actions .danger {
-  background: #dc2626;
-  color: #ffffff;
-
-  box-shadow: 0 3px 8px rgba(220, 38, 38, 0.25);
-}
-
-.modal-backdrop .modal .modal-actions .danger:hover {
-  background: #b91c1c;
-
-  box-shadow: 0 5px 12px rgba(220, 38, 38, 0.3);
-
-  transform: translateY(-1px);
-}
-
-.modal-backdrop .modal .modal-actions .danger:active {
-  background: #991b1b;
-  transform: translateY(1px);
-}
-
-/* Trạng thái đang disabled */
-.modal-backdrop .modal .modal-actions button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
-}
-
-/* Mobile */
-@media (max-width: 600px) {
-  .modal-backdrop {
-    padding: 16px;
+    width: 100%;
+    min-height: 100vh;
   }
 
-  .modal-backdrop .modal {
+  .menu-open-button {
+    display: grid;
+  }
+
+  .sidebar {
+    position: fixed;
+
+    top: 0;
+    left: 0;
+
+    width: 260px;
+    height: 100vh;
+
+    transform: translateX(-100%);
+
+    transition:
+      transform 0.25s ease;
+
+    box-shadow:
+      10px 0 30px rgba(15, 23, 42, 0.18);
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  .menu-close-button {
+    display: grid;
+  }
+
+  .menu-open .menu-overlay {
+    display: block;
+  }
+
+  .content {
     width: 100%;
-    max-width: none;
+
+    padding: 22px 18px;
+  }
+
+  .topbar {
+    padding-left: 58px;
+  }
+
+  .topbar h2 {
+    font-size: 1.65rem;
+  }
+
+  .panel-grid {
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(0, 1fr)
+      );
+  }
+}
+
+
+/* =========================================================
+   TABLET / SMALL SCREEN
+   ========================================================= */
+
+@media (max-width: 700px) {
+  .content {
+    padding: 18px 14px;
+  }
+
+  .topbar {
+    align-items: flex-start;
+
+    gap: 14px;
+
+    padding-left: 54px;
+  }
+
+  .topbar h2 {
+    font-size: 1.45rem;
+  }
+
+  .topbar .primary {
+    flex-shrink: 0;
+
+    padding: 9px 11px;
+
+    font-size: 0.8rem;
+  }
+
+  .panel-grid {
+    grid-template-columns: 1fr;
+
+    gap: 16px;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .full-width,
+  .actions {
+    grid-column: auto;
+  }
+
+  .metric-card {
+    min-height: 110px;
+  }
+
+  .metric-card strong {
+    font-size: 1.7rem;
+  }
+
+  .panel {
+    padding: 16px;
+
     border-radius: 14px;
   }
 
-  .modal-backdrop .modal h3 {
-    padding: 18px;
-  }
-
-  .modal-backdrop .modal > p {
-    padding: 18px;
-  }
-
-  .modal-backdrop .modal .modal-actions {
-    padding: 14px 18px;
-  }
-
-  .modal-backdrop .modal .modal-actions button {
-    flex: 1;
-    min-width: 0;
+  .related-data {
+    grid-template-columns: 1fr;
   }
 }
 
-@media (max-width: 600px) {
-  .related-data {
-    grid-template-columns: 1fr;
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 480px) {
+  .menu-open-button {
+    top: 12px;
+    left: 12px;
+
+    width: 40px;
+    height: 40px;
+  }
+
+  .content {
+    padding: 14px 10px;
+  }
+
+  .topbar {
+    flex-direction: column;
+
+    padding-left: 52px;
+  }
+
+  .topbar .primary {
+    align-self: flex-start;
+  }
+
+  .panel {
+    padding: 14px;
+  }
+
+  .actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .actions button {
+    width: 100%;
+  }
+
+  .delete-modal,
+  .modal-backdrop .modal,
+  .modal-overlay > .modal {
+    width: calc(100vw - 24px);
+
+    border-radius: 14px;
   }
 
   .delete-modal-header {
@@ -4337,8 +4921,14 @@ td {
     padding: 18px;
   }
 
-  .delete-modal-actions {
+  .delete-modal-actions,
+  .modal-actions {
     padding: 14px 18px;
+  }
+
+  .delete-modal-actions button,
+  .modal-actions button {
+    min-height: 40px;
   }
 }
 </style>
