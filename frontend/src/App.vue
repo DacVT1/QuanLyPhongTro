@@ -2059,19 +2059,20 @@ onMounted(() => {
 
               <input
                 v-model="nguoiThueForm.sdt"
-                type="tel"
-                required
-                pattern="[0-9]{10,11}"
-                placeholder="VD: 0912345678"
+                placeholder="0123456789"
+                type="text"
+                maxlength="10"
+                inputmode="numeric"
                 @input="handleSoDienThoaiInput"
                 @blur="validateSoDienThoai"
               />
-              <span
+
+              <p
                 v-if="soDienThoaiError"
-                class="text-red-500 text-sm font-normal"
+                class="mt-1 text-sm font-normal text-red-500"
               >
                 {{ soDienThoaiError }}
-              </span>
+              </p>
             </label>
 
             <label>
