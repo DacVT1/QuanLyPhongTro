@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { HoaDon } from '../../entities/hoa-don.entity';
@@ -11,15 +11,22 @@ export class HoaDonService {
   ) {}
 
   async findAll() {
-    return this.repository.find({ relations: { hopDong: true } });
+    return this.repository.find({
+      relations: { hopDong: true },
+    });
   }
 
   async findOne(id: string) {
-    return this.repository.findOne({ where: { id }, relations: { hopDong: true } });
+    return this.repository.findOne({
+      where: { id },
+      relations: { hopDong: true },
+    });
   }
 
   async create(payload: Partial<HoaDon>) {
-    return this.repository.save(this.repository.create(payload));
+    return this.repository.save(
+      this.repository.create(payload),
+    );
   }
 
   async update(id: string, payload: Partial<HoaDon>) {
@@ -28,9 +35,17 @@ export class HoaDonService {
   }
 
   async remove(id: string) {
-    const item = await this.findOne(id);
-    if (!item) return null;
-    await this.repository.remove(item);
-    return item;
+    const result = await this.repository.delete(id);
+
+    if (!result.affected) {
+      throw new NotFoundException(
+        'Không tìm thấy hóa đơn để xóa',
+      );
+    }
+
+    return {
+      message: 'Xóa hóa đơn thành công',
+      id,
+    };
   }
 }
