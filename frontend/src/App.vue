@@ -15,7 +15,42 @@ const tabs = [
 ];
 const currentTab = ref("dashboard");
 const isMenuOpen = ref(false);
+const soDienThoaiError = ref("");
 
+function handleSoDienThoaiInput() {
+  // Chỉ giữ lại chữ số và tối đa 10 số
+  nguoiThueForm.value.sdt =
+    nguoiThueForm.value.sdt
+      .replace(/\D/g, "")
+      .slice(0, 10);
+
+  // Nếu đang nhập thì xóa lỗi cũ
+  soDienThoaiError.value = "";
+}
+
+function validateSoDienThoai() {
+  const value = nguoiThueForm.value.sdt;
+
+  if (!value) {
+    soDienThoaiError.value = "Vui lòng nhập số điện thoại";
+    return false;
+  }
+
+  if (!value.startsWith("0")) {
+    soDienThoaiError.value =
+      "Số điện thoại phải bắt đầu bằng số 0";
+    return false;
+  }
+
+  if (value.length !== 10) {
+    soDienThoaiError.value =
+      "Số điện thoại phải có đúng 10 chữ số";
+    return false;
+  }
+
+  soDienThoaiError.value = "";
+  return true;
+}
 function toggleMenu() {
   isMenuOpen.value = !isMenuOpen.value;
 }
@@ -2156,11 +2191,19 @@ onMounted(() => {
 
               <input
                 v-model="nguoiThueForm.sdt"
-                placeholder="Số điện thoại"
                 type="tel"
                 required
                 pattern="[0-9]{10,11}"
+                placeholder="VD: 0912345678"
+                @input="handleSoDienThoaiInput"
+                @blur="validateSoDienThoai"
               />
+              <span
+  v-if="soDienThoaiError"
+  class="text-red-500 text-sm"
+>
+  {{ soDienThoaiError }}
+</span>
             </label>
 
             <label>
