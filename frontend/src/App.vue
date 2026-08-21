@@ -2318,10 +2318,11 @@ onMounted(() => {
                   <button class="table-btn edit" @click="editHoaDon(item)">
                     Sửa
                   </button>
+
                   <button
                     type="button"
-                    class="btn danger"
-                    @click="requestDeleteHoaDon(item)"
+                    class="table-btn delete"
+                    @click.stop="requestDeleteHoaDon(item)"
                   >
                     Xóa
                   </button>
