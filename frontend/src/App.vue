@@ -579,9 +579,7 @@ function handleGiuongChangeForHopDong() {
 
   hopDongForm.value.tienThue = giaGiuong;
 
-  tienThueDisplay.value = giaGiuong
-    ? giaGiuong.toLocaleString("en-US")
-    : "";
+  tienThueDisplay.value = giaGiuong ? giaGiuong.toLocaleString("en-US") : "";
 }
 
 function handleTienDatCocInput(event: Event) {
@@ -726,21 +724,20 @@ function closeDeletePhongModal() {
 }
 
 function requestDeleteNguoiThue(item: any) {
-  const soHopDong = hopDongs.value.filter(
-    (hopDong) => {
-      const nguoiThueId =
-        hopDong.nguoiThue?.id ??
-        hopDong.nguoiThueId;
+  const hopDongIds = hopDongs.value
+    .filter((hopDong) => {
+      const nguoiThueId = hopDong.nguoiThue?.id ?? hopDong.nguoiThueId;
 
       return String(nguoiThueId) === String(item.id);
-    },
-  ).length;
+    })
+    .map((hopDong) => hopDong.maHopDong)
+    .filter(Boolean);
 
   deleteNguoiThueInfo.value = {
     id: item.id,
     hoTen: item.hoTen ?? "Người thuê",
     cccd: item.cccd ?? "",
-    soHopDong,
+    hopDongIds,
   };
 
   deleteNguoiThueErrorMessage.value = "";
@@ -784,6 +781,12 @@ async function confirmDeleteNguoiThue() {
   const id = deleteNguoiThueInfo.value.id;
 
   if (!id) {
+    return;
+  }
+
+  if (deleteNguoiThueInfo.value.hopDongIds.length > 0) {
+    deleteNguoiThueErrorMessage.value =
+      "Không thể xóa người thuê vì người thuê đang có hợp đồng. Cần thực hiện xóa hợp đồng trước.";
     return;
   }
 
@@ -1045,16 +1048,11 @@ async function saveHopDong() {
   const payload = {
     maHopDong: hopDongForm.value.maHopDong,
     ngayBatDau:
-      hopDongForm.value.ngayBatDau ||
-      new Date().toISOString().slice(0, 10),
+      hopDongForm.value.ngayBatDau || new Date().toISOString().slice(0, 10),
     ngayKetThuc: hopDongForm.value.ngayKetThuc || null,
     tienThue: giaThue,
-    chuKyThanhToan: Number(
-      hopDongForm.value.chuKyThanhToan || 1,
-    ),
-    tienDatCoc: Number(
-      hopDongForm.value.tienDatCoc || 0,
-    ),
+    chuKyThanhToan: Number(hopDongForm.value.chuKyThanhToan || 1),
+    tienDatCoc: Number(hopDongForm.value.tienDatCoc || 0),
     ghiChu: hopDongForm.value.ghiChu || null,
     trangThai: hopDongForm.value.trangThai,
     giuong: {
@@ -1066,10 +1064,7 @@ async function saveHopDong() {
   };
 
   if (editingHopDongId.value) {
-    await api.patch(
-      `/hop-dong/${editingHopDongId.value}`,
-      payload,
-    );
+    await api.patch(`/hop-dong/${editingHopDongId.value}`, payload);
   } else {
     await api.post("/hop-dong", payload);
   }
@@ -1150,6 +1145,7 @@ const deleteNguoiThueInfo = ref({
   hoTen: "",
   cccd: "",
   soHopDong: 0,
+  hopDongIds: [] as string[],
 });
 
 const deleteNguoiThueErrorMessage = ref("");
@@ -1396,9 +1392,7 @@ function editHopDong(item: any) {
   };
 
   // Hiển thị Giá thuê và Đặt cọc đã lưu
-  tienThueDisplay.value = tienThue
-    ? tienThue.toLocaleString("en-US")
-    : "";
+  tienThueDisplay.value = tienThue ? tienThue.toLocaleString("en-US") : "";
 
   tienDatCocDisplay.value = tienDatCoc
     ? tienDatCoc.toLocaleString("en-US")
@@ -2158,12 +2152,9 @@ onMounted(() => {
                 @blur="validateSoDienThoai"
               />
 
-              <span
-    v-if="soDienThoaiError"
-    class="form-error"
-  >
-    {{ soDienThoaiError }}
-  </span>
+              <span v-if="soDienThoaiError" class="form-error">
+                {{ soDienThoaiError }}
+              </span>
             </label>
 
             <label>
@@ -2443,17 +2434,17 @@ onMounted(() => {
               {{ requiredLabel("Giá thuê") }}
 
               <div class="currency-input">
-  <input
-    :value="tienThueDisplay"
-    type="text"
-    placeholder="Giá thuê"
-    @input="handleTienThueInput"
-    @blur="formatTienThueDisplay"
-    required
-  />
+                <input
+                  :value="tienThueDisplay"
+                  type="text"
+                  placeholder="Giá thuê"
+                  @input="handleTienThueInput"
+                  @blur="formatTienThueDisplay"
+                  required
+                />
 
-  <span>VND</span>
-</div>
+                <span>VND</span>
+              </div>
             </label>
 
             <label>
@@ -2474,13 +2465,13 @@ onMounted(() => {
               Đặt cọc
 
               <div class="currency-input">
-  <input
-    :value="tienDatCocDisplay"
-    type="text"
-    placeholder="Số tiền đặt cọc"
-  />
-  <span>VND</span>
-</div>
+                <input
+                  :value="tienDatCocDisplay"
+                  type="text"
+                  placeholder="Số tiền đặt cọc"
+                />
+                <span>VND</span>
+              </div>
             </label>
 
             <label>
@@ -2776,33 +2767,29 @@ onMounted(() => {
           </div>
         </div>
 
-        <div class="delete-modal-body">
-  <template v-if="deleteNguoiThueInfo.soHopDong > 0">
-    <div class="warning-message">
-      <strong>Không thể xóa người thuê này!</strong>
+       <div class="delete-modal-body">
+  <template v-if="deleteNguoiThueInfo.hopDongIds.length > 0">
+    <p class="warning-message">
+      Bạn chú ý người thuê
+      <strong>{{ deleteNguoiThueInfo.hoTen }}</strong>
+      đang có trong hợp đồng
 
-      <p>
-        Người thuê đang có
-        <strong>{{ deleteNguoiThueInfo.soHopDong }}</strong>
-        hợp đồng.
-      </p>
+      <strong>
+        {{ deleteNguoiThueInfo.hopDongIds.join(", ") }}
+      </strong>
 
-      <p>
-        Vui lòng xóa hợp đồng trước khi xóa người thuê.
-      </p>
-    </div>
+      nên không thể xóa được.
+    </p>
 
     <p class="delete-modal-note">
-      Không thể thực hiện thao tác xóa khi người thuê vẫn còn hợp đồng.
+      Cần thực hiện xóa hợp đồng trước.
     </p>
   </template>
 
   <template v-else>
     <p class="confirm-message">
       Bạn có chắc chắn muốn xóa người thuê
-      <strong>
-        {{ deleteNguoiThueInfo.hoTen }}
-      </strong>
+      <strong>{{ deleteNguoiThueInfo.hoTen }}</strong>
       không?
     </p>
 
@@ -2829,7 +2816,7 @@ onMounted(() => {
   </button>
 
   <button
-    v-if="deleteNguoiThueInfo.soHopDong === 0"
+    v-if="deleteNguoiThueInfo.hopDongIds.length === 0"
     class="danger-button"
     type="button"
     @click="confirmDeleteNguoiThue"
@@ -2837,6 +2824,25 @@ onMounted(() => {
     Xác nhận xóa
   </button>
 </div>
+
+        <div class="delete-modal-actions">
+          <button
+            class="secondary"
+            type="button"
+            @click="closeDeleteNguoiThueModal"
+          >
+            Đóng
+          </button>
+
+          <button
+            v-if="deleteNguoiThueInfo.soHopDong === 0"
+            class="danger-button"
+            type="button"
+            @click="confirmDeleteNguoiThue"
+          >
+            Xác nhận xóa
+          </button>
+        </div>
       </div>
     </div>
 

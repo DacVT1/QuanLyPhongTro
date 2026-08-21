@@ -35,30 +35,28 @@ export class NguoiThueService {
   }
 
   async remove(id: string) {
-    const item = await this.repository.findOne({
-      where: { id },
-    });
+  const item = await this.repository.findOne({
+    where: { id },
+  });
 
-    if (!item) {
-      return null;
-    }
-
-    const hopDongCount = await this.hopDongRepository.count({
-      where: {
-        nguoiThue: {
-          id,
-        },
-      },
-    });
-
-    if (hopDongCount > 0) {
-      throw new ConflictException(
-        'Không thể xóa người thuê vì người thuê đang có hợp đồng. Vui lòng xóa hợp đồng trước khi xóa người thuê.',
-      );
-    }
-
-    await this.repository.remove(item);
-
-    return item;
+  if (!item) {
+    return null;
   }
+
+  const hopDongCount = await this.hopDongRepository
+    .createQueryBuilder('hopDong')
+    .innerJoin('hopDong.nguoiThue', 'nguoiThue')
+    .where('nguoiThue.id = :id', { id })
+    .getCount();
+
+  if (hopDongCount > 0) {
+    throw new ConflictException(
+      'Không thể xóa người thuê vì người thuê đang có hợp đồng. Vui lòng xóa hợp đồng trước khi xóa người thuê.',
+    );
+  }
+
+  await this.repository.remove(item);
+
+  return item;
+}
 }
