@@ -999,22 +999,42 @@ async function saveHopDong() {
   if (!validateNgayHopDong()) {
     return;
   }
+
   if (!hopDongForm.value.maHopDong) {
     syncHopDongCode();
   }
 
+  const giaThue = Number(hopDongForm.value.tienThue || 0);
+  const giuongId = hopDongForm.value.giuongId;
+
+  if (!giuongId) {
+    alert("Vui lòng chọn giường.");
+    return;
+  }
+
+  // 1. Cập nhật Giá giường theo Giá thuê
+  await api.patch(`/giuong/${giuongId}`, {
+    giaGiuong: giaThue,
+  });
+
+  // 2. Lưu hợp đồng
   const payload = {
     maHopDong: hopDongForm.value.maHopDong,
     ngayBatDau:
-      hopDongForm.value.ngayBatDau || new Date().toISOString().slice(0, 10),
+      hopDongForm.value.ngayBatDau ||
+      new Date().toISOString().slice(0, 10),
     ngayKetThuc: hopDongForm.value.ngayKetThuc || null,
-    tienThue: Number(hopDongForm.value.tienThue || 0),
-    chuKyThanhToan: Number(hopDongForm.value.chuKyThanhToan || 1),
-    tienDatCoc: Number(hopDongForm.value.tienDatCoc || 0),
+    tienThue: giaThue,
+    chuKyThanhToan: Number(
+      hopDongForm.value.chuKyThanhToan || 1,
+    ),
+    tienDatCoc: Number(
+      hopDongForm.value.tienDatCoc || 0,
+    ),
     ghiChu: hopDongForm.value.ghiChu || null,
     trangThai: hopDongForm.value.trangThai,
     giuong: {
-      id: hopDongForm.value.giuongId,
+      id: giuongId,
     },
     nguoiThue: {
       id: hopDongForm.value.nguoiThueId,
@@ -1022,7 +1042,10 @@ async function saveHopDong() {
   };
 
   if (editingHopDongId.value) {
-    await api.patch(`/hop-dong/${editingHopDongId.value}`, payload);
+    await api.patch(
+      `/hop-dong/${editingHopDongId.value}`,
+      payload,
+    );
   } else {
     await api.post("/hop-dong", payload);
   }
