@@ -18,13 +18,20 @@ const isMenuOpen = ref(false);
 const soDienThoaiError = ref("");
 
 function handleSoDienThoaiInput() {
-  // Chỉ giữ lại chữ số và tối đa 10 số
-  nguoiThueForm.value.sdt =
-    nguoiThueForm.value.sdt
-      .replace(/\D/g, "")
-      .slice(0, 10);
+  const value = nguoiThueForm.value.sdt;
 
-  // Nếu đang nhập thì xóa lỗi cũ
+  // Không tự cắt dữ liệu người dùng nhập
+  if (value.length > 10) {
+    soDienThoaiError.value = "Số điện thoại không được vượt quá 10 chữ số";
+    return;
+  }
+
+  // Kiểm tra ký tự không phải số
+  if (!/^\d*$/.test(value)) {
+    soDienThoaiError.value = "Số điện thoại chỉ được nhập chữ số";
+    return;
+  }
+
   soDienThoaiError.value = "";
 }
 
@@ -36,21 +43,30 @@ function validateSoDienThoai() {
     return false;
   }
 
-  if (!value.startsWith("0")) {
-    soDienThoaiError.value =
-      "Số điện thoại phải bắt đầu bằng số 0";
+  if (!/^\d+$/.test(value)) {
+    soDienThoaiError.value = "Số điện thoại chỉ được nhập chữ số";
     return false;
   }
 
-  if (value.length !== 10) {
-    soDienThoaiError.value =
-      "Số điện thoại phải có đúng 10 chữ số";
+  if (!value.startsWith("0")) {
+    soDienThoaiError.value = "Số điện thoại phải bắt đầu bằng số 0";
+    return false;
+  }
+
+  if (value.length > 10) {
+    soDienThoaiError.value = "Số điện thoại không được vượt quá 10 chữ số";
+    return false;
+  }
+
+  if (value.length < 10) {
+    soDienThoaiError.value = "Số điện thoại phải có đúng 10 chữ số";
     return false;
   }
 
   soDienThoaiError.value = "";
   return true;
 }
+
 function toggleMenu() {
   isMenuOpen.value = !isMenuOpen.value;
 }
@@ -340,7 +356,6 @@ const deleteHopDongInfo = ref({
   maHopDong: "",
 });
 
-
 function requestDeleteHoaDon(item: any) {
   deleteHoaDonInfo.value = {
     id: item.id,
@@ -392,7 +407,7 @@ const giuongOptions = computed(() => {
 
   // Chưa chọn tầng
   if (!giuongForm.value.phongId) {
-  return [];
+    return [];
   }
 
   // Lấy các giường đã được sử dụng trong phòng đang chọn
@@ -1437,10 +1452,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div
-    class="app-shell"
-    :class="{ 'menu-open': isMenuOpen }"
-  >
+  <div class="app-shell" :class="{ 'menu-open': isMenuOpen }">
     <!-- =====================================================
          NÚT MỞ MENU
          ===================================================== -->
@@ -1458,10 +1470,7 @@ onMounted(() => {
     <!-- =====================================================
          SIDEBAR
          ===================================================== -->
-    <aside
-      class="sidebar"
-      :class="{ open: isMenuOpen }"
-    >
+    <aside class="sidebar" :class="{ open: isMenuOpen }">
       <div class="sidebar-header">
         <div class="brand">
           <div class="brand-mark">N</div>
@@ -1496,33 +1505,19 @@ onMounted(() => {
           "
         >
           <span class="nav-icon">
-            <template v-if="tab === 'dashboard'">
-              ⌂
-            </template>
+            <template v-if="tab === 'dashboard'"> ⌂ </template>
 
-            <template v-else-if="tab === 'nhaTro'">
-              🏠
-            </template>
+            <template v-else-if="tab === 'nhaTro'"> 🏠 </template>
 
-            <template v-else-if="tab === 'phong'">
-              ▦
-            </template>
+            <template v-else-if="tab === 'phong'"> ▦ </template>
 
-            <template v-else-if="tab === 'giuong'">
-              ▤
-            </template>
+            <template v-else-if="tab === 'giuong'"> ▤ </template>
 
-            <template v-else-if="tab === 'nguoiThue'">
-              ♙
-            </template>
+            <template v-else-if="tab === 'nguoiThue'"> ♙ </template>
 
-            <template v-else-if="tab === 'hopDong'">
-              ▤
-            </template>
+            <template v-else-if="tab === 'hopDong'"> ▤ </template>
 
-            <template v-else>
-              ▣
-            </template>
+            <template v-else> ▣ </template>
           </span>
 
           <span class="nav-label">
@@ -1550,11 +1545,7 @@ onMounted(() => {
          OVERLAY
          Dùng cho màn hình nhỏ
          ===================================================== -->
-    <div
-      v-if="isMenuOpen"
-      class="menu-overlay"
-      @click="closeMenu"
-    ></div>
+    <div v-if="isMenuOpen" class="menu-overlay" @click="closeMenu"></div>
 
     <!-- =====================================================
          NỘI DUNG CHÍNH
@@ -1566,26 +1557,15 @@ onMounted(() => {
           <h2>Quản lý nhà trọ</h2>
         </div>
 
-        <button
-          class="primary"
-          @click="loadData"
-        >
-          Làm mới dữ liệu
-        </button>
+        <button class="primary" @click="loadData">Làm mới dữ liệu</button>
       </header>
 
       <!-- ===================================================
            DASHBOARD
            =================================================== -->
-      <section
-        v-if="currentTab === 'dashboard'"
-        class="panel-grid"
-      >
+      <section v-if="currentTab === 'dashboard'" class="panel-grid">
         <div class="metric-card metric-nhatro highlight">
-          <div
-            class="metric-decor"
-            aria-hidden="true"
-          ></div>
+          <div class="metric-decor" aria-hidden="true"></div>
 
           <div class="metric-body">
             <span>Nhà trọ</span>
@@ -1594,10 +1574,7 @@ onMounted(() => {
         </div>
 
         <div class="metric-card metric-phong">
-          <div
-            class="metric-decor"
-            aria-hidden="true"
-          ></div>
+          <div class="metric-decor" aria-hidden="true"></div>
 
           <div class="metric-body">
             <span>Phòng</span>
@@ -1606,10 +1583,7 @@ onMounted(() => {
         </div>
 
         <div class="metric-card metric-giuong">
-          <div
-            class="metric-decor"
-            aria-hidden="true"
-          ></div>
+          <div class="metric-decor" aria-hidden="true"></div>
 
           <div class="metric-body">
             <span>Giường</span>
@@ -1618,10 +1592,7 @@ onMounted(() => {
         </div>
 
         <div class="metric-card metric-hopdong">
-          <div
-            class="metric-decor"
-            aria-hidden="true"
-          ></div>
+          <div class="metric-decor" aria-hidden="true"></div>
 
           <div class="metric-body">
             <span>Hợp đồng</span>
@@ -1630,10 +1601,7 @@ onMounted(() => {
         </div>
 
         <div class="metric-card metric-hoadon">
-          <div
-            class="metric-decor"
-            aria-hidden="true"
-          ></div>
+          <div class="metric-decor" aria-hidden="true"></div>
 
           <div class="metric-body">
             <span>Hóa đơn</span>
@@ -1645,19 +1613,13 @@ onMounted(() => {
       <!-- ===================================================
            NHÀ TRỌ
            =================================================== -->
-      <section
-        v-else-if="currentTab === 'nhaTro'"
-        class="panel-grid"
-      >
+      <section v-else-if="currentTab === 'nhaTro'" class="panel-grid">
         <div class="panel">
           <h3>
             {{ editingNhaTroId ? "Sửa nhà trọ" : "Thêm nhà trọ" }}
           </h3>
 
-          <form
-            @submit.prevent="saveNhaTro"
-            class="form-grid"
-          >
+          <form @submit.prevent="saveNhaTro" class="form-grid">
             <label>
               {{ requiredLabel("Mã nhà trọ") }}
 
@@ -1711,18 +1673,11 @@ onMounted(() => {
             </label>
 
             <div class="actions">
-              <button
-                class="primary"
-                type="submit"
-              >
+              <button class="primary" type="submit">
                 {{ editingNhaTroId ? "Cập nhật" : "Lưu" }}
               </button>
 
-              <button
-                class="secondary"
-                type="button"
-                @click="resetNhaTroForm"
-              >
+              <button class="secondary" type="button" @click="resetNhaTroForm">
                 Hủy
               </button>
             </div>
@@ -1744,20 +1699,14 @@ onMounted(() => {
             </thead>
 
             <tbody>
-              <tr
-                v-for="item in nhaTros"
-                :key="item.id"
-              >
+              <tr v-for="item in nhaTros" :key="item.id">
                 <td>{{ item.maNhaTro }}</td>
                 <td>{{ item.tenNhaTro }}</td>
                 <td>{{ item.diaChi }}</td>
                 <td>{{ item.soTang }}</td>
 
                 <td class="row-actions">
-                  <button
-                    class="table-btn edit"
-                    @click="editNhaTro(item)"
-                  >
+                  <button class="table-btn edit" @click="editNhaTro(item)">
                     Sửa
                   </button>
 
@@ -1777,19 +1726,13 @@ onMounted(() => {
       <!-- ===================================================
            PHÒNG
            =================================================== -->
-      <section
-        v-else-if="currentTab === 'phong'"
-        class="panel-grid"
-      >
+      <section v-else-if="currentTab === 'phong'" class="panel-grid">
         <div class="panel">
           <h3>
             {{ editingPhongId ? "Sửa phòng" : "Thêm phòng" }}
           </h3>
 
-          <form
-            @submit.prevent="savePhong"
-            class="form-grid"
-          >
+          <form @submit.prevent="savePhong" class="form-grid">
             <label>
               {{ requiredLabel("Nhà trọ") }}
 
@@ -1798,15 +1741,9 @@ onMounted(() => {
                 @change="handleNhaTroChange"
                 required
               >
-                <option value="">
-                  Chọn nhà trọ
-                </option>
+                <option value="">Chọn nhà trọ</option>
 
-                <option
-                  v-for="item in nhaTros"
-                  :key="item.id"
-                  :value="item.id"
-                >
+                <option v-for="item in nhaTros" :key="item.id" :value="item.id">
                   {{ item.tenNhaTro }}
                 </option>
               </select>
@@ -1821,12 +1758,7 @@ onMounted(() => {
                 required
                 :disabled="!phongForm.nhaTroId"
               >
-                <option
-                  value=""
-                  disabled
-                >
-                  -- Chọn tầng --
-                </option>
+                <option value="" disabled>-- Chọn tầng --</option>
 
                 <option
                   v-for="floor in tangSoOptions"
@@ -1874,18 +1806,11 @@ onMounted(() => {
             </label>
 
             <div class="actions">
-              <button
-                class="primary"
-                type="submit"
-              >
+              <button class="primary" type="submit">
                 {{ editingPhongId ? "Cập nhật" : "Lưu" }}
               </button>
 
-              <button
-                class="secondary"
-                type="button"
-                @click="resetPhongForm"
-              >
+              <button class="secondary" type="button" @click="resetPhongForm">
                 Hủy
               </button>
             </div>
@@ -1908,10 +1833,7 @@ onMounted(() => {
             </thead>
 
             <tbody>
-              <tr
-                v-for="item in phongs"
-                :key="item.id"
-              >
+              <tr v-for="item in phongs" :key="item.id">
                 <td>
                   {{ item.maPhong }}
                 </td>
@@ -1927,10 +1849,7 @@ onMounted(() => {
                 <td>{{ item.soGiuongToiDa }}</td>
 
                 <td class="row-actions">
-                  <button
-                    class="table-btn edit"
-                    @click="editPhong(item)"
-                  >
+                  <button class="table-btn edit" @click="editPhong(item)">
                     Sửa
                   </button>
 
@@ -1951,19 +1870,13 @@ onMounted(() => {
       <!-- ===================================================
            GIƯỜNG
            =================================================== -->
-      <section
-        v-else-if="currentTab === 'giuong'"
-        class="panel-grid"
-      >
+      <section v-else-if="currentTab === 'giuong'" class="panel-grid">
         <div class="panel">
           <h3>
             {{ editingGiuongId ? "Sửa giường" : "Thêm giường" }}
           </h3>
 
-          <form
-            @submit.prevent="saveGiuong"
-            class="form-grid"
-          >
+          <form @submit.prevent="saveGiuong" class="form-grid">
             <label>
               {{ requiredLabel("Nhà trọ:") }}
 
@@ -1972,15 +1885,9 @@ onMounted(() => {
                 @change="handleNhaTroChangeForGiuong"
                 required
               >
-                <option value="">
-                  Chọn nhà trọ
-                </option>
+                <option value="">Chọn nhà trọ</option>
 
-                <option
-                  v-for="item in nhaTros"
-                  :key="item.id"
-                  :value="item.id"
-                >
+                <option v-for="item in nhaTros" :key="item.id" :value="item.id">
                   {{ item.tenNhaTro }}
                 </option>
               </select>
@@ -1995,9 +1902,7 @@ onMounted(() => {
                 @change="giuongForm.giuongSo = ''"
                 required
               >
-                <option value="">
-                  Chọn tầng số
-                </option>
+                <option value="">Chọn tầng số</option>
 
                 <option
                   v-for="item in filteredPhongsByNhaTro"
@@ -2017,15 +1922,9 @@ onMounted(() => {
                 :disabled="!giuongForm.phongId"
                 required
               >
-                <option value="">
-                  Chọn giường
-                </option>
+                <option value="">Chọn giường</option>
 
-                <option
-                  v-for="item in giuongOptions"
-                  :key="item"
-                  :value="item"
-                >
+                <option v-for="item in giuongOptions" :key="item" :value="item">
                   Giường {{ item }}
                 </option>
               </select>
@@ -2052,37 +1951,22 @@ onMounted(() => {
               {{ requiredLabel("Trạng thái") }}
 
               <select v-model="giuongForm.trangThai">
-                <option value="trong">
-                  Trống
-                </option>
+                <option value="trong">Trống</option>
 
-                <option value="da_thue">
-                  Đã thuê
-                </option>
+                <option value="da_thue">Đã thuê</option>
 
-                <option value="bao_tri">
-                  Bảo trì
-                </option>
+                <option value="bao_tri">Bảo trì</option>
 
-                <option value="sap_tra_tro">
-                  Sắp trả trọ
-                </option>
+                <option value="sap_tra_tro">Sắp trả trọ</option>
               </select>
             </label>
 
             <div class="actions">
-              <button
-                class="primary"
-                type="submit"
-              >
+              <button class="primary" type="submit">
                 {{ editingGiuongId ? "Cập nhật" : "Lưu" }}
               </button>
 
-              <button
-                class="secondary"
-                type="button"
-                @click="resetGiuongForm"
-              >
+              <button class="secondary" type="button" @click="resetGiuongForm">
                 Hủy
               </button>
             </div>
@@ -2105,10 +1989,7 @@ onMounted(() => {
             </thead>
 
             <tbody>
-              <tr
-                v-for="item in giuongs"
-                :key="item.id"
-              >
+              <tr v-for="item in giuongs" :key="item.id">
                 <td>{{ item.phong?.tangSo }}</td>
 
                 <td>{{ item.maGiuong }}</td>
@@ -2124,10 +2005,7 @@ onMounted(() => {
                 </td>
 
                 <td class="row-actions">
-                  <button
-                    class="table-btn edit"
-                    @click="editGiuong(item)"
-                  >
+                  <button class="table-btn edit" @click="editGiuong(item)">
                     Sửa
                   </button>
 
@@ -2148,23 +2026,13 @@ onMounted(() => {
       <!-- ===================================================
            NGƯỜI THUÊ
            =================================================== -->
-      <section
-        v-else-if="currentTab === 'nguoiThue'"
-        class="panel-grid"
-      >
+      <section v-else-if="currentTab === 'nguoiThue'" class="panel-grid">
         <div class="panel">
           <h3>
-            {{
-              editingNguoiThueId
-                ? "Sửa người thuê"
-                : "Thêm người thuê"
-            }}
+            {{ editingNguoiThueId ? "Sửa người thuê" : "Thêm người thuê" }}
           </h3>
 
-          <form
-            @submit.prevent="saveNguoiThue"
-            class="form-grid"
-          >
+          <form @submit.prevent="saveNguoiThue" class="form-grid">
             <label>
               {{ requiredLabel("Họ tên") }}
 
@@ -2199,11 +2067,11 @@ onMounted(() => {
                 @blur="validateSoDienThoai"
               />
               <span
-  v-if="soDienThoaiError"
-  class="text-red-500 text-sm"
->
-  {{ soDienThoaiError }}
-</span>
+                v-if="soDienThoaiError"
+                class="text-red-500 text-sm font-normal"
+              >
+                {{ soDienThoaiError }}
+              </span>
             </label>
 
             <label>
@@ -2230,11 +2098,7 @@ onMounted(() => {
             <label>
               {{ requiredLabel("Ngày sinh") }}
 
-              <input
-                v-model="nguoiThueForm.ngaySinh"
-                type="date"
-                required
-              />
+              <input v-model="nguoiThueForm.ngaySinh" type="date" required />
             </label>
 
             <label>
@@ -2258,10 +2122,7 @@ onMounted(() => {
               />
 
               <div
-                v-if="
-                  editingNguoiThueId &&
-                  nguoiThueForm.cccdMatTruocUrl
-                "
+                v-if="editingNguoiThueId && nguoiThueForm.cccdMatTruocUrl"
                 class="cccd-current"
               >
                 <span>Ảnh hiện tại:</span>
@@ -2275,10 +2136,7 @@ onMounted(() => {
                 </a>
               </div>
 
-              <div
-                v-if="cccdMatTruocPreviewUrl"
-                class="cccd-current"
-              >
+              <div v-if="cccdMatTruocPreviewUrl" class="cccd-current">
                 <span>Ảnh mới:</span>
 
                 <a
@@ -2302,10 +2160,7 @@ onMounted(() => {
               />
 
               <div
-                v-if="
-                  editingNguoiThueId &&
-                  nguoiThueForm.cccdMatSauUrl
-                "
+                v-if="editingNguoiThueId && nguoiThueForm.cccdMatSauUrl"
                 class="cccd-current"
               >
                 <span>Ảnh hiện tại:</span>
@@ -2319,10 +2174,7 @@ onMounted(() => {
                 </a>
               </div>
 
-              <div
-                v-if="cccdMatSauPreviewUrl"
-                class="cccd-current"
-              >
+              <div v-if="cccdMatSauPreviewUrl" class="cccd-current">
                 <span>Ảnh mới:</span>
 
                 <a
@@ -2336,10 +2188,7 @@ onMounted(() => {
             </label>
 
             <div class="actions">
-              <button
-                class="primary"
-                type="submit"
-              >
+              <button class="primary" type="submit">
                 {{ editingNguoiThueId ? "Cập nhật" : "Lưu" }}
               </button>
 
@@ -2368,19 +2217,13 @@ onMounted(() => {
             </thead>
 
             <tbody>
-              <tr
-                v-for="item in nguoiThues"
-                :key="item.id"
-              >
+              <tr v-for="item in nguoiThues" :key="item.id">
                 <td>{{ item.hoTen }}</td>
                 <td>{{ item.cccd }}</td>
                 <td>{{ item.sdt }}</td>
 
                 <td class="row-actions">
-                  <button
-                    class="table-btn edit"
-                    @click="editNguoiThue(item)"
-                  >
+                  <button class="table-btn edit" @click="editNguoiThue(item)">
                     Sửa
                   </button>
 
@@ -2400,19 +2243,13 @@ onMounted(() => {
       <!-- ===================================================
            HỢP ĐỒNG
            =================================================== -->
-      <section
-        v-else-if="currentTab === 'hopDong'"
-        class="panel-grid"
-      >
+      <section v-else-if="currentTab === 'hopDong'" class="panel-grid">
         <div class="panel">
           <h3>
             {{ editingHopDongId ? "Sửa hợp đồng" : "Thêm hợp đồng" }}
           </h3>
 
-          <form
-            @submit.prevent="saveHopDong"
-            class="form-grid"
-          >
+          <form @submit.prevent="saveHopDong" class="form-grid">
             <label>
               {{ requiredLabel("Nhà trọ") }}
 
@@ -2421,15 +2258,9 @@ onMounted(() => {
                 @change="handleNhaTroChangeForHopDong"
                 required
               >
-                <option value="">
-                  Chọn nhà trọ
-                </option>
+                <option value="">Chọn nhà trọ</option>
 
-                <option
-                  v-for="item in nhaTros"
-                  :key="item.id"
-                  :value="item.id"
-                >
+                <option v-for="item in nhaTros" :key="item.id" :value="item.id">
                   {{ item.maNhaTro }} - {{ item.tenNhaTro }}
                 </option>
               </select>
@@ -2443,9 +2274,7 @@ onMounted(() => {
                 @change="handlePhongChangeForHopDong"
                 required
               >
-                <option value="">
-                  Chọn phòng
-                </option>
+                <option value="">Chọn phòng</option>
 
                 <option
                   v-for="item in hopDongPhongOptions"
@@ -2456,10 +2285,7 @@ onMounted(() => {
                 </option>
               </select>
 
-              <small
-                v-if="hopDongPhongOptions.length === 0"
-                class="form-hint"
-              >
+              <small v-if="hopDongPhongOptions.length === 0" class="form-hint">
                 Nhà trọ này chưa có phòng.
               </small>
             </label>
@@ -2472,9 +2298,7 @@ onMounted(() => {
                 @change="syncHopDongCode"
                 required
               >
-                <option value="">
-                  Chọn giường
-                </option>
+                <option value="">Chọn giường</option>
 
                 <option
                   v-for="item in hopDongGiuongOptions"
@@ -2485,10 +2309,7 @@ onMounted(() => {
                 </option>
               </select>
 
-              <small
-                v-if="hopDongGiuongOptions.length === 0"
-                class="form-hint"
-              >
+              <small v-if="hopDongGiuongOptions.length === 0" class="form-hint">
                 Nhà trọ này không còn giường trống để lập hợp đồng.
               </small>
             </label>
@@ -2496,13 +2317,8 @@ onMounted(() => {
             <label>
               {{ requiredLabel("Người thuê") }}
 
-              <select
-                v-model="hopDongForm.nguoiThueId"
-                required
-              >
-                <option value="">
-                  Chọn người thuê
-                </option>
+              <select v-model="hopDongForm.nguoiThueId" required>
+                <option value="">Chọn người thuê</option>
 
                 <option
                   v-for="item in nguoiThues"
@@ -2517,11 +2333,7 @@ onMounted(() => {
             <label>
               {{ requiredLabel("Ngày bắt đầu") }}
 
-              <input
-                v-model="hopDongForm.ngayBatDau"
-                type="date"
-                required
-              />
+              <input v-model="hopDongForm.ngayBatDau" type="date" required />
             </label>
 
             <label>
@@ -2555,25 +2367,14 @@ onMounted(() => {
             <label>
               {{ requiredLabel("Chu kỳ thanh toán") }}
 
-              <select
-                v-model.number="hopDongForm.chuKyThanhToan"
-                required
-              >
-                <option :value="1">
-                  Hàng tháng
-                </option>
+              <select v-model.number="hopDongForm.chuKyThanhToan" required>
+                <option :value="1">Hàng tháng</option>
 
-                <option :value="3">
-                  3 tháng
-                </option>
+                <option :value="3">3 tháng</option>
 
-                <option :value="6">
-                  6 tháng
-                </option>
+                <option :value="6">6 tháng</option>
 
-                <option :value="12">
-                  12 tháng
-                </option>
+                <option :value="12">12 tháng</option>
               </select>
             </label>
 
@@ -2597,17 +2398,11 @@ onMounted(() => {
               {{ requiredLabel("Trạng thái") }}
 
               <select v-model="hopDongForm.trangThai">
-                <option value="active">
-                  Có hiệu lực
-                </option>
+                <option value="active">Có hiệu lực</option>
 
-                <option value="sap_het_han">
-                  Sắp hết hiệu lực
-                </option>
+                <option value="sap_het_han">Sắp hết hiệu lực</option>
 
-                <option value="expired">
-                  Hết hiệu lực
-                </option>
+                <option value="expired">Hết hiệu lực</option>
               </select>
             </label>
 
@@ -2622,18 +2417,11 @@ onMounted(() => {
             </label>
 
             <div class="actions">
-              <button
-                class="primary"
-                type="submit"
-              >
+              <button class="primary" type="submit">
                 {{ editingHopDongId ? "Cập nhật" : "Lưu" }}
               </button>
 
-              <button
-                class="secondary"
-                type="button"
-                @click="resetHopDongForm"
-              >
+              <button class="secondary" type="button" @click="resetHopDongForm">
                 Hủy
               </button>
             </div>
@@ -2657,10 +2445,7 @@ onMounted(() => {
             </thead>
 
             <tbody>
-              <tr
-                v-for="item in hopDongs"
-                :key="item.id"
-              >
+              <tr v-for="item in hopDongs" :key="item.id">
                 <td>
                   {{ item.maHopDong }}
                 </td>
@@ -2672,9 +2457,7 @@ onMounted(() => {
                 <td>
                   {{
                     item.ngayBatDau
-                      ? new Date(
-                          item.ngayBatDau
-                        ).toLocaleDateString("vi-VN")
+                      ? new Date(item.ngayBatDau).toLocaleDateString("vi-VN")
                       : ""
                   }}
                 </td>
@@ -2682,9 +2465,7 @@ onMounted(() => {
                 <td>
                   {{
                     item.ngayKetThuc
-                      ? new Date(
-                          item.ngayKetThuc
-                        ).toLocaleDateString("vi-VN")
+                      ? new Date(item.ngayKetThuc).toLocaleDateString("vi-VN")
                       : "Không xác định"
                   }}
                 </td>
@@ -2694,12 +2475,7 @@ onMounted(() => {
                 </td>
 
                 <td>
-                  <span
-                    :class="[
-                      'status-badge',
-                      item.trangThai,
-                    ]"
-                  >
+                  <span :class="['status-badge', item.trangThai]">
                     {{
                       item.trangThai === "active"
                         ? "Có hiệu lực"
@@ -2713,10 +2489,7 @@ onMounted(() => {
                 </td>
 
                 <td class="row-actions">
-                  <button
-                    class="table-btn edit"
-                    @click="editHopDong(item)"
-                  >
+                  <button class="table-btn edit" @click="editHopDong(item)">
                     Sửa
                   </button>
 
@@ -2737,19 +2510,13 @@ onMounted(() => {
       <!-- ===================================================
            HÓA ĐƠN
            =================================================== -->
-      <section
-        v-else-if="currentTab === 'hoaDon'"
-        class="panel-grid"
-      >
+      <section v-else-if="currentTab === 'hoaDon'" class="panel-grid">
         <div class="panel">
           <h3>
             {{ editingHoaDonId ? "Sửa hóa đơn" : "Thêm hóa đơn" }}
           </h3>
 
-          <form
-            @submit.prevent="saveHoaDon"
-            class="form-grid"
-          >
+          <form @submit.prevent="saveHoaDon" class="form-grid">
             <label>
               {{ requiredLabel("Hợp đồng") }}
 
@@ -2758,9 +2525,7 @@ onMounted(() => {
                 @change="syncHoaDonCode"
                 required
               >
-                <option value="">
-                  Chọn hợp đồng
-                </option>
+                <option value="">Chọn hợp đồng</option>
 
                 <option
                   v-for="item in hopDongs"
@@ -2799,13 +2564,9 @@ onMounted(() => {
               {{ requiredLabel("Trạng thái") }}
 
               <select v-model="hoaDonForm.trangThai">
-                <option value="chua_thanh_toan">
-                  Chưa thanh toán
-                </option>
+                <option value="chua_thanh_toan">Chưa thanh toán</option>
 
-                <option value="da_thanh_toan">
-                  Đã thanh toán
-                </option>
+                <option value="da_thanh_toan">Đã thanh toán</option>
               </select>
             </label>
 
@@ -2820,18 +2581,11 @@ onMounted(() => {
             </label>
 
             <div class="actions">
-              <button
-                class="primary"
-                type="submit"
-              >
+              <button class="primary" type="submit">
                 {{ editingHoaDonId ? "Cập nhật" : "Lưu" }}
               </button>
 
-              <button
-                class="secondary"
-                type="button"
-                @click="resetHoaDonForm"
-              >
+              <button class="secondary" type="button" @click="resetHoaDonForm">
                 Hủy
               </button>
             </div>
@@ -2854,10 +2608,7 @@ onMounted(() => {
             </thead>
 
             <tbody>
-              <tr
-                v-for="item in hoaDons"
-                :key="item.id"
-              >
+              <tr v-for="item in hoaDons" :key="item.id">
                 <td>
                   {{ item.maHoaDon }}
                 </td>
@@ -2889,20 +2640,14 @@ onMounted(() => {
 
                 <td>
                   {{
-                    item.trangThai === "da_thanh_toan" &&
-                    item.ngayNop
-                      ? new Date(
-                          item.ngayNop
-                        ).toLocaleDateString("vi-VN")
+                    item.trangThai === "da_thanh_toan" && item.ngayNop
+                      ? new Date(item.ngayNop).toLocaleDateString("vi-VN")
                       : ""
                   }}
                 </td>
 
                 <td class="row-actions">
-                  <button
-                    class="table-btn edit"
-                    @click="editHoaDon(item)"
-                  >
+                  <button class="table-btn edit" @click="editHoaDon(item)">
                     Sửa
                   </button>
 
@@ -2952,9 +2697,7 @@ onMounted(() => {
             "
           >
             <div class="warning-message">
-              <strong>
-                Không thể xóa nhà trọ này!
-              </strong>
+              <strong> Không thể xóa nhà trọ này! </strong>
 
               <p>
                 Nhà trọ đang có dữ liệu liên quan. Bạn cần xử lý các dữ liệu này
@@ -3008,16 +2751,11 @@ onMounted(() => {
               ?
             </p>
 
-            <p class="delete-modal-note">
-              Thao tác này không thể hoàn tác.
-            </p>
+            <p class="delete-modal-note">Thao tác này không thể hoàn tác.</p>
           </template>
 
           <p
-            v-if="
-              deleteErrorMessage &&
-              deleteNhaTroInfo.soPhong === 0
-            "
+            v-if="deleteErrorMessage && deleteNhaTroInfo.soPhong === 0"
             class="error-message"
           >
             {{ deleteErrorMessage }}
@@ -3078,9 +2816,7 @@ onMounted(() => {
         <div class="delete-modal-body">
           <template v-if="deletePhongInfo.soGiuong > 0">
             <div class="warning-message">
-              <strong>
-                Không thể xóa phòng này!
-              </strong>
+              <strong> Không thể xóa phòng này! </strong>
 
               <p>
                 Phòng đang có dữ liệu giường liên quan. Bạn cần xử lý các dữ
@@ -3113,15 +2849,10 @@ onMounted(() => {
               không?
             </p>
 
-            <p class="delete-modal-note">
-              Thao tác này không thể hoàn tác.
-            </p>
+            <p class="delete-modal-note">Thao tác này không thể hoàn tác.</p>
           </template>
 
-          <p
-            v-if="deletePhongErrorMessage"
-            class="error-message"
-          >
+          <p v-if="deletePhongErrorMessage" class="error-message">
             {{ deletePhongErrorMessage }}
           </p>
         </div>
@@ -3177,10 +2908,7 @@ onMounted(() => {
             không?
           </p>
 
-          <p
-            v-if="deleteHopDongErrorMessage"
-            class="error-message"
-          >
+          <p v-if="deleteHopDongErrorMessage" class="error-message">
             {{ deleteHopDongErrorMessage }}
           </p>
         </div>
@@ -3194,11 +2922,7 @@ onMounted(() => {
             Hủy
           </button>
 
-          <button
-            type="button"
-            class="danger"
-            @click="confirmDeleteHopDong"
-          >
+          <button type="button" class="danger" @click="confirmDeleteHopDong">
             Xóa
           </button>
         </div>
@@ -3247,14 +2971,9 @@ onMounted(() => {
             không?
           </p>
 
-          <p class="delete-modal-note">
-            Thao tác này không thể hoàn tác.
-          </p>
+          <p class="delete-modal-note">Thao tác này không thể hoàn tác.</p>
 
-          <p
-            v-if="deleteGiuongErrorMessage"
-            class="error-message"
-          >
+          <p v-if="deleteGiuongErrorMessage" class="error-message">
             {{ deleteGiuongErrorMessage }}
           </p>
         </div>
@@ -3313,14 +3032,9 @@ onMounted(() => {
             không?
           </p>
 
-          <p class="delete-modal-note">
-            Thao tác này không thể hoàn tác.
-          </p>
+          <p class="delete-modal-note">Thao tác này không thể hoàn tác.</p>
 
-          <p
-            v-if="deleteNguoiThueErrorMessage"
-            class="error-message"
-          >
+          <p v-if="deleteNguoiThueErrorMessage" class="error-message">
             {{ deleteNguoiThueErrorMessage }}
           </p>
         </div>
@@ -3364,26 +3078,14 @@ onMounted(() => {
           không?
         </p>
 
-        <p
-          v-if="deleteHoaDonErrorMessage"
-          class="error-message"
-        >
+        <p v-if="deleteHoaDonErrorMessage" class="error-message">
           {{ deleteHoaDonErrorMessage }}
         </p>
 
         <div class="modal-actions">
-          <button
-            type="button"
-            @click="closeDeleteHoaDonModal"
-          >
-            Hủy
-          </button>
+          <button type="button" @click="closeDeleteHoaDonModal">Hủy</button>
 
-          <button
-            type="button"
-            class="btn danger"
-            @click="confirmDeleteHoaDon"
-          >
+          <button type="button" class="btn danger" @click="confirmDeleteHoaDon">
             Xóa
           </button>
         </div>
@@ -3412,13 +3114,7 @@ onMounted(() => {
 
   background: linear-gradient(135deg, #f8fafc, #e2e8f0);
 
-  font-family:
-    Inter,
-    "Segoe UI",
-    Roboto,
-    Helvetica,
-    Arial,
-    sans-serif;
+  font-family: Inter, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 
   color: #0f172a;
 }
@@ -3439,7 +3135,6 @@ textarea {
   font: inherit;
 }
 
-
 /* =========================================================
    APP LAYOUT
    ========================================================= */
@@ -3459,7 +3154,6 @@ textarea {
 
   overflow-x: hidden;
 }
-
 
 /* =========================================================
    SIDEBAR
@@ -3513,11 +3207,7 @@ textarea {
 
   border-radius: 12px;
 
-  background: linear-gradient(
-    135deg,
-    #38bdf8,
-    #2563eb
-  );
+  background: linear-gradient(135deg, #38bdf8, #2563eb);
 
   display: grid;
   place-items: center;
@@ -3525,8 +3215,7 @@ textarea {
   font-size: 1rem;
   font-weight: 700;
 
-  box-shadow:
-    0 6px 16px rgba(37, 99, 235, 0.25);
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.25);
 }
 
 .brand h1 {
@@ -3549,7 +3238,6 @@ textarea {
 
   font-size: 0.72rem;
 }
-
 
 /* =========================================================
    MENU BUTTON
@@ -3590,8 +3278,7 @@ textarea {
 
   font-size: 1.2rem;
 
-  box-shadow:
-    0 8px 20px rgba(15, 23, 42, 0.2);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.2);
 
   z-index: 1200;
 }
@@ -3616,7 +3303,6 @@ textarea {
 .menu-close-button:hover {
   background: rgba(255, 255, 255, 0.15);
 }
-
 
 /* =========================================================
    NAVIGATION
@@ -3666,16 +3352,11 @@ textarea {
 }
 
 .nav-item.active {
-  background: linear-gradient(
-    135deg,
-    #38bdf8,
-    #2563eb
-  );
+  background: linear-gradient(135deg, #38bdf8, #2563eb);
 
   color: white;
 
-  box-shadow:
-    0 5px 14px rgba(37, 99, 235, 0.25);
+  box-shadow: 0 5px 14px rgba(37, 99, 235, 0.25);
 }
 
 .nav-icon {
@@ -3701,7 +3382,6 @@ textarea {
   white-space: nowrap;
 }
 
-
 /* =========================================================
    MENU OVERLAY
    ========================================================= */
@@ -3720,7 +3400,6 @@ textarea {
   z-index: 900;
 }
 
-
 /* =========================================================
    MAIN CONTENT
    ========================================================= */
@@ -3736,7 +3415,6 @@ textarea {
 
   overflow-x: hidden;
 }
-
 
 /* =========================================================
    TOP BAR
@@ -3780,7 +3458,6 @@ textarea {
   line-height: 1.2;
 }
 
-
 /* =========================================================
    BUTTONS
    ========================================================= */
@@ -3805,23 +3482,17 @@ textarea {
 }
 
 .primary {
-  background: linear-gradient(
-    135deg,
-    #2563eb,
-    #0ea5e9
-  );
+  background: linear-gradient(135deg, #2563eb, #0ea5e9);
 
   color: white;
 
-  box-shadow:
-    0 4px 10px rgba(37, 99, 235, 0.2);
+  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.2);
 }
 
 .primary:hover {
   transform: translateY(-1px);
 
-  box-shadow:
-    0 6px 14px rgba(37, 99, 235, 0.25);
+  box-shadow: 0 6px 14px rgba(37, 99, 235, 0.25);
 }
 
 .secondary {
@@ -3834,7 +3505,6 @@ textarea {
   background: #cbd5e1;
 }
 
-
 /* =========================================================
    PANELS / GRID
    ========================================================= */
@@ -3842,11 +3512,7 @@ textarea {
 .panel-grid {
   display: grid;
 
-  grid-template-columns:
-    repeat(
-      auto-fit,
-      minmax(280px, 1fr)
-    );
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
 
   gap: 20px;
 
@@ -3868,8 +3534,7 @@ textarea {
 
   border-radius: 18px;
 
-  box-shadow:
-    0 12px 24px rgba(15, 23, 42, 0.06);
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.06);
 
   backdrop-filter: blur(10px);
 
@@ -3883,7 +3548,6 @@ textarea {
 
   font-size: 1.1rem;
 }
-
 
 /* =========================================================
    DASHBOARD METRIC CARD
@@ -3909,8 +3573,7 @@ textarea {
 
   overflow: hidden;
 
-  box-shadow:
-    0 12px 24px rgba(15, 23, 42, 0.06);
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.06);
 
   background: rgba(255, 255, 255, 0.8);
 
@@ -3918,11 +3581,7 @@ textarea {
 }
 
 .metric-card.highlight {
-  background: linear-gradient(
-    135deg,
-    #eff6ff,
-    #dbeafe
-  );
+  background: linear-gradient(135deg, #eff6ff, #dbeafe);
 }
 
 .metric-card .metric-decor {
@@ -3959,56 +3618,49 @@ textarea {
   line-height: 1.1;
 }
 
-
 /* =========================================================
    METRIC COLORS
    ========================================================= */
 
 .metric-card.metric-nhatro .metric-decor {
-  background:
-    linear-gradient(
-      135deg,
-      rgba(239, 246, 255, 0.95),
-      rgba(219, 234, 254, 0.95)
-    );
+  background: linear-gradient(
+    135deg,
+    rgba(239, 246, 255, 0.95),
+    rgba(219, 234, 254, 0.95)
+  );
 }
 
 .metric-card.metric-phong .metric-decor {
-  background:
-    linear-gradient(
-      135deg,
-      rgba(255, 247, 237, 0.95),
-      rgba(255, 237, 213, 0.95)
-    );
+  background: linear-gradient(
+    135deg,
+    rgba(255, 247, 237, 0.95),
+    rgba(255, 237, 213, 0.95)
+  );
 }
 
 .metric-card.metric-giuong .metric-decor {
-  background:
-    linear-gradient(
-      135deg,
-      rgba(240, 253, 244, 0.95),
-      rgba(187, 247, 208, 0.95)
-    );
+  background: linear-gradient(
+    135deg,
+    rgba(240, 253, 244, 0.95),
+    rgba(187, 247, 208, 0.95)
+  );
 }
 
 .metric-card.metric-hopdong .metric-decor {
-  background:
-    linear-gradient(
-      135deg,
-      rgba(255, 241, 242, 0.95),
-      rgba(254, 215, 226, 0.95)
-    );
+  background: linear-gradient(
+    135deg,
+    rgba(255, 241, 242, 0.95),
+    rgba(254, 215, 226, 0.95)
+  );
 }
 
 .metric-card.metric-hoadon .metric-decor {
-  background:
-    linear-gradient(
-      135deg,
-      rgba(248, 250, 252, 0.95),
-      rgba(226, 232, 240, 0.95)
-    );
+  background: linear-gradient(
+    135deg,
+    rgba(248, 250, 252, 0.95),
+    rgba(226, 232, 240, 0.95)
+  );
 }
-
 
 /* =========================================================
    FORM
@@ -4017,11 +3669,7 @@ textarea {
 .form-grid {
   display: grid;
 
-  grid-template-columns:
-    repeat(
-      2,
-      minmax(0, 1fr)
-    );
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 
   gap: 16px;
 
@@ -4070,8 +3718,7 @@ select:focus,
 textarea:focus {
   border-color: #3b82f6;
 
-  box-shadow:
-    0 0 0 3px rgba(59, 130, 246, 0.12);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
 }
 
 textarea {
@@ -4098,7 +3745,6 @@ textarea {
   grid-column: 1 / -1;
 }
 
-
 /* =========================================================
    FORM ACTIONS
    ========================================================= */
@@ -4113,7 +3759,6 @@ textarea {
 
   margin-top: 4px;
 }
-
 
 /* =========================================================
    CURRENCY INPUT
@@ -4167,7 +3812,6 @@ textarea {
 
   white-space: nowrap;
 }
-
 
 /* =========================================================
    TABLE
@@ -4229,7 +3873,6 @@ tbody tr:hover {
   background: rgba(248, 250, 252, 0.8);
 }
 
-
 /* =========================================================
    TABLE ACTIONS
    ========================================================= */
@@ -4268,7 +3911,6 @@ tbody tr:hover {
 .table-btn.delete:hover {
   background: #fecaca;
 }
-
 
 /* =========================================================
    STATUS
@@ -4316,7 +3958,6 @@ tbody tr:hover {
   color: #b91c1c;
 }
 
-
 /* =========================================================
    NHÀ TRỌ
    ========================================================= */
@@ -4324,11 +3965,7 @@ tbody tr:hover {
 .nha-tro-grid {
   display: grid;
 
-  grid-template-columns:
-    repeat(
-      auto-fit,
-      minmax(220px, 1fr)
-    );
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 
   gap: 12px;
 }
@@ -4365,7 +4002,6 @@ tbody tr:hover {
   font-size: 1.25rem;
 }
 
-
 /* =========================================================
    RELATIONSHIP
    ========================================================= */
@@ -4377,7 +4013,6 @@ tbody tr:hover {
 
   line-height: 1.7;
 }
-
 
 /* =========================================================
    CCCD
@@ -4420,7 +4055,6 @@ tbody tr:hover {
 .cccd-current a:hover {
   text-decoration: underline;
 }
-
 
 /* =========================================================
    DELETE MODAL - COMMON
@@ -4476,20 +4110,15 @@ tbody tr:hover {
   from {
     opacity: 0;
 
-    transform:
-      translateY(-10px)
-      scale(0.98);
+    transform: translateY(-10px) scale(0.98);
   }
 
   to {
     opacity: 1;
 
-    transform:
-      translateY(0)
-      scale(1);
+    transform: translateY(0) scale(1);
   }
 }
-
 
 /* =========================================================
    DELETE MODAL HEADER
@@ -4542,7 +4171,6 @@ tbody tr:hover {
   font-weight: 700;
 }
 
-
 /* =========================================================
    DELETE MODAL BODY
    ========================================================= */
@@ -4578,11 +4206,7 @@ tbody tr:hover {
 .related-data {
   display: grid;
 
-  grid-template-columns:
-    repeat(
-      2,
-      minmax(0, 1fr)
-    );
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 
   gap: 12px;
 
@@ -4661,7 +4285,6 @@ tbody tr:hover {
   line-height: 1.4;
 }
 
-
 /* =========================================================
    DELETE MODAL ACTIONS
    ========================================================= */
@@ -4713,7 +4336,6 @@ tbody tr:hover {
 
   transform: translateY(-1px);
 }
-
 
 /* =========================================================
    STANDARD MODAL
@@ -4774,7 +4396,6 @@ tbody tr:hover {
   font-weight: 700;
 }
 
-
 /* =========================================================
    MOBILE
    ========================================================= */
@@ -4802,11 +4423,9 @@ tbody tr:hover {
 
     transform: translateX(-100%);
 
-    transition:
-      transform 0.25s ease;
+    transition: transform 0.25s ease;
 
-    box-shadow:
-      10px 0 30px rgba(15, 23, 42, 0.18);
+    box-shadow: 10px 0 30px rgba(15, 23, 42, 0.18);
   }
 
   .sidebar.open {
@@ -4836,14 +4455,9 @@ tbody tr:hover {
   }
 
   .panel-grid {
-    grid-template-columns:
-      repeat(
-        2,
-        minmax(0, 1fr)
-      );
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
-
 
 /* =========================================================
    TABLET / SMALL SCREEN
@@ -4907,7 +4521,6 @@ tbody tr:hover {
     grid-template-columns: 1fr;
   }
 }
-
 
 /* =========================================================
    MOBILE
