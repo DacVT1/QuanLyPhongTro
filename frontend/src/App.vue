@@ -1218,12 +1218,22 @@ function generateHopDongCode(giuongId: string) {
 }
 
 function generateHoaDonCode(hopDongId: string, thangThanhToan: string) {
-  const hopDong = hopDongs.value.find((item) => item.id === hopDongId);
-  if (!hopDong?.maHopDong) return "";
-  const month = thangThanhToan
-    ? new Date(thangThanhToan).toISOString().slice(0, 7)
-    : new Date().toISOString().slice(0, 7);
-  return `${hopDong.maHopDong}_${month}`;
+  const hopDong = hopDongs.value.find(
+    (item) => item.id === hopDongId,
+  );
+
+  if (!hopDong?.maHopDong) {
+    return "";
+  }
+
+  const date = thangThanhToan
+    ? new Date(`${thangThanhToan}T00:00:00`)
+    : new Date();
+
+  const month = date.getMonth() + 1;
+  const year = date.getFullYear();
+
+  return `${hopDong.maHopDong}_TH${month}/${year}`;
 }
 
 function syncHopDongCode() {
