@@ -357,6 +357,20 @@ const editingHoaDonId = ref<string | null>(null);
 const showDeleteHoaDonModal = ref(false);
 const showDeleteHopDongModal = ref(false);
 
+function formatTienThueDisplay(value: number | string | null | undefined) {
+  if (value === null || value === undefined || value === "") {
+    return "";
+  }
+
+  const numberValue = Number(String(value).replace(/[^\d]/g, ""));
+
+  if (isNaN(numberValue)) {
+    return "";
+  }
+
+  return numberValue.toLocaleString("vi-VN");
+}
+
 const deleteHoaDonInfo = ref({
   id: "",
   maHoaDon: "",
@@ -712,10 +726,15 @@ function closeDeletePhongModal() {
 }
 
 function requestDeleteNguoiThue(item: any) {
+  const soHopDong = hopDongs.value.filter(
+    (hopDong) => hopDong.nguoiThue?.id === item.id,
+  ).length;
+
   deleteNguoiThueInfo.value = {
     id: item.id,
     hoTen: item.hoTen ?? "Người thuê",
     cccd: item.cccd ?? "",
+    soHopDong,
   };
 
   deleteNguoiThueErrorMessage.value = "";
@@ -1125,6 +1144,7 @@ const deleteNguoiThueInfo = ref({
   id: "",
   hoTen: "",
   cccd: "",
+  soHopDong: 0,
 });
 
 const deleteNguoiThueErrorMessage = ref("");
@@ -2752,103 +2772,66 @@ onMounted(() => {
         </div>
 
         <div class="delete-modal-body">
-          <template
-            v-if="
-              deleteNhaTroInfo.soPhong > 0 ||
-              deleteNhaTroInfo.soGiuong > 0 ||
-              deleteNhaTroInfo.soHopDong > 0 ||
-              deleteNhaTroInfo.soHoaDon > 0
-            "
-          >
-            <div class="warning-message">
-              <strong> Không thể xóa nhà trọ này! </strong>
+  <template v-if="deleteNguoiThueInfo.soHopDong > 0">
+    <div class="warning-message">
+      <strong>Không thể xóa người thuê này!</strong>
 
-              <p>
-                Nhà trọ đang có dữ liệu liên quan. Bạn cần xử lý các dữ liệu này
-                trước khi xóa.
-              </p>
-            </div>
+      <p>
+        Người thuê đang có
+        <strong>{{ deleteNguoiThueInfo.soHopDong }}</strong>
+        hợp đồng.
+      </p>
 
-            <div class="related-data">
-              <div class="related-item">
-                <span>Phòng</span>
-                <strong>
-                  {{ deleteNhaTroInfo.soPhong }}
-                </strong>
-              </div>
+      <p>
+        Vui lòng xóa hợp đồng trước khi xóa người thuê.
+      </p>
+    </div>
 
-              <div class="related-item">
-                <span>Giường</span>
-                <strong>
-                  {{ deleteNhaTroInfo.soGiuong }}
-                </strong>
-              </div>
+    <p class="delete-modal-note">
+      Không thể thực hiện thao tác xóa khi người thuê vẫn còn hợp đồng.
+    </p>
+  </template>
 
-              <div class="related-item">
-                <span>Hợp đồng</span>
-                <strong>
-                  {{ deleteNhaTroInfo.soHopDong }}
-                </strong>
-              </div>
+  <template v-else>
+    <p class="confirm-message">
+      Bạn có chắc chắn muốn xóa người thuê
+      <strong>
+        {{ deleteNguoiThueInfo.hoTen }}
+      </strong>
+      không?
+    </p>
 
-              <div class="related-item">
-                <span>Hóa đơn</span>
-                <strong>
-                  {{ deleteNhaTroInfo.soHoaDon }}
-                </strong>
-              </div>
-            </div>
+    <p class="delete-modal-note">
+      Thao tác này không thể hoàn tác.
+    </p>
+  </template>
 
-            <p class="delete-modal-note">
-              Việc xóa nhà trọ có thể ảnh hưởng đến các dữ liệu liên quan. Hãy
-              xóa hoặc xử lý các dữ liệu liên quan trước khi thực hiện thao tác
-              này.
-            </p>
-          </template>
+  <p
+    v-if="deleteNguoiThueErrorMessage"
+    class="error-message"
+  >
+    {{ deleteNguoiThueErrorMessage }}
+  </p>
+</div>
 
-          <template v-else>
-            <p class="confirm-message">
-              Bạn có chắc chắn muốn xóa nhà trọ
-              <strong>
-                {{ deleteNhaTroInfo.tenNhaTro }}
-              </strong>
-              ?
-            </p>
+<div class="delete-modal-actions">
+  <button
+    class="secondary"
+    type="button"
+    @click="closeDeleteNguoiThueModal"
+  >
+    Đóng
+  </button>
 
-            <p class="delete-modal-note">Thao tác này không thể hoàn tác.</p>
-          </template>
-
-          <p
-            v-if="deleteErrorMessage && deleteNhaTroInfo.soPhong === 0"
-            class="error-message"
-          >
-            {{ deleteErrorMessage }}
-          </p>
-        </div>
-
-        <div class="delete-modal-actions">
-          <button
-            class="secondary"
-            type="button"
-            @click="closeDeleteNhaTroModal"
-          >
-            Đóng
-          </button>
-
-          <button
-            v-if="
-              deleteNhaTroInfo.soPhong === 0 &&
-              deleteNhaTroInfo.soGiuong === 0 &&
-              deleteNhaTroInfo.soHopDong === 0 &&
-              deleteNhaTroInfo.soHoaDon === 0
-            "
-            class="danger-button"
-            type="button"
-            @click="confirmDeleteNhaTro"
-          >
-            Xác nhận xóa
-          </button>
-        </div>
+  <button
+    v-if="deleteNguoiThueInfo.soHopDong === 0"
+    class="danger-button"
+    type="button"
+    @click="confirmDeleteNguoiThue"
+  >
+    Xác nhận xóa
+  </button>
+</div>
       </div>
     </div>
 
