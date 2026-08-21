@@ -176,10 +176,10 @@ const nguoiThueForm = ref({
   hoTen: "",
   cccd: "",
   sdt: "",
-  email: "",
+  email: "a@gmail.com",
   diaChi: "",
   ngaySinh: "",
-  bienSoXe: "",
+  bienSoXe: "00A0-00000",
   cccdMatTruoc: null as File | null,
   cccdMatSau: null as File | null,
   cccdMatTruocUrl: "",
@@ -474,7 +474,7 @@ function resetGiuongForm() {
     trangThai: "trong",
   };
 
-  giaGiuongDisplay.value = "";
+  giaGiuongDisplay.value = "1,500,000";
 
   editingGiuongId.value = null;
 }
@@ -508,10 +508,10 @@ function resetNguoiThueForm() {
     hoTen: "",
     cccd: "",
     sdt: "",
-    email: "",
+    email: "a@gmail.com",
     diaChi: "",
     ngaySinh: "",
-    bienSoXe: "",
+    bienSoXe: "00A0-00000",
     cccdMatTruoc: null,
     cccdMatSau: null,
 
