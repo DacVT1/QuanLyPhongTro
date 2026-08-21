@@ -1864,14 +1864,14 @@ onMounted(() => {
 </label>
 
 <label>
-  {{ requiredLabel('Giá thuê trọn gói') }}
+  {{ requiredLabel('Giá thuê') }}
   <div class="currency-input">
     <input
       v-model.number="hopDongForm.tienThue"
       type="number"
       min="0"
       step="1000"
-      placeholder="Giá thuê trọn gói"
+      placeholder="Giá thuê"
       required
     />
     <span>VND</span>
