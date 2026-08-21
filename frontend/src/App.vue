@@ -406,6 +406,91 @@ const nguoiThues = ref<any[]>([]);
 const hopDongs = ref<any[]>([]);
 const hoaDons = ref<any[]>([]);
 
+const nhaTroDashboard = computed(() => {
+  return nhaTros.value.map((nhaTro) => {
+    const rooms = phongs.value.filter(
+      (phong) =>
+        phong.nhaTro?.id === nhaTro.id,
+    );
+
+    const beds = giuongs.value.filter(
+      (giuong) =>
+        giuong.phong?.nhaTro?.id === nhaTro.id,
+    );
+
+    const activeContracts =
+      hopDongs.value.filter(
+        (hopDong) =>
+          hopDong.trangThai === "active" &&
+          hopDong.giuong?.phong?.nhaTro?.id ===
+            nhaTro.id,
+      );
+
+    const occupiedRoomIds = new Set(
+      activeContracts
+        .map(
+          (hopDong) =>
+            hopDong.giuong?.phong?.id,
+        )
+        .filter(Boolean),
+    );
+
+    const occupiedBedIds = new Set(
+      activeContracts
+        .map(
+          (hopDong) =>
+            hopDong.giuong?.id,
+        )
+        .filter(Boolean),
+    );
+
+    const paidContracts = hoaDons.value.filter(
+      (hoaDon) =>
+        hoaDon.trangThai ===
+          "DA_THANH_TOAN" &&
+        hoaDon.hopDong?.giuong?.phong?.nhaTro
+          ?.id === nhaTro.id,
+    );
+
+    const paidBedIds = new Set(
+      paidContracts
+        .map(
+          (hoaDon) =>
+            hoaDon.hopDong?.giuong?.id,
+        )
+        .filter(Boolean),
+    );
+
+    return {
+      id: nhaTro.id,
+
+      maNhaTro:
+        nhaTro.maNhaTro ?? "",
+
+      tenNhaTro:
+        nhaTro.tenNhaTro ?? "",
+
+      soTang:
+        Number(nhaTro.soTang ?? 0),
+
+      totalPhong:
+        rooms.length,
+
+      totalPhongCoNguoi:
+        occupiedRoomIds.size,
+
+      totalGiuong:
+        beds.length,
+
+      totalGiuongCoNguoi:
+        occupiedBedIds.size,
+
+      totalGiuongDaThanhToan:
+        paidBedIds.size,
+    };
+  });
+});
+
 const nhaTroForm = ref({
   maNhaTro: "",
   tenNhaTro: "",
@@ -2071,9 +2156,12 @@ onMounted(() => {
   <h4>
     Tỷ lệ phòng có người ở
   </h4>
-
+<div
+  v-for="house in nhaTroDashboard"
+  :key="house.id"
+>
   <div class="chart-container">
-
+  
     <Doughnut
       :data="getPhongChartData(house)"
       :options="doughnutOptions"
@@ -2104,6 +2192,7 @@ onMounted(() => {
   </div>
 
 </div>
+
 
 <div class="dashboard-chart-card">
 
@@ -2180,7 +2269,7 @@ onMounted(() => {
     </p>
 
   </div>
-
+</div>
 </div>
       </section>
 
