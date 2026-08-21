@@ -14,7 +14,15 @@ const tabs = [
   "hoaDon",
 ];
 const currentTab = ref("dashboard");
+const isMenuOpen = ref(false);
 
+function toggleMenu() {
+  isMenuOpen.value = !isMenuOpen.value;
+}
+
+function closeMenu() {
+  isMenuOpen.value = false;
+}
 const summary = ref({
   totalNhaTro: 0,
   totalPhong: 0,
@@ -1394,82 +1402,204 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="app-shell">
-    <aside class="sidebar">
-      <div class="brand">
-        <div class="brand-mark">N</div>
-        <div>
-          <h1>Nhà Trọ</h1>
-          <small>Quản lý</small>
+  <div
+    class="app-shell"
+    :class="{ 'menu-open': isMenuOpen }"
+  >
+    <!-- =====================================================
+         NÚT MỞ MENU
+         ===================================================== -->
+    <button
+      v-if="!isMenuOpen"
+      type="button"
+      class="menu-toggle menu-open-button"
+      aria-label="Mở menu"
+      title="Mở menu"
+      @click="toggleMenu"
+    >
+      ☰
+    </button>
+
+    <!-- =====================================================
+         SIDEBAR
+         ===================================================== -->
+    <aside
+      class="sidebar"
+      :class="{ open: isMenuOpen }"
+    >
+      <div class="sidebar-header">
+        <div class="brand">
+          <div class="brand-mark">N</div>
+
+          <div>
+            <h1>Nhà Trọ</h1>
+            <small>Quản lý</small>
+          </div>
         </div>
+
+        <!-- Nút Tắt menu -->
+        <button
+          type="button"
+          class="menu-toggle menu-close-button"
+          aria-label="Tắt menu"
+          title="Tắt menu"
+          @click="closeMenu"
+        >
+          ×
+        </button>
       </div>
 
       <nav class="nav">
         <button
           v-for="tab in tabs"
           :key="tab"
+          type="button"
           :class="['nav-item', { active: currentTab === tab }]"
-          @click="currentTab = tab"
+          @click="
+            currentTab = tab;
+            closeMenu();
+          "
         >
-          {{
-            tab === "dashboard"
-              ? "Tổng quan"
-              : tab === "nhaTro"
-                ? "Nhà trọ"
-                : tab === "phong"
-                  ? "Phòng"
-                  : tab === "giuong"
-                    ? "Giường"
-                    : tab === "nguoiThue"
-                      ? "Người thuê"
-                      : tab === "hopDong"
-                        ? "Hợp đồng"
-                        : "Hóa đơn"
-          }}
+          <span class="nav-icon">
+            <template v-if="tab === 'dashboard'">
+              ⌂
+            </template>
+
+            <template v-else-if="tab === 'nhaTro'">
+              🏠
+            </template>
+
+            <template v-else-if="tab === 'phong'">
+              ▦
+            </template>
+
+            <template v-else-if="tab === 'giuong'">
+              ▤
+            </template>
+
+            <template v-else-if="tab === 'nguoiThue'">
+              ♙
+            </template>
+
+            <template v-else-if="tab === 'hopDong'">
+              ▤
+            </template>
+
+            <template v-else>
+              ▣
+            </template>
+          </span>
+
+          <span class="nav-label">
+            {{
+              tab === "dashboard"
+                ? "Tổng quan"
+                : tab === "nhaTro"
+                  ? "Nhà trọ"
+                  : tab === "phong"
+                    ? "Phòng"
+                    : tab === "giuong"
+                      ? "Giường"
+                      : tab === "nguoiThue"
+                        ? "Người thuê"
+                        : tab === "hopDong"
+                          ? "Hợp đồng"
+                          : "Hóa đơn"
+            }}
+          </span>
         </button>
       </nav>
     </aside>
 
+    <!-- =====================================================
+         OVERLAY
+         Dùng cho màn hình nhỏ
+         ===================================================== -->
+    <div
+      v-if="isMenuOpen"
+      class="menu-overlay"
+      @click="closeMenu"
+    ></div>
+
+    <!-- =====================================================
+         NỘI DUNG CHÍNH
+         ===================================================== -->
     <main class="content">
       <header class="topbar">
         <div>
           <p class="eyebrow">Hệ thống</p>
           <h2>Quản lý nhà trọ</h2>
         </div>
-        <button class="primary" @click="loadData">Làm mới dữ liệu</button>
+
+        <button
+          class="primary"
+          @click="loadData"
+        >
+          Làm mới dữ liệu
+        </button>
       </header>
 
-      <section v-if="currentTab === 'dashboard'" class="panel-grid">
+      <!-- ===================================================
+           DASHBOARD
+           =================================================== -->
+      <section
+        v-if="currentTab === 'dashboard'"
+        class="panel-grid"
+      >
         <div class="metric-card metric-nhatro highlight">
-          <div class="metric-decor" aria-hidden="true"></div>
+          <div
+            class="metric-decor"
+            aria-hidden="true"
+          ></div>
+
           <div class="metric-body">
             <span>Nhà trọ</span>
             <strong>{{ summary.totalNhaTro }}</strong>
           </div>
         </div>
+
         <div class="metric-card metric-phong">
-          <div class="metric-decor" aria-hidden="true"></div>
+          <div
+            class="metric-decor"
+            aria-hidden="true"
+          ></div>
+
           <div class="metric-body">
             <span>Phòng</span>
             <strong>{{ summary.totalPhong }}</strong>
           </div>
         </div>
+
         <div class="metric-card metric-giuong">
-          <div class="metric-decor" aria-hidden="true"></div>
+          <div
+            class="metric-decor"
+            aria-hidden="true"
+          ></div>
+
           <div class="metric-body">
             <span>Giường</span>
             <strong>{{ summary.totalGiuong }}</strong>
           </div>
         </div>
+
         <div class="metric-card metric-hopdong">
-          <div class="metric-decor" aria-hidden="true"></div>
+          <div
+            class="metric-decor"
+            aria-hidden="true"
+          ></div>
+
           <div class="metric-body">
             <span>Hợp đồng</span>
             <strong>{{ summary.totalHopDong }}</strong>
           </div>
         </div>
+
         <div class="metric-card metric-hoadon">
-          <div class="metric-decor" aria-hidden="true"></div>
+          <div
+            class="metric-decor"
+            aria-hidden="true"
+          ></div>
+
           <div class="metric-body">
             <span>Hóa đơn</span>
             <strong>{{ summary.totalHoaDon }}</strong>
@@ -1477,36 +1607,55 @@ onMounted(() => {
         </div>
       </section>
 
-      <section v-else-if="currentTab === 'nhaTro'" class="panel-grid">
+      <!-- ===================================================
+           NHÀ TRỌ
+           =================================================== -->
+      <section
+        v-else-if="currentTab === 'nhaTro'"
+        class="panel-grid"
+      >
         <div class="panel">
-          <h3>{{ editingNhaTroId ? "Sửa nhà trọ" : "Thêm nhà trọ" }}</h3>
-          <form @submit.prevent="saveNhaTro" class="form-grid">
+          <h3>
+            {{ editingNhaTroId ? "Sửa nhà trọ" : "Thêm nhà trọ" }}
+          </h3>
+
+          <form
+            @submit.prevent="saveNhaTro"
+            class="form-grid"
+          >
             <label>
               {{ requiredLabel("Mã nhà trọ") }}
+
               <input
                 v-model="nhaTroForm.maNhaTro"
                 placeholder="Ví dụ: CG"
                 required
               />
             </label>
+
             <label>
               {{ requiredLabel("Tên nhà trọ") }}
+
               <input
                 v-model="nhaTroForm.tenNhaTro"
                 placeholder="Tên nhà trọ"
                 required
               />
             </label>
+
             <label>
               {{ requiredLabel("Địa chỉ") }}
+
               <input
                 v-model="nhaTroForm.diaChi"
                 placeholder="Địa chỉ"
                 required
               />
             </label>
+
             <label>
               {{ requiredLabel("Số tầng") }}
+
               <input
                 v-model.number="nhaTroForm.soTang"
                 type="number"
@@ -1515,19 +1664,30 @@ onMounted(() => {
                 required
               />
             </label>
+
             <label>
               {{ requiredLabel("Mô tả") }}
+
               <textarea
                 v-model="nhaTroForm.moTa"
                 placeholder="Mô tả"
                 rows="3"
               ></textarea>
             </label>
+
             <div class="actions">
-              <button class="primary" type="submit">
+              <button
+                class="primary"
+                type="submit"
+              >
                 {{ editingNhaTroId ? "Cập nhật" : "Lưu" }}
               </button>
-              <button class="secondary" type="button" @click="resetNhaTroForm">
+
+              <button
+                class="secondary"
+                type="button"
+                @click="resetNhaTroForm"
+              >
                 Hủy
               </button>
             </div>
@@ -1536,6 +1696,7 @@ onMounted(() => {
 
         <div class="panel">
           <h3>Danh sách nhà trọ</h3>
+
           <table>
             <thead>
               <tr>
@@ -1546,16 +1707,25 @@ onMounted(() => {
                 <th>Hành động</th>
               </tr>
             </thead>
+
             <tbody>
-              <tr v-for="item in nhaTros" :key="item.id">
+              <tr
+                v-for="item in nhaTros"
+                :key="item.id"
+              >
                 <td>{{ item.maNhaTro }}</td>
                 <td>{{ item.tenNhaTro }}</td>
                 <td>{{ item.diaChi }}</td>
                 <td>{{ item.soTang }}</td>
+
                 <td class="row-actions">
-                  <button class="table-btn edit" @click="editNhaTro(item)">
+                  <button
+                    class="table-btn edit"
+                    @click="editNhaTro(item)"
+                  >
                     Sửa
                   </button>
+
                   <button
                     class="table-btn delete"
                     @click="requestDeleteNhaTro(item)"
@@ -1569,19 +1739,39 @@ onMounted(() => {
         </div>
       </section>
 
-      <section v-else-if="currentTab === 'phong'" class="panel-grid">
+      <!-- ===================================================
+           PHÒNG
+           =================================================== -->
+      <section
+        v-else-if="currentTab === 'phong'"
+        class="panel-grid"
+      >
         <div class="panel">
-          <h3>{{ editingPhongId ? "Sửa phòng" : "Thêm phòng" }}</h3>
-          <form @submit.prevent="savePhong" class="form-grid">
+          <h3>
+            {{ editingPhongId ? "Sửa phòng" : "Thêm phòng" }}
+          </h3>
+
+          <form
+            @submit.prevent="savePhong"
+            class="form-grid"
+          >
             <label>
               {{ requiredLabel("Nhà trọ") }}
+
               <select
                 v-model="phongForm.nhaTroId"
                 @change="handleNhaTroChange"
                 required
               >
-                <option value="">Chọn nhà trọ</option>
-                <option v-for="item in nhaTros" :key="item.id" :value="item.id">
+                <option value="">
+                  Chọn nhà trọ
+                </option>
+
+                <option
+                  v-for="item in nhaTros"
+                  :key="item.id"
+                  :value="item.id"
+                >
                   {{ item.tenNhaTro }}
                 </option>
               </select>
@@ -1596,7 +1786,12 @@ onMounted(() => {
                 required
                 :disabled="!phongForm.nhaTroId"
               >
-                <option value="" disabled>-- Chọn tầng --</option>
+                <option
+                  value=""
+                  disabled
+                >
+                  -- Chọn tầng --
+                </option>
 
                 <option
                   v-for="floor in tangSoOptions"
@@ -1607,8 +1802,10 @@ onMounted(() => {
                 </option>
               </select>
             </label>
+
             <label>
               {{ requiredLabel("Số giường tối đa") }}
+
               <input
                 v-model.number="phongForm.soGiuongToiDa"
                 type="number"
@@ -1618,16 +1815,20 @@ onMounted(() => {
                 required
               />
             </label>
+
             <label>
               {{ requiredLabel("Loại phòng") }}
+
               <input
                 v-model="phongForm.loaiPhong"
                 placeholder="Loại phòng"
                 required
               />
             </label>
+
             <label>
               {{ requiredLabel("Diện tích") }}
+
               <input
                 v-model.number="phongForm.dienTich"
                 type="number"
@@ -1636,11 +1837,20 @@ onMounted(() => {
                 required
               />
             </label>
+
             <div class="actions">
-              <button class="primary" type="submit">
+              <button
+                class="primary"
+                type="submit"
+              >
                 {{ editingPhongId ? "Cập nhật" : "Lưu" }}
               </button>
-              <button class="secondary" type="button" @click="resetPhongForm">
+
+              <button
+                class="secondary"
+                type="button"
+                @click="resetPhongForm"
+              >
                 Hủy
               </button>
             </div>
@@ -1649,6 +1859,7 @@ onMounted(() => {
 
         <div class="panel">
           <h3>Danh sách phòng</h3>
+
           <table>
             <thead>
               <tr>
@@ -1660,8 +1871,12 @@ onMounted(() => {
                 <th>Hành động</th>
               </tr>
             </thead>
+
             <tbody>
-              <tr v-for="item in phongs" :key="item.id">
+              <tr
+                v-for="item in phongs"
+                :key="item.id"
+              >
                 <td>
                   {{ item.maPhong }}
                 </td>
@@ -1669,13 +1884,21 @@ onMounted(() => {
                 <td>
                   {{ item.nhaTro?.tenNhaTro || item.nhaTro?.maNhaTro }}
                 </td>
+
                 <td>{{ item.tangSo }}</td>
+
                 <td>{{ item.loaiPhong }}</td>
+
                 <td>{{ item.soGiuongToiDa }}</td>
+
                 <td class="row-actions">
-                  <button class="table-btn edit" @click="editPhong(item)">
+                  <button
+                    class="table-btn edit"
+                    @click="editPhong(item)"
+                  >
                     Sửa
                   </button>
+
                   <button
                     type="button"
                     class="table-btn delete"
@@ -1690,32 +1913,57 @@ onMounted(() => {
         </div>
       </section>
 
-      <section v-else-if="currentTab === 'giuong'" class="panel-grid">
+      <!-- ===================================================
+           GIƯỜNG
+           =================================================== -->
+      <section
+        v-else-if="currentTab === 'giuong'"
+        class="panel-grid"
+      >
         <div class="panel">
-          <h3>{{ editingGiuongId ? "Sửa giường" : "Thêm giường" }}</h3>
-          <form @submit.prevent="saveGiuong" class="form-grid">
+          <h3>
+            {{ editingGiuongId ? "Sửa giường" : "Thêm giường" }}
+          </h3>
+
+          <form
+            @submit.prevent="saveGiuong"
+            class="form-grid"
+          >
             <label>
               {{ requiredLabel("Nhà trọ:") }}
+
               <select
                 v-model="giuongForm.nhaTroId"
                 @change="handleNhaTroChangeForGiuong"
                 required
               >
-                <option value="">Chọn nhà trọ</option>
-                <option v-for="item in nhaTros" :key="item.id" :value="item.id">
+                <option value="">
+                  Chọn nhà trọ
+                </option>
+
+                <option
+                  v-for="item in nhaTros"
+                  :key="item.id"
+                  :value="item.id"
+                >
                   {{ item.tenNhaTro }}
                 </option>
               </select>
             </label>
+
             <label>
               {{ requiredLabel("Chọn tầng:") }}
+
               <select
                 v-model="giuongForm.phongId"
                 :disabled="!giuongForm.nhaTroId"
                 @change="giuongForm.giuongSo = ''"
                 required
               >
-                <option value="">Chọn tầng số</option>
+                <option value="">
+                  Chọn tầng số
+                </option>
+
                 <option
                   v-for="item in filteredPhongsByNhaTro"
                   :key="item.id"
@@ -1725,16 +1973,28 @@ onMounted(() => {
                 </option>
               </select>
             </label>
+
             <label>
               {{ requiredLabel("Giường số:") }}
-              <select v-model="giuongForm.giuongSo" required>
-                <option value="">Chọn giường</option>
 
-                <option v-for="item in giuongOptions" :key="item" :value="item">
+              <select
+                v-model="giuongForm.giuongSo"
+                required
+              >
+                <option value="">
+                  Chọn giường
+                </option>
+
+                <option
+                  v-for="item in giuongOptions"
+                  :key="item"
+                  :value="item"
+                >
                   Giường {{ item }}
                 </option>
               </select>
             </label>
+
             <label>
               {{ requiredLabel("Giá giường:") }}
 
@@ -1751,20 +2011,42 @@ onMounted(() => {
                 <span>VND</span>
               </div>
             </label>
+
             <label>
               {{ requiredLabel("Trạng thái") }}
+
               <select v-model="giuongForm.trangThai">
-                <option value="trong">Trống</option>
-                <option value="da_thue">Đã thuê</option>
-                <option value="bao_tri">Bảo trì</option>
-                <option value="sap_tra_tro">Sắp trả trọ</option>
+                <option value="trong">
+                  Trống
+                </option>
+
+                <option value="da_thue">
+                  Đã thuê
+                </option>
+
+                <option value="bao_tri">
+                  Bảo trì
+                </option>
+
+                <option value="sap_tra_tro">
+                  Sắp trả trọ
+                </option>
               </select>
             </label>
+
             <div class="actions">
-              <button class="primary" type="submit">
+              <button
+                class="primary"
+                type="submit"
+              >
                 {{ editingGiuongId ? "Cập nhật" : "Lưu" }}
               </button>
-              <button class="secondary" type="button" @click="resetGiuongForm">
+
+              <button
+                class="secondary"
+                type="button"
+                @click="resetGiuongForm"
+              >
                 Hủy
               </button>
             </div>
@@ -1773,6 +2055,7 @@ onMounted(() => {
 
         <div class="panel">
           <h3>Danh sách giường</h3>
+
           <table>
             <thead>
               <tr>
@@ -1784,17 +2067,34 @@ onMounted(() => {
                 <th>Hành động</th>
               </tr>
             </thead>
+
             <tbody>
-              <tr v-for="item in giuongs" :key="item.id">
+              <tr
+                v-for="item in giuongs"
+                :key="item.id"
+              >
                 <td>{{ item.phong?.tangSo }}</td>
+
                 <td>{{ item.maGiuong }}</td>
+
                 <td>{{ item.giuongSo }}</td>
-                <td>{{ formatCurrency(item.giaGiuong) }}</td>
-                <td>{{ getStatusText(item.trangThai) }}</td>
+
+                <td>
+                  {{ formatCurrency(item.giaGiuong) }}
+                </td>
+
+                <td>
+                  {{ getStatusText(item.trangThai) }}
+                </td>
+
                 <td class="row-actions">
-                  <button class="table-btn edit" @click="editGiuong(item)">
+                  <button
+                    class="table-btn edit"
+                    @click="editGiuong(item)"
+                  >
                     Sửa
                   </button>
+
                   <button
                     type="button"
                     class="table-btn delete"
@@ -1809,22 +2109,39 @@ onMounted(() => {
         </div>
       </section>
 
-      <section v-else-if="currentTab === 'nguoiThue'" class="panel-grid">
+      <!-- ===================================================
+           NGƯỜI THUÊ
+           =================================================== -->
+      <section
+        v-else-if="currentTab === 'nguoiThue'"
+        class="panel-grid"
+      >
         <div class="panel">
           <h3>
-            {{ editingNguoiThueId ? "Sửa người thuê" : "Thêm người thuê" }}
+            {{
+              editingNguoiThueId
+                ? "Sửa người thuê"
+                : "Thêm người thuê"
+            }}
           </h3>
-          <form @submit.prevent="saveNguoiThue" class="form-grid">
+
+          <form
+            @submit.prevent="saveNguoiThue"
+            class="form-grid"
+          >
             <label>
               {{ requiredLabel("Họ tên") }}
+
               <input
                 v-model="nguoiThueForm.hoTen"
                 placeholder="Họ tên"
                 required
               />
             </label>
+
             <label>
               {{ requiredLabel("CCCD") }}
+
               <input
                 v-model="nguoiThueForm.cccd"
                 placeholder="CCCD"
@@ -1832,8 +2149,10 @@ onMounted(() => {
                 pattern="[0-9]{9,12}"
               />
             </label>
+
             <label>
               {{ requiredLabel("Số điện thoại") }}
+
               <input
                 v-model="nguoiThueForm.sdt"
                 placeholder="Số điện thoại"
@@ -1842,8 +2161,10 @@ onMounted(() => {
                 pattern="[0-9]{10,11}"
               />
             </label>
+
             <label>
               {{ requiredLabel("Email") }}
+
               <input
                 v-model="nguoiThueForm.email"
                 type="email"
@@ -1851,20 +2172,30 @@ onMounted(() => {
                 required
               />
             </label>
+
             <label>
               {{ requiredLabel("Địa chỉ") }}
+
               <input
                 v-model="nguoiThueForm.diaChi"
                 placeholder="Địa chỉ"
                 required
               />
             </label>
+
             <label>
               {{ requiredLabel("Ngày sinh") }}
-              <input v-model="nguoiThueForm.ngaySinh" type="date" required />
+
+              <input
+                v-model="nguoiThueForm.ngaySinh"
+                type="date"
+                required
+              />
             </label>
+
             <label>
               Biển số xe
+
               <input
                 v-model="nguoiThueForm.bienSoXe"
                 type="text"
@@ -1883,7 +2214,10 @@ onMounted(() => {
               />
 
               <div
-                v-if="editingNguoiThueId && nguoiThueForm.cccdMatTruocUrl"
+                v-if="
+                  editingNguoiThueId &&
+                  nguoiThueForm.cccdMatTruocUrl
+                "
                 class="cccd-current"
               >
                 <span>Ảnh hiện tại:</span>
@@ -1897,7 +2231,10 @@ onMounted(() => {
                 </a>
               </div>
 
-              <div v-if="cccdMatTruocPreviewUrl" class="cccd-current">
+              <div
+                v-if="cccdMatTruocPreviewUrl"
+                class="cccd-current"
+              >
                 <span>Ảnh mới:</span>
 
                 <a
@@ -1921,7 +2258,10 @@ onMounted(() => {
               />
 
               <div
-                v-if="editingNguoiThueId && nguoiThueForm.cccdMatSauUrl"
+                v-if="
+                  editingNguoiThueId &&
+                  nguoiThueForm.cccdMatSauUrl
+                "
                 class="cccd-current"
               >
                 <span>Ảnh hiện tại:</span>
@@ -1935,7 +2275,10 @@ onMounted(() => {
                 </a>
               </div>
 
-              <div v-if="cccdMatSauPreviewUrl" class="cccd-current">
+              <div
+                v-if="cccdMatSauPreviewUrl"
+                class="cccd-current"
+              >
                 <span>Ảnh mới:</span>
 
                 <a
@@ -1947,10 +2290,15 @@ onMounted(() => {
                 </a>
               </div>
             </label>
+
             <div class="actions">
-              <button class="primary" type="submit">
+              <button
+                class="primary"
+                type="submit"
+              >
                 {{ editingNguoiThueId ? "Cập nhật" : "Lưu" }}
               </button>
+
               <button
                 class="secondary"
                 type="button"
@@ -1964,6 +2312,7 @@ onMounted(() => {
 
         <div class="panel">
           <h3>Danh sách người thuê</h3>
+
           <table>
             <thead>
               <tr>
@@ -1973,15 +2322,24 @@ onMounted(() => {
                 <th>Hành động</th>
               </tr>
             </thead>
+
             <tbody>
-              <tr v-for="item in nguoiThues" :key="item.id">
+              <tr
+                v-for="item in nguoiThues"
+                :key="item.id"
+              >
                 <td>{{ item.hoTen }}</td>
                 <td>{{ item.cccd }}</td>
                 <td>{{ item.sdt }}</td>
+
                 <td class="row-actions">
-                  <button class="table-btn edit" @click="editNguoiThue(item)">
+                  <button
+                    class="table-btn edit"
+                    @click="editNguoiThue(item)"
+                  >
                     Sửa
                   </button>
+
                   <button
                     class="table-btn delete"
                     @click="requestDeleteNguoiThue(item)"
@@ -1995,10 +2353,22 @@ onMounted(() => {
         </div>
       </section>
 
-      <section v-else-if="currentTab === 'hopDong'" class="panel-grid">
+      <!-- ===================================================
+           HỢP ĐỒNG
+           =================================================== -->
+      <section
+        v-else-if="currentTab === 'hopDong'"
+        class="panel-grid"
+      >
         <div class="panel">
-          <h3>{{ editingHopDongId ? "Sửa hợp đồng" : "Thêm hợp đồng" }}</h3>
-          <form @submit.prevent="saveHopDong" class="form-grid">
+          <h3>
+            {{ editingHopDongId ? "Sửa hợp đồng" : "Thêm hợp đồng" }}
+          </h3>
+
+          <form
+            @submit.prevent="saveHopDong"
+            class="form-grid"
+          >
             <label>
               {{ requiredLabel("Nhà trọ") }}
 
@@ -2007,13 +2377,20 @@ onMounted(() => {
                 @change="handleNhaTroChangeForHopDong"
                 required
               >
-                <option value="">Chọn nhà trọ</option>
+                <option value="">
+                  Chọn nhà trọ
+                </option>
 
-                <option v-for="item in nhaTros" :key="item.id" :value="item.id">
+                <option
+                  v-for="item in nhaTros"
+                  :key="item.id"
+                  :value="item.id"
+                >
                   {{ item.maNhaTro }} - {{ item.tenNhaTro }}
                 </option>
               </select>
             </label>
+
             <label v-if="hopDongForm.nhaTroId">
               {{ requiredLabel("Phòng") }}
 
@@ -2022,7 +2399,9 @@ onMounted(() => {
                 @change="handlePhongChangeForHopDong"
                 required
               >
-                <option value="">Chọn phòng</option>
+                <option value="">
+                  Chọn phòng
+                </option>
 
                 <option
                   v-for="item in hopDongPhongOptions"
@@ -2033,10 +2412,14 @@ onMounted(() => {
                 </option>
               </select>
 
-              <small v-if="hopDongPhongOptions.length === 0" class="form-hint">
+              <small
+                v-if="hopDongPhongOptions.length === 0"
+                class="form-hint"
+              >
                 Nhà trọ này chưa có phòng.
               </small>
             </label>
+
             <label v-if="hopDongForm.phongId">
               {{ requiredLabel("Giường") }}
 
@@ -2045,7 +2428,9 @@ onMounted(() => {
                 @change="syncHopDongCode"
                 required
               >
-                <option value="">Chọn giường</option>
+                <option value="">
+                  Chọn giường
+                </option>
 
                 <option
                   v-for="item in hopDongGiuongOptions"
@@ -2056,14 +2441,25 @@ onMounted(() => {
                 </option>
               </select>
 
-              <small v-if="hopDongGiuongOptions.length === 0" class="form-hint">
+              <small
+                v-if="hopDongGiuongOptions.length === 0"
+                class="form-hint"
+              >
                 Nhà trọ này không còn giường trống để lập hợp đồng.
               </small>
             </label>
+
             <label>
               {{ requiredLabel("Người thuê") }}
-              <select v-model="hopDongForm.nguoiThueId" required>
-                <option value="">Chọn người thuê</option>
+
+              <select
+                v-model="hopDongForm.nguoiThueId"
+                required
+              >
+                <option value="">
+                  Chọn người thuê
+                </option>
+
                 <option
                   v-for="item in nguoiThues"
                   :key="item.id"
@@ -2073,13 +2469,20 @@ onMounted(() => {
                 </option>
               </select>
             </label>
+
             <label>
               {{ requiredLabel("Ngày bắt đầu") }}
-              <input v-model="hopDongForm.ngayBatDau" type="date" required />
+
+              <input
+                v-model="hopDongForm.ngayBatDau"
+                type="date"
+                required
+              />
             </label>
 
             <label>
               Ngày kết thúc
+
               <input
                 v-model="hopDongForm.ngayKetThuc"
                 type="date"
@@ -2090,6 +2493,7 @@ onMounted(() => {
 
             <label>
               {{ requiredLabel("Giá thuê") }}
+
               <div class="currency-input">
                 <input
                   v-model.number="hopDongForm.tienThue"
@@ -2099,22 +2503,39 @@ onMounted(() => {
                   placeholder="Giá thuê"
                   required
                 />
+
                 <span>VND</span>
               </div>
             </label>
 
             <label>
               {{ requiredLabel("Chu kỳ thanh toán") }}
-              <select v-model.number="hopDongForm.chuKyThanhToan" required>
-                <option :value="1">Hàng tháng</option>
-                <option :value="3">3 tháng</option>
-                <option :value="6">6 tháng</option>
-                <option :value="12">12 tháng</option>
+
+              <select
+                v-model.number="hopDongForm.chuKyThanhToan"
+                required
+              >
+                <option :value="1">
+                  Hàng tháng
+                </option>
+
+                <option :value="3">
+                  3 tháng
+                </option>
+
+                <option :value="6">
+                  6 tháng
+                </option>
+
+                <option :value="12">
+                  12 tháng
+                </option>
               </select>
             </label>
 
             <label>
               Đặt cọc
+
               <div class="currency-input">
                 <input
                   v-model.number="hopDongForm.tienDatCoc"
@@ -2123,34 +2544,52 @@ onMounted(() => {
                   step="1000"
                   placeholder="Số tiền đặt cọc"
                 />
+
                 <span>VND</span>
               </div>
             </label>
 
             <label>
               {{ requiredLabel("Trạng thái") }}
+
               <select v-model="hopDongForm.trangThai">
-                <option value="active">Có hiệu lực</option>
+                <option value="active">
+                  Có hiệu lực
+                </option>
 
-                <option value="sap_het_han">Sắp hết hiệu lực</option>
+                <option value="sap_het_han">
+                  Sắp hết hiệu lực
+                </option>
 
-                <option value="expired">Hết hiệu lực</option>
+                <option value="expired">
+                  Hết hiệu lực
+                </option>
               </select>
             </label>
 
             <label class="full-width">
               Ghi chú
+
               <textarea
                 v-model="hopDongForm.ghiChu"
                 rows="3"
                 placeholder="Nhập ghi chú cho hợp đồng..."
               ></textarea>
             </label>
+
             <div class="actions">
-              <button class="primary" type="submit">
+              <button
+                class="primary"
+                type="submit"
+              >
                 {{ editingHopDongId ? "Cập nhật" : "Lưu" }}
               </button>
-              <button class="secondary" type="button" @click="resetHopDongForm">
+
+              <button
+                class="secondary"
+                type="button"
+                @click="resetHopDongForm"
+              >
                 Hủy
               </button>
             </div>
@@ -2159,6 +2598,7 @@ onMounted(() => {
 
         <div class="panel">
           <h3>Danh sách hợp đồng</h3>
+
           <table>
             <thead>
               <tr>
@@ -2173,7 +2613,10 @@ onMounted(() => {
             </thead>
 
             <tbody>
-              <tr v-for="item in hopDongs" :key="item.id">
+              <tr
+                v-for="item in hopDongs"
+                :key="item.id"
+              >
                 <td>
                   {{ item.maHopDong }}
                 </td>
@@ -2185,7 +2628,9 @@ onMounted(() => {
                 <td>
                   {{
                     item.ngayBatDau
-                      ? new Date(item.ngayBatDau).toLocaleDateString("vi-VN")
+                      ? new Date(
+                          item.ngayBatDau
+                        ).toLocaleDateString("vi-VN")
                       : ""
                   }}
                 </td>
@@ -2193,7 +2638,9 @@ onMounted(() => {
                 <td>
                   {{
                     item.ngayKetThuc
-                      ? new Date(item.ngayKetThuc).toLocaleDateString("vi-VN")
+                      ? new Date(
+                          item.ngayKetThuc
+                        ).toLocaleDateString("vi-VN")
                       : "Không xác định"
                   }}
                 </td>
@@ -2203,7 +2650,12 @@ onMounted(() => {
                 </td>
 
                 <td>
-                  <span :class="['status-badge', item.trangThai]">
+                  <span
+                    :class="[
+                      'status-badge',
+                      item.trangThai,
+                    ]"
+                  >
                     {{
                       item.trangThai === "active"
                         ? "Có hiệu lực"
@@ -2217,7 +2669,10 @@ onMounted(() => {
                 </td>
 
                 <td class="row-actions">
-                  <button class="table-btn edit" @click="editHopDong(item)">
+                  <button
+                    class="table-btn edit"
+                    @click="editHopDong(item)"
+                  >
                     Sửa
                   </button>
 
@@ -2235,18 +2690,34 @@ onMounted(() => {
         </div>
       </section>
 
-      <section v-else-if="currentTab === 'hoaDon'" class="panel-grid">
+      <!-- ===================================================
+           HÓA ĐƠN
+           =================================================== -->
+      <section
+        v-else-if="currentTab === 'hoaDon'"
+        class="panel-grid"
+      >
         <div class="panel">
-          <h3>{{ editingHoaDonId ? "Sửa hóa đơn" : "Thêm hóa đơn" }}</h3>
-          <form @submit.prevent="saveHoaDon" class="form-grid">
+          <h3>
+            {{ editingHoaDonId ? "Sửa hóa đơn" : "Thêm hóa đơn" }}
+          </h3>
+
+          <form
+            @submit.prevent="saveHoaDon"
+            class="form-grid"
+          >
             <label>
               {{ requiredLabel("Hợp đồng") }}
+
               <select
                 v-model="hoaDonForm.hopDongId"
                 @change="syncHoaDonCode"
                 required
               >
-                <option value="">Chọn hợp đồng</option>
+                <option value="">
+                  Chọn hợp đồng
+                </option>
+
                 <option
                   v-for="item in hopDongs"
                   :key="item.id"
@@ -2256,8 +2727,10 @@ onMounted(() => {
                 </option>
               </select>
             </label>
+
             <label>
               {{ requiredLabel("Tháng thanh toán") }}
+
               <input
                 v-model="hoaDonForm.thangThanhToan"
                 type="date"
@@ -2265,8 +2738,10 @@ onMounted(() => {
                 required
               />
             </label>
+
             <label>
               {{ requiredLabel("Tổng tiền") }}
+
               <input
                 v-model.number="hoaDonForm.tongTien"
                 type="number"
@@ -2275,26 +2750,44 @@ onMounted(() => {
                 required
               />
             </label>
+
             <label>
               {{ requiredLabel("Trạng thái") }}
+
               <select v-model="hoaDonForm.trangThai">
-                <option value="chua_thanh_toan">Chưa thanh toán</option>
-                <option value="da_thanh_toan">Đã thanh toán</option>
+                <option value="chua_thanh_toan">
+                  Chưa thanh toán
+                </option>
+
+                <option value="da_thanh_toan">
+                  Đã thanh toán
+                </option>
               </select>
             </label>
+
             <label class="full-width">
               Ghi chú
+
               <textarea
                 v-model="hoaDonForm.ghiChu"
                 rows="3"
                 placeholder="Nhập ghi chú cho hóa đơn..."
               ></textarea>
             </label>
+
             <div class="actions">
-              <button class="primary" type="submit">
+              <button
+                class="primary"
+                type="submit"
+              >
                 {{ editingHoaDonId ? "Cập nhật" : "Lưu" }}
               </button>
-              <button class="secondary" type="button" @click="resetHoaDonForm">
+
+              <button
+                class="secondary"
+                type="button"
+                @click="resetHoaDonForm"
+              >
                 Hủy
               </button>
             </div>
@@ -2317,23 +2810,22 @@ onMounted(() => {
             </thead>
 
             <tbody>
-              <tr v-for="item in hoaDons" :key="item.id">
-                <!-- Mã hóa đơn -->
+              <tr
+                v-for="item in hoaDons"
+                :key="item.id"
+              >
                 <td>
                   {{ item.maHoaDon }}
                 </td>
 
-                <!-- Người thuê -->
                 <td>
                   {{ item.hopDong?.nguoiThue?.hoTen ?? "" }}
                 </td>
 
-                <!-- Tổng tiền -->
                 <td>
                   {{ formatCurrency(item.tongTien) }}
                 </td>
 
-                <!-- Trạng thái -->
                 <td>
                   <span
                     :class="[
@@ -2351,18 +2843,22 @@ onMounted(() => {
                   </span>
                 </td>
 
-                <!-- Ngày nộp -->
                 <td>
                   {{
-                    item.trangThai === "da_thanh_toan" && item.ngayNop
-                      ? new Date(item.ngayNop).toLocaleDateString("vi-VN")
+                    item.trangThai === "da_thanh_toan" &&
+                    item.ngayNop
+                      ? new Date(
+                          item.ngayNop
+                        ).toLocaleDateString("vi-VN")
                       : ""
                   }}
                 </td>
 
-                <!-- Hành động -->
                 <td class="row-actions">
-                  <button class="table-btn edit" @click="editHoaDon(item)">
+                  <button
+                    class="table-btn edit"
+                    @click="editHoaDon(item)"
+                  >
                     Sửa
                   </button>
 
@@ -2380,7 +2876,10 @@ onMounted(() => {
         </div>
       </section>
     </main>
-    <!-- Modal xóa nhà trọ -->
+
+    <!-- =====================================================
+         MODAL XÓA NHÀ TRỌ
+         ===================================================== -->
     <div
       v-if="showDeleteNhaTroModal"
       class="modal-overlay"
@@ -2409,7 +2908,9 @@ onMounted(() => {
             "
           >
             <div class="warning-message">
-              <strong>Không thể xóa nhà trọ này!</strong>
+              <strong>
+                Không thể xóa nhà trọ này!
+              </strong>
 
               <p>
                 Nhà trọ đang có dữ liệu liên quan. Bạn cần xử lý các dữ liệu này
@@ -2420,22 +2921,30 @@ onMounted(() => {
             <div class="related-data">
               <div class="related-item">
                 <span>Phòng</span>
-                <strong>{{ deleteNhaTroInfo.soPhong }}</strong>
+                <strong>
+                  {{ deleteNhaTroInfo.soPhong }}
+                </strong>
               </div>
 
               <div class="related-item">
                 <span>Giường</span>
-                <strong>{{ deleteNhaTroInfo.soGiuong }}</strong>
+                <strong>
+                  {{ deleteNhaTroInfo.soGiuong }}
+                </strong>
               </div>
 
               <div class="related-item">
                 <span>Hợp đồng</span>
-                <strong>{{ deleteNhaTroInfo.soHopDong }}</strong>
+                <strong>
+                  {{ deleteNhaTroInfo.soHopDong }}
+                </strong>
               </div>
 
               <div class="related-item">
                 <span>Hóa đơn</span>
-                <strong>{{ deleteNhaTroInfo.soHoaDon }}</strong>
+                <strong>
+                  {{ deleteNhaTroInfo.soHoaDon }}
+                </strong>
               </div>
             </div>
 
@@ -2449,15 +2958,22 @@ onMounted(() => {
           <template v-else>
             <p class="confirm-message">
               Bạn có chắc chắn muốn xóa nhà trọ
-              <strong>{{ deleteNhaTroInfo.tenNhaTro }}</strong
-              >?
+              <strong>
+                {{ deleteNhaTroInfo.tenNhaTro }}
+              </strong>
+              ?
             </p>
 
-            <p class="delete-modal-note">Thao tác này không thể hoàn tác.</p>
+            <p class="delete-modal-note">
+              Thao tác này không thể hoàn tác.
+            </p>
           </template>
 
           <p
-            v-if="deleteErrorMessage && deleteNhaTroInfo.soPhong === 0"
+            v-if="
+              deleteErrorMessage &&
+              deleteNhaTroInfo.soPhong === 0
+            "
             class="error-message"
           >
             {{ deleteErrorMessage }}
@@ -2489,14 +3005,16 @@ onMounted(() => {
         </div>
       </div>
     </div>
-    <!-- Modal xóa phòng -->
+
+    <!-- =====================================================
+         MODAL XÓA PHÒNG
+         ===================================================== -->
     <div
       v-if="showDeletePhongModal"
       class="modal-overlay"
       @click.self="closeDeletePhongModal"
     >
       <div class="delete-modal">
-        <!-- Header -->
         <div class="delete-modal-header">
           <div class="warning-icon">⚠</div>
 
@@ -2505,6 +3023,7 @@ onMounted(() => {
 
             <p>
               {{ deletePhongInfo.maPhong }}
+
               <span v-if="deletePhongInfo.tenNhaTro">
                 - {{ deletePhongInfo.tenNhaTro }}
               </span>
@@ -2512,11 +3031,12 @@ onMounted(() => {
           </div>
         </div>
 
-        <!-- Body -->
         <div class="delete-modal-body">
           <template v-if="deletePhongInfo.soGiuong > 0">
             <div class="warning-message">
-              <strong>Không thể xóa phòng này!</strong>
+              <strong>
+                Không thể xóa phòng này!
+              </strong>
 
               <p>
                 Phòng đang có dữ liệu giường liên quan. Bạn cần xử lý các dữ
@@ -2549,15 +3069,19 @@ onMounted(() => {
               không?
             </p>
 
-            <p class="delete-modal-note">Thao tác này không thể hoàn tác.</p>
+            <p class="delete-modal-note">
+              Thao tác này không thể hoàn tác.
+            </p>
           </template>
 
-          <p v-if="deletePhongErrorMessage" class="error-message">
+          <p
+            v-if="deletePhongErrorMessage"
+            class="error-message"
+          >
             {{ deletePhongErrorMessage }}
           </p>
         </div>
 
-        <!-- Footer -->
         <div class="delete-modal-actions">
           <button
             class="secondary"
@@ -2579,6 +3103,9 @@ onMounted(() => {
       </div>
     </div>
 
+    <!-- =====================================================
+         MODAL XÓA HỢP ĐỒNG
+         ===================================================== -->
     <div
       v-if="showDeleteHopDongModal"
       class="modal-overlay"
@@ -2606,7 +3133,10 @@ onMounted(() => {
             không?
           </p>
 
-          <p v-if="deleteHopDongErrorMessage" class="error-message">
+          <p
+            v-if="deleteHopDongErrorMessage"
+            class="error-message"
+          >
             {{ deleteHopDongErrorMessage }}
           </p>
         </div>
@@ -2620,21 +3150,26 @@ onMounted(() => {
             Hủy
           </button>
 
-          <button type="button" class="danger" @click="confirmDeleteHopDong">
+          <button
+            type="button"
+            class="danger"
+            @click="confirmDeleteHopDong"
+          >
             Xóa
           </button>
         </div>
       </div>
     </div>
 
-    <!-- Modal xóa giường -->
+    <!-- =====================================================
+         MODAL XÓA GIƯỜNG
+         ===================================================== -->
     <div
       v-if="showDeleteGiuongModal"
       class="modal-overlay"
       @click.self="closeDeleteGiuongModal"
     >
       <div class="delete-modal">
-        <!-- Header -->
         <div class="delete-modal-header">
           <div class="warning-icon">⚠</div>
 
@@ -2643,6 +3178,7 @@ onMounted(() => {
 
             <p>
               {{ deleteGiuongInfo.maGiuong }}
+
               <span v-if="deleteGiuongInfo.maPhong">
                 - Phòng {{ deleteGiuongInfo.maPhong }}
               </span>
@@ -2650,7 +3186,6 @@ onMounted(() => {
           </div>
         </div>
 
-        <!-- Body -->
         <div class="delete-modal-body">
           <p class="confirm-message">
             Bạn có chắc chắn muốn xóa giường
@@ -2668,14 +3203,18 @@ onMounted(() => {
             không?
           </p>
 
-          <p class="delete-modal-note">Thao tác này không thể hoàn tác.</p>
+          <p class="delete-modal-note">
+            Thao tác này không thể hoàn tác.
+          </p>
 
-          <p v-if="deleteGiuongErrorMessage" class="error-message">
+          <p
+            v-if="deleteGiuongErrorMessage"
+            class="error-message"
+          >
             {{ deleteGiuongErrorMessage }}
           </p>
         </div>
 
-        <!-- Footer -->
         <div class="delete-modal-actions">
           <button
             class="secondary"
@@ -2695,7 +3234,10 @@ onMounted(() => {
         </div>
       </div>
     </div>
-    <!-- Modal xóa người thuê -->
+
+    <!-- =====================================================
+         MODAL XÓA NGƯỜI THUÊ
+         ===================================================== -->
     <div
       v-if="showDeleteNguoiThueModal"
       class="modal-overlay"
@@ -2710,6 +3252,7 @@ onMounted(() => {
 
             <p>
               {{ deleteNguoiThueInfo.hoTen }}
+
               <span v-if="deleteNguoiThueInfo.cccd">
                 - CCCD: {{ deleteNguoiThueInfo.cccd }}
               </span>
@@ -2726,9 +3269,14 @@ onMounted(() => {
             không?
           </p>
 
-          <p class="delete-modal-note">Thao tác này không thể hoàn tác.</p>
+          <p class="delete-modal-note">
+            Thao tác này không thể hoàn tác.
+          </p>
 
-          <p v-if="deleteNguoiThueErrorMessage" class="error-message">
+          <p
+            v-if="deleteNguoiThueErrorMessage"
+            class="error-message"
+          >
             {{ deleteNguoiThueErrorMessage }}
           </p>
         </div>
@@ -2752,6 +3300,10 @@ onMounted(() => {
         </div>
       </div>
     </div>
+
+    <!-- =====================================================
+         MODAL XÓA HÓA ĐƠN
+         ===================================================== -->
     <div
       v-if="showDeleteHoaDonModal"
       class="modal-backdrop"
@@ -2762,18 +3314,32 @@ onMounted(() => {
 
         <p>
           Bạn có chắc chắn muốn xóa hóa đơn
-          <strong>{{ deleteHoaDonInfo.maHoaDon }}</strong>
+          <strong>
+            {{ deleteHoaDonInfo.maHoaDon }}
+          </strong>
           không?
         </p>
 
-        <p v-if="deleteHoaDonErrorMessage" class="error-message">
+        <p
+          v-if="deleteHoaDonErrorMessage"
+          class="error-message"
+        >
           {{ deleteHoaDonErrorMessage }}
         </p>
 
         <div class="modal-actions">
-          <button type="button" @click="closeDeleteHoaDonModal">Hủy</button>
+          <button
+            type="button"
+            @click="closeDeleteHoaDonModal"
+          >
+            Hủy
+          </button>
 
-          <button type="button" class="btn danger" @click="confirmDeleteHoaDon">
+          <button
+            type="button"
+            class="btn danger"
+            @click="confirmDeleteHoaDon"
+          >
             Xóa
           </button>
         </div>
