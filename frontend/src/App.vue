@@ -2815,14 +2815,14 @@ onMounted(() => {
     Đóng
   </button>
 
-  <button
-    v-if="deleteNguoiThueInfo.hopDongIds.length === 0"
-    class="danger-button"
-    type="button"
-    @click="confirmDeleteNguoiThue"
-  >
-    Xác nhận xóa
-  </button>
+<button
+  v-if="deleteNguoiThueInfo.hopDongIds.length === 0"
+  class="danger-button"
+  type="button"
+  @click="confirmDeleteNguoiThue"
+>
+  Xác nhận xóa
+</button>
 </div>
 
         <div class="delete-modal-actions">
@@ -3082,20 +3082,45 @@ onMounted(() => {
         </div>
 
         <div class="delete-modal-body">
-          <p class="confirm-message">
-            Bạn có chắc chắn muốn xóa người thuê
-            <strong>
-              {{ deleteNguoiThueInfo.hoTen }}
-            </strong>
-            không?
-          </p>
+  <!-- Người thuê đang có hợp đồng -->
+  <template v-if="deleteNguoiThueInfo.hopDongIds.length > 0">
+    <p class="warning-message">
+      Bạn chú ý người thuê
+      <strong>{{ deleteNguoiThueInfo.hoTen }}</strong>
+      đang có trong hợp đồng
+      <strong>
+        {{ deleteNguoiThueInfo.hopDongIds.join(", ") }}
+      </strong>
+      nên không thể xóa được.
+    </p>
 
-          <p class="delete-modal-note">Thao tác này không thể hoàn tác.</p>
+    <p class="delete-modal-note">
+      Cần thực hiện xóa hợp đồng trước.
+    </p>
+  </template>
 
-          <p v-if="deleteNguoiThueErrorMessage" class="error-message">
-            {{ deleteNguoiThueErrorMessage }}
-          </p>
-        </div>
+  <!-- Người thuê không có hợp đồng -->
+  <template v-else>
+    <p class="confirm-message">
+      Bạn có chắc chắn muốn xóa người thuê
+      <strong>
+        {{ deleteNguoiThueInfo.hoTen }}
+      </strong>
+      không?
+    </p>
+
+    <p class="delete-modal-note">
+      Thao tác này không thể hoàn tác.
+    </p>
+  </template>
+
+  <p
+    v-if="deleteNguoiThueErrorMessage"
+    class="error-message"
+  >
+    {{ deleteNguoiThueErrorMessage }}
+  </p>
+</div>
 
         <div class="delete-modal-actions">
           <button
