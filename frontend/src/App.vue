@@ -585,7 +585,7 @@ const giuongForm = ref({
   phongId: "",
   giuongSo: "",
   giaGiuong: 1500000,
-  trangThai: "trong",
+  // trangThai: "trong",
 });
 
 const nguoiThueForm = ref({
@@ -904,7 +904,7 @@ function resetGiuongForm() {
     phongId: "",
     giuongSo: "",
     giaGiuong: 1500000,
-    trangThai: "trong",
+    // trangThai: "trong",
   };
 
   giaGiuongDisplay.value = "1,500,000";
@@ -1227,7 +1227,7 @@ async function saveGiuong() {
   const payload = {
     giuongSo: Number(giuongForm.value.giuongSo),
     giaGiuong: Number(giuongForm.value.giaGiuong || 0),
-    trangThai: giuongForm.value.trangThai,
+    trangThai: "trong",
     phong: {
       id: giuongForm.value.phongId,
     },
@@ -2715,7 +2715,7 @@ onMounted(() => {
               </div>
             </label>
 
-            <label>
+            <!-- <label>
               {{ requiredLabel("Trạng thái") }}
 
               <select v-model="giuongForm.trangThai">
@@ -2727,7 +2727,7 @@ onMounted(() => {
 
                 <option value="sap_tra_tro">Sắp trả trọ</option>
               </select>
-            </label>
+            </label> -->
 
             <div class="actions">
               <button class="primary" type="submit">
