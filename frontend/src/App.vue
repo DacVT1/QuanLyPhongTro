@@ -462,34 +462,34 @@ const nhaTroDashboard = computed(() => {
   return nhaTros.value.map((nhaTro) => {
     const now = new Date();
 
-const currentMonth = `${now.getFullYear()}-${String(
-  now.getMonth() + 1,
-).padStart(2, "0")}`;
+    const currentMonth = `${now.getFullYear()}-${String(
+      now.getMonth() + 1,
+    ).padStart(2, "0")}`;
 
-const currentMonthHoaDons = hoaDons.value.filter((hoaDon) => {
-  const thangThanhToan = String(hoaDon.thangThanhToan ?? "");
+    const currentMonthHoaDons = hoaDons.value.filter((hoaDon) => {
+      const thangThanhToan = String(hoaDon.thangThanhToan ?? "");
 
-  return (
-    thangThanhToan.slice(0, 7) === currentMonth &&
-    hoaDon.hopDong?.giuong?.phong?.nhaTro?.id === nhaTro.id
-  );
-});
+      return (
+        thangThanhToan.slice(0, 7) === currentMonth &&
+        hoaDon.hopDong?.giuong?.phong?.nhaTro?.id === nhaTro.id
+      );
+    });
 
-const paidCurrentMonthHoaDons = currentMonthHoaDons.filter(
-  (hoaDon) => hoaDon.trangThai === "da_thanh_toan",
-);
+    const paidCurrentMonthHoaDons = currentMonthHoaDons.filter(
+      (hoaDon) => hoaDon.trangThai === "da_thanh_toan",
+    );
 
-const currentMonthBedIds = new Set(
-  currentMonthHoaDons
-    .map((hoaDon) => hoaDon.hopDong?.giuong?.id)
-    .filter(Boolean),
-);
+    const currentMonthBedIds = new Set(
+      currentMonthHoaDons
+        .map((hoaDon) => hoaDon.hopDong?.giuong?.id)
+        .filter(Boolean),
+    );
 
-const paidBedIds = new Set(
-  paidCurrentMonthHoaDons
-    .map((hoaDon) => hoaDon.hopDong?.giuong?.id)
-    .filter(Boolean),
-);
+    const paidBedIds = new Set(
+      paidCurrentMonthHoaDons
+        .map((hoaDon) => hoaDon.hopDong?.giuong?.id)
+        .filter(Boolean),
+    );
 
     const rooms = phongs.value.filter(
       (phong) => phong.nhaTro?.id === nhaTro.id,
@@ -520,7 +520,6 @@ const paidBedIds = new Set(
         hoaDon.trangThai === "da_thanh_toan" &&
         hoaDon.hopDong?.giuong?.phong?.nhaTro?.id === nhaTro.id,
     );
-
 
     return {
       id: nhaTro.id,
@@ -738,6 +737,7 @@ const showNhaTroForm = ref(false);
 const editingPhongId = ref<string | null>(null);
 const showPhongForm = ref(false);
 const editingGiuongId = ref<string | null>(null);
+const showGiuongForm = ref(false);
 const editingNguoiThueId = ref<string | null>(null);
 const cccdMatTruocInput = ref<HTMLInputElement | null>(null);
 const cccdMatSauInput = ref<HTMLInputElement | null>(null);
@@ -757,6 +757,15 @@ function openAddPhongForm() {
 function closePhongForm() {
   resetPhongForm();
   showPhongForm.value = false;
+}
+function openAddGiuongForm() {
+  resetGiuongForm();
+  showGiuongForm.value = true;
+}
+
+function closeGiuongForm() {
+  resetGiuongForm();
+  showGiuongForm.value = false;
 }
 function formatTienThueDisplay(value: number | string | null | undefined) {
   if (value === null || value === undefined || value === "") {
@@ -1335,6 +1344,7 @@ async function saveGiuong() {
     }
 
     resetGiuongForm();
+    showGiuongForm.value = false;
     await loadData();
   } catch (error: any) {
     console.error("Không thể lưu giường:", error);
@@ -1779,7 +1789,6 @@ function editNhaTro(item: any) {
   };
   showNhaTroForm.value = true;
   currentTab.value = "nhaTro";
-
 }
 
 function editPhong(item: any) {
@@ -1827,7 +1836,7 @@ function editGiuong(item: any) {
   };
 
   giaGiuongDisplay.value = giaGiuong ? giaGiuong.toLocaleString("en-US") : "";
-
+  showGiuongForm.value = true;
   currentTab.value = "giuong";
 }
 
@@ -2389,7 +2398,8 @@ onMounted(() => {
                 <div class="description-icon">🧾</div>
 
                 <p>
-                  Tỷ lệ giường đã thanh toán hóa đơn so với tổng số giường có hóa đơn trong tháng hiện tại.
+                  Tỷ lệ giường đã thanh toán hóa đơn so với tổng số giường có
+                  hóa đơn trong tháng hiện tại.
                 </p>
               </div>
             </div>
@@ -2400,143 +2410,126 @@ onMounted(() => {
       <!-- ===================================================
            NHÀ TRỌ
            =================================================== -->
-      <section
-  v-else-if="currentTab === 'nhaTro'"
-  class="panel-grid"
->
-  <!-- FORM THÊM / SỬA NHÀ TRỌ -->
-  <div v-if="showNhaTroForm" class="panel">
-    <h3>
-      {{ editingNhaTroId ? "Sửa nhà trọ" : "Thêm nhà trọ" }}
-    </h3>
+      <section v-else-if="currentTab === 'nhaTro'" class="panel-grid">
+        <!-- FORM THÊM / SỬA NHÀ TRỌ -->
+        <div v-if="showNhaTroForm" class="panel">
+          <h3>
+            {{ editingNhaTroId ? "Sửa nhà trọ" : "Thêm nhà trọ" }}
+          </h3>
 
-    <form @submit.prevent="saveNhaTro" class="form-grid">
-      <label>
-        {{ requiredLabel("Mã nhà trọ") }}
+          <form @submit.prevent="saveNhaTro" class="form-grid">
+            <label>
+              {{ requiredLabel("Mã nhà trọ") }}
 
-        <input
-          v-model="nhaTroForm.maNhaTro"
-          placeholder="Ví dụ: CG"
-          required
-        />
-      </label>
+              <input
+                v-model="nhaTroForm.maNhaTro"
+                placeholder="Ví dụ: CG"
+                required
+              />
+            </label>
 
-      <label>
-        {{ requiredLabel("Tên nhà trọ") }}
+            <label>
+              {{ requiredLabel("Tên nhà trọ") }}
 
-        <input
-          v-model="nhaTroForm.tenNhaTro"
-          placeholder="Tên nhà trọ"
-          required
-        />
-      </label>
+              <input
+                v-model="nhaTroForm.tenNhaTro"
+                placeholder="Tên nhà trọ"
+                required
+              />
+            </label>
 
-      <label>
-        {{ requiredLabel("Địa chỉ") }}
+            <label>
+              {{ requiredLabel("Địa chỉ") }}
 
-        <input
-          v-model="nhaTroForm.diaChi"
-          placeholder="Địa chỉ"
-          required
-        />
-      </label>
+              <input
+                v-model="nhaTroForm.diaChi"
+                placeholder="Địa chỉ"
+                required
+              />
+            </label>
 
-      <label>
-        {{ requiredLabel("Số tầng") }}
+            <label>
+              {{ requiredLabel("Số tầng") }}
 
-        <input
-          v-model.number="nhaTroForm.soTang"
-          type="number"
-          min="1"
-          placeholder="Số tầng"
-          required
-        />
-      </label>
+              <input
+                v-model.number="nhaTroForm.soTang"
+                type="number"
+                min="1"
+                placeholder="Số tầng"
+                required
+              />
+            </label>
 
-      <label>
-        {{ requiredLabel("Mô tả") }}
+            <label>
+              {{ requiredLabel("Mô tả") }}
 
-        <textarea
-          v-model="nhaTroForm.moTa"
-          placeholder="Mô tả"
-          rows="3"
-        ></textarea>
-      </label>
+              <textarea
+                v-model="nhaTroForm.moTa"
+                placeholder="Mô tả"
+                rows="3"
+              ></textarea>
+            </label>
 
-      <div class="actions">
-        <button class="primary" type="submit">
-          {{ editingNhaTroId ? "Cập nhật" : "Lưu" }}
-        </button>
+            <div class="actions">
+              <button class="primary" type="submit">
+                {{ editingNhaTroId ? "Cập nhật" : "Lưu" }}
+              </button>
 
-        <button
-          class="secondary"
-          type="button"
-          @click="closeNhaTroForm"
-        >
-          Hủy
-        </button>
-      </div>
-    </form>
-  </div>
+              <button class="secondary" type="button" @click="closeNhaTroForm">
+                Hủy
+              </button>
+            </div>
+          </form>
+        </div>
 
-  <!-- DANH SÁCH NHÀ TRỌ -->
-  <div v-else class="panel">
-    <div class="panel-header">
-      <h3>Danh sách nhà trọ</h3>
+        <!-- DANH SÁCH NHÀ TRỌ -->
+        <div v-else class="panel">
+          <div class="panel-header">
+            <h3>Danh sách nhà trọ</h3>
 
-      <button
-        type="button"
-        class="primary"
-        @click="openAddNhaTroForm"
-      >
-        Thêm nhà trọ
-      </button>
-    </div>
-
-    <table>
-      <thead>
-        <tr>
-          <th>Mã</th>
-          <th>Tên</th>
-          <th>Địa chỉ</th>
-          <th>Số tầng</th>
-          <th>Hành động</th>
-        </tr>
-      </thead>
-
-      <tbody>
-        <tr
-          v-for="item in nhaTros"
-          :key="item.id"
-        >
-          <td>{{ item.maNhaTro }}</td>
-
-          <td>{{ item.tenNhaTro }}</td>
-
-          <td>{{ item.diaChi }}</td>
-
-          <td>{{ item.soTang }}</td>
-
-          <td class="row-actions">
-            <button
-              class="table-btn edit"
-              @click="editNhaTro(item)"
-            >
-              Sửa
+            <button type="button" class="primary" @click="openAddNhaTroForm">
+              Thêm nhà trọ
             </button>
+          </div>
 
-            <button
-              class="table-btn delete"
-              @click="requestDeleteNhaTro(item)"
-            >
-              Xóa
-            </button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-</section>
+          <table>
+            <thead>
+              <tr>
+                <th>Mã</th>
+                <th>Tên</th>
+                <th>Địa chỉ</th>
+                <th>Số tầng</th>
+                <th>Hành động</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              <tr v-for="item in nhaTros" :key="item.id">
+                <td>{{ item.maNhaTro }}</td>
+
+                <td>{{ item.tenNhaTro }}</td>
+
+                <td>{{ item.diaChi }}</td>
+
+                <td>{{ item.soTang }}</td>
+
+                <td class="row-actions">
+                  <button class="table-btn edit" @click="editNhaTro(item)">
+                    Sửa
+                  </button>
+
+                  <button
+                    class="table-btn delete"
+                    @click="requestDeleteNhaTro(item)"
+                  >
+                    Xóa
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
 
       <!-- ===================================================
            PHÒNG
@@ -2551,25 +2544,99 @@ onMounted(() => {
       {{ editingPhongId ? "Sửa phòng" : "Thêm phòng" }}
     </h3>
 
-    <!-- form phòng hiện tại của bạn đặt ở đây -->
+    <form @submit.prevent="savePhong" class="form-grid">
+      <label>
+        {{ requiredLabel("Nhà trọ") }}
 
-    <div class="actions">
-      <button
-        type="submit"
-        class="primary"
-        form="phong-form"
-      >
-        {{ editingPhongId ? "Cập nhật" : "Lưu" }}
-      </button>
+        <select
+          v-model="phongForm.nhaTroId"
+          @change="handleNhaTroChange"
+          required
+        >
+          <option value="">Chọn nhà trọ</option>
 
-      <button
-        type="button"
-        class="secondary"
-        @click="closePhongForm"
-      >
-        Hủy
-      </button>
-    </div>
+          <option
+            v-for="item in nhaTros"
+            :key="item.id"
+            :value="item.id"
+          >
+            {{ item.tenNhaTro }}
+          </option>
+        </select>
+      </label>
+
+      <label>
+        {{ requiredLabel("Tầng số") }}
+
+        <select
+          v-model="phongForm.tangSo"
+          @change="updateMaPhongByTang"
+          required
+          :disabled="!phongForm.nhaTroId"
+        >
+          <option value="" disabled>
+            -- Chọn tầng --
+          </option>
+
+          <option
+            v-for="floor in tangSoOptions"
+            :key="floor"
+            :value="floor"
+          >
+            Tầng {{ floor }}
+          </option>
+        </select>
+      </label>
+
+      <label>
+        {{ requiredLabel("Số giường tối đa") }}
+
+        <input
+          v-model.number="phongForm.soGiuongToiDa"
+          type="number"
+          min="1"
+          max="8"
+          placeholder="Số giường tối đa"
+          required
+        />
+      </label>
+
+      <label>
+        {{ requiredLabel("Loại phòng") }}
+
+        <input
+          v-model="phongForm.loaiPhong"
+          placeholder="Loại phòng"
+          required
+        />
+      </label>
+
+      <label>
+        {{ requiredLabel("Diện tích") }}
+
+        <input
+          v-model.number="phongForm.dienTich"
+          type="number"
+          min="1"
+          placeholder="Diện tích"
+          required
+        />
+      </label>
+
+      <div class="actions">
+        <button class="primary" type="submit">
+          {{ editingPhongId ? "Cập nhật" : "Lưu" }}
+        </button>
+
+        <button
+          class="secondary"
+          type="button"
+          @click="closePhongForm"
+        >
+          Hủy
+        </button>
+      </div>
+    </form>
   </div>
 
   <!-- DANH SÁCH PHÒNG -->
@@ -2586,167 +2653,115 @@ onMounted(() => {
       </button>
     </div>
 
-    <!-- bảng Danh sách phòng hiện tại -->
+    <table>
+      <thead>
+        <tr>
+          <th>Mã phòng</th>
+          <th>Nhà trọ</th>
+          <th>Tầng số</th>
+          <th>Loại</th>
+          <th>Số giường</th>
+          <th>Hành động</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <tr
+          v-for="item in phongs"
+          :key="item.id"
+        >
+          <td>
+            {{ item.maPhong }}
+          </td>
+
+          <td>
+            {{ item.nhaTro?.tenNhaTro || item.nhaTro?.maNhaTro }}
+          </td>
+
+          <td>
+            {{ item.tangSo }}
+          </td>
+
+          <td>
+            {{ item.loaiPhong }}
+          </td>
+
+          <td>
+            {{ item.soGiuongToiDa }}
+          </td>
+
+          <td class="row-actions">
+            <button
+              class="table-btn edit"
+              @click="editPhong(item)"
+            >
+              Sửa
+            </button>
+
+            <button
+              type="button"
+              class="table-btn delete"
+              @click.stop="requestDeletePhong(item)"
+            >
+              Xóa
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
   </div>
 </section>
 
       <!-- ===================================================
            GIƯỜNG
            =================================================== -->
-      <section v-else-if="currentTab === 'giuong'" class="panel-grid">
-        <div class="panel">
-          <h3>
-            {{ editingGiuongId ? "Sửa giường" : "Thêm giường" }}
-          </h3>
+      <section
+  v-else-if="currentTab === 'giuong'"
+  class="panel-grid"
+>
+  <!-- FORM THÊM / SỬA GIƯỜNG -->
+  <div v-if="showGiuongForm" class="panel">
+    <h3>
+      {{ editingGiuongId ? "Sửa giường" : "Thêm giường" }}
+    </h3>
 
-          <form @submit.prevent="saveGiuong" class="form-grid">
-            <label>
-              {{ requiredLabel("Nhà trọ:") }}
+    <!-- GIỮ NGUYÊN TOÀN BỘ FORM GIƯỜNG HIỆN TẠI Ở ĐÂY -->
 
-              <select
-                v-model="giuongForm.nhaTroId"
-                @change="handleNhaTroChangeForGiuong"
-                required
-              >
-                <option value="">Chọn nhà trọ</option>
+    <div class="actions">
+      <button
+        type="submit"
+        class="primary"
+      >
+        {{ editingGiuongId ? "Cập nhật" : "Lưu" }}
+      </button>
 
-                <option v-for="item in nhaTros" :key="item.id" :value="item.id">
-                  {{ item.tenNhaTro }}
-                </option>
-              </select>
-            </label>
+      <button
+        type="button"
+        class="secondary"
+        @click="closeGiuongForm"
+      >
+        Hủy
+      </button>
+    </div>
+  </div>
 
-            <label>
-              {{ requiredLabel("Chọn tầng:") }}
+  <!-- DANH SÁCH GIƯỜNG -->
+  <div v-else class="panel">
+    <div class="panel-header">
+      <h3>Danh sách giường</h3>
 
-              <select
-                v-model="giuongForm.phongId"
-                :disabled="!giuongForm.nhaTroId"
-                @change="giuongForm.giuongSo = ''"
-                required
-              >
-                <option value="">Chọn tầng số</option>
+      <button
+        type="button"
+        class="primary"
+        @click="openAddGiuongForm"
+      >
+        Thêm giường
+      </button>
+    </div>
 
-                <option
-                  v-for="item in filteredPhongsByNhaTro"
-                  :key="item.id"
-                  :value="item.id"
-                >
-                  Tầng {{ item.tangSo }}
-                </option>
-              </select>
-            </label>
-
-            <label>
-              {{ requiredLabel("Giường số:") }}
-
-              <select
-                v-model="giuongForm.giuongSo"
-                :disabled="!giuongForm.phongId"
-                required
-              >
-                <option value="">Chọn giường</option>
-
-                <option v-for="item in giuongOptions" :key="item" :value="item">
-                  Giường {{ item }}
-                </option>
-              </select>
-            </label>
-
-            <label>
-              {{ requiredLabel("Giá giường:") }}
-
-              <div class="money-input">
-                <input
-                  :value="giaGiuongDisplay"
-                  type="text"
-                  inputmode="numeric"
-                  placeholder="1,000,000"
-                  @input="handleGiaGiuongInput"
-                  required
-                />
-
-                <span>VND</span>
-              </div>
-            </label>
-
-            <!-- <label>
-              {{ requiredLabel("Trạng thái") }}
-
-              <select v-model="giuongForm.trangThai">
-                <option value="trong">Trống</option>
-
-                <option value="da_thue">Đã thuê</option>
-
-                <option value="bao_tri">Bảo trì</option>
-
-                <option value="sap_tra_tro">Sắp trả trọ</option>
-              </select>
-            </label> -->
-
-            <div class="actions">
-              <button class="primary" type="submit">
-                {{ editingGiuongId ? "Cập nhật" : "Lưu" }}
-              </button>
-
-              <button class="secondary" type="button" @click="resetGiuongForm">
-                Hủy
-              </button>
-            </div>
-          </form>
-        </div>
-
-        <div class="panel">
-          <h3>Danh sách giường</h3>
-
-          <table>
-            <thead>
-              <tr>
-                <th>Phòng số</th>
-                <th>Mã giường</th>
-                <th>Giường số</th>
-                <th>Giá giường</th>
-                <th>Trạng thái</th>
-                <th>Hành động</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              <tr v-for="item in giuongs" :key="item.id">
-                <td>{{ item.phong?.tangSo }}</td>
-
-                <td>{{ item.maGiuong }}</td>
-
-                <td>{{ item.giuongSo }}</td>
-
-                <td>
-                  {{ formatCurrency(item.giaGiuong) }}
-                </td>
-
-                <td>
-                  <span :class="['status-badge', item.trangThai]">
-                    {{ getStatusText(item.trangThai) }}
-                  </span>
-                </td>
-
-                <td class="row-actions">
-                  <button class="table-btn edit" @click="editGiuong(item)">
-                    Sửa
-                  </button>
-
-                  <button
-                    type="button"
-                    class="table-btn delete"
-                    @click.stop="requestDeleteGiuong(item)"
-                  >
-                    Xóa
-                  </button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
+    <!-- GIỮ NGUYÊN BẢNG DANH SÁCH GIƯỜNG HIỆN TẠI Ở ĐÂY -->
+  </div>
+</section>
 
       <!-- ===================================================
            NGƯỜI THUÊ
