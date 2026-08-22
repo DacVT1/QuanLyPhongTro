@@ -5,6 +5,7 @@ import { Doughnut } from "vue-chartjs";
 import { computed, onMounted, ref } from "vue";
 import api from "./services/api";
 import { getImageUrl } from "./utils/image";
+import { NhaTro } from "./Nha-Tro";
 ChartJS.register(ArcElement, Tooltip, Legend);
 const cccdMatTruocPreviewUrl = ref("");
 const cccdMatSauPreviewUrl = ref("");
@@ -544,14 +545,6 @@ const nhaTroDashboard = computed(() => {
   });
 });
 
-const nhaTroForm = ref({
-  maNhaTro: "",
-  tenNhaTro: "",
-  diaChi: "",
-  soTang: 1,
-  moTa: "",
-});
-
 const phongForm = ref({
   maPhong: "",
   tangSo: "",
@@ -748,8 +741,6 @@ function handlePhongChangeForHopDong() {
   hopDongForm.value.maHopDong = "";
 }
 
-const editingNhaTroId = ref<string | null>(null);
-const showNhaTroForm = ref(false);
 const editingPhongId = ref<string | null>(null);
 const showPhongForm = ref(false);
 const editingGiuongId = ref<string | null>(null);
@@ -968,26 +959,9 @@ async function loadData() {
   }
 }
 
-function resetNhaTroForm() {
-  nhaTroForm.value = {
-    maNhaTro: "",
-    tenNhaTro: "",
-    diaChi: "",
-    soTang: 1,
-    moTa: "",
-  };
-  editingNhaTroId.value = null;
-}
 
-function openAddNhaTroForm() {
-  resetNhaTroForm();
-  showNhaTroForm.value = true;
-}
 
-function closeNhaTroForm() {
-  resetNhaTroForm();
-  showNhaTroForm.value = false;
-}
+
 
 function resetPhongForm() {
   phongForm.value = {
@@ -1139,30 +1113,6 @@ function resetHoaDonForm() {
   tienDichVuKhacError.value = "";
   hoaDonThangThanhToanError.value = "";
   editingHoaDonId.value = null;
-}
-
-async function saveNhaTro() {
-  try {
-    const payload = { ...nhaTroForm.value };
-
-    if (editingNhaTroId.value) {
-      await api.patch(`/nha-tro/${editingNhaTroId.value}`, payload);
-    } else {
-      await api.post("/nha-tro", payload);
-    }
-
-    resetNhaTroForm();
-    showNhaTroForm.value = false;
-
-    await loadData();
-  } catch (error: any) {
-    console.error("Không thể lưu nhà trọ:", error);
-
-    alert(
-      error?.response?.data?.message ??
-        "Không thể lưu nhà trọ. Vui lòng thử lại.",
-    );
-  }
 }
 
 async function savePhong() {
@@ -1693,7 +1643,6 @@ async function saveHoaDon() {
   }
 }
 
-const showDeleteNhaTroModal = ref(false);
 const showDeleteGiuongModal = ref(false);
 const showDeletePhongModal = ref(false);
 
@@ -1724,118 +1673,9 @@ const deletePhongInfo = ref({
 });
 
 const deletePhongErrorMessage = ref("");
-const deleteNhaTroInfo = ref({
-  id: "",
-  tenNhaTro: "",
-  soPhong: 0,
-  soGiuong: 0,
-  soHopDong: 0,
-  soHoaDon: 0,
-});
 
-const deleteErrorMessage = ref("");
 
-function closeDeleteNhaTroModal() {
-  showDeleteNhaTroModal.value = false;
-  deleteErrorMessage.value = "";
-}
 
-async function deleteNhaTro(id: string) {
-  try {
-    deleteErrorMessage.value = "";
-
-    const nhaTro = nhaTros.value.find((item) => item.id === id);
-
-    deleteNhaTroInfo.value = {
-      id,
-      tenNhaTro: nhaTro?.tenNhaTro ?? "Nhà trọ",
-      soPhong: 0,
-      soGiuong: 0,
-      soHopDong: 0,
-      soHoaDon: 0,
-    };
-
-    await api.delete(`/nha-tro/${id}`);
-
-    closeDeleteNhaTroModal();
-
-    if (editingNhaTroId.value === id) {
-      resetNhaTroForm();
-    }
-
-    await loadData();
-  } catch (error: any) {
-    if (error.response?.status === 409) {
-      const responseData = error.response?.data;
-
-      const data = responseData?.data ?? {};
-
-      deleteNhaTroInfo.value = {
-        id,
-        tenNhaTro:
-          data.tenNhaTro ??
-          nhaTros.value.find((item) => item.id === id)?.tenNhaTro ??
-          "Nhà trọ",
-        soPhong: Number(data.soPhong ?? 0),
-        soGiuong: Number(data.soGiuong ?? 0),
-        soHopDong: Number(data.soHopDong ?? 0),
-        soHoaDon: Number(data.soHoaDon ?? 0),
-      };
-
-      deleteErrorMessage.value =
-        responseData?.message ??
-        "Không thể xóa nhà trọ vì đang có dữ liệu liên quan.";
-
-      showDeleteNhaTroModal.value = true;
-
-      return;
-    }
-
-    console.error("Không thể xóa nhà trọ:", error);
-
-    deleteErrorMessage.value =
-      error.response?.data?.message ?? "Có lỗi xảy ra khi xóa nhà trọ.";
-
-    showDeleteNhaTroModal.value = true;
-  }
-}
-
-function requestDeleteNhaTro(item: any) {
-  deleteNhaTroInfo.value = {
-    id: item.id,
-    tenNhaTro: item.tenNhaTro ?? "Nhà trọ",
-    soPhong: 0,
-    soGiuong: 0,
-    soHopDong: 0,
-    soHoaDon: 0,
-  };
-
-  deleteErrorMessage.value = "";
-  showDeleteNhaTroModal.value = true;
-}
-
-async function confirmDeleteNhaTro() {
-  const id = deleteNhaTroInfo.value.id;
-
-  if (!id) {
-    return;
-  }
-
-  await deleteNhaTro(id);
-}
-
-function editNhaTro(item: any) {
-  editingNhaTroId.value = item.id;
-  nhaTroForm.value = {
-    maNhaTro: item.maNhaTro ?? "",
-    tenNhaTro: item.tenNhaTro ?? "",
-    diaChi: item.diaChi ?? "",
-    soTang: item.soTang ?? 1,
-    moTa: item.moTa ?? "",
-  };
-  showNhaTroForm.value = true;
-  currentTab.value = "nhaTro";
-}
 
 function editPhong(item: any) {
   editingPhongId.value = item.id;
@@ -2456,126 +2296,11 @@ onMounted(() => {
       <!-- ===================================================
            NHÀ TRỌ
            =================================================== -->
-      <section v-else-if="currentTab === 'nhaTro'" class="panel-grid">
-        <!-- FORM THÊM / SỬA NHÀ TRỌ -->
-        <div v-if="showNhaTroForm" class="panel">
-          <h3>
-            {{ editingNhaTroId ? "Sửa nhà trọ" : "Thêm nhà trọ" }}
-          </h3>
-
-          <form @submit.prevent="saveNhaTro" class="form-grid">
-            <label>
-              {{ requiredLabel("Mã nhà trọ") }}
-
-              <input
-                v-model="nhaTroForm.maNhaTro"
-                placeholder="Ví dụ: CG"
-                required
-              />
-            </label>
-
-            <label>
-              {{ requiredLabel("Tên nhà trọ") }}
-
-              <input
-                v-model="nhaTroForm.tenNhaTro"
-                placeholder="Tên nhà trọ"
-                required
-              />
-            </label>
-
-            <label>
-              {{ requiredLabel("Địa chỉ") }}
-
-              <input
-                v-model="nhaTroForm.diaChi"
-                placeholder="Địa chỉ"
-                required
-              />
-            </label>
-
-            <label>
-              {{ requiredLabel("Số tầng") }}
-
-              <input
-                v-model.number="nhaTroForm.soTang"
-                type="number"
-                min="1"
-                placeholder="Số tầng"
-                required
-              />
-            </label>
-
-            <label>
-              {{ requiredLabel("Mô tả") }}
-
-              <textarea
-                v-model="nhaTroForm.moTa"
-                placeholder="Mô tả"
-                rows="3"
-              ></textarea>
-            </label>
-
-            <div class="actions">
-              <button class="primary" type="submit">
-                {{ editingNhaTroId ? "Cập nhật" : "Lưu" }}
-              </button>
-
-              <button class="secondary" type="button" @click="closeNhaTroForm">
-                Hủy
-              </button>
-            </div>
-          </form>
-        </div>
-
-        <!-- DANH SÁCH NHÀ TRỌ -->
-        <div v-else class="panel">
-          <div class="panel-header">
-            <h3>Danh sách nhà trọ</h3>
-
-            <button type="button" class="primary" @click="openAddNhaTroForm">
-              Thêm nhà trọ
-            </button>
-          </div>
-
-          <table>
-            <thead>
-              <tr>
-                <th>Mã</th>
-                <th>Tên</th>
-                <th>Địa chỉ</th>
-                <th>Số tầng</th>
-                <th>Hành động</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              <tr v-for="item in nhaTros" :key="item.id">
-                <td>{{ item.maNhaTro }}</td>
-
-                <td>{{ item.tenNhaTro }}</td>
-
-                <td>{{ item.diaChi }}</td>
-
-                <td>{{ item.soTang }}</td>
-
-                <td class="row-actions">
-                  <button class="table-btn edit" @click="editNhaTro(item)">
-                    Sửa
-                  </button>
-
-                  <button
-                    class="table-btn delete"
-                    @click="requestDeleteNhaTro(item)"
-                  >
-                    Xóa
-                  </button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
+      <NhaTro
+  v-else-if="currentTab === 'nhaTro'"
+  :nha-tros="nhaTros"
+  @refresh="loadData"
+/>
 
       <!-- ===================================================
            PHÒNG
@@ -3878,115 +3603,6 @@ onMounted(() => {
     <!-- =====================================================
      MODAL XÓA NHÀ TRỌ
      ===================================================== -->
-    <div
-      v-if="showDeleteNhaTroModal"
-      class="modal-overlay"
-      @click.self="closeDeleteNhaTroModal"
-    >
-      <div class="delete-modal">
-        <div class="delete-modal-header">
-          <div class="warning-icon">⚠</div>
-
-          <div>
-            <h3>Xác nhận xóa nhà trọ</h3>
-
-            <p>
-              {{ deleteNhaTroInfo.tenNhaTro }}
-            </p>
-          </div>
-        </div>
-
-        <div class="delete-modal-body">
-          <!-- Nhà trọ đang có dữ liệu liên quan -->
-          <template
-            v-if="
-              deleteNhaTroInfo.soPhong > 0 ||
-              deleteNhaTroInfo.soGiuong > 0 ||
-              deleteNhaTroInfo.soHopDong > 0 ||
-              deleteNhaTroInfo.soHoaDon > 0
-            "
-          >
-            <p class="warning-message">
-              <strong>Không thể xóa nhà trọ này!</strong>
-            </p>
-
-            <p>
-              Nhà trọ
-              <strong>{{ deleteNhaTroInfo.tenNhaTro }}</strong>
-              đang có dữ liệu liên quan.
-            </p>
-
-            <div class="related-data">
-              <div v-if="deleteNhaTroInfo.soPhong > 0" class="related-item">
-                <span>Phòng</span>
-                <strong>{{ deleteNhaTroInfo.soPhong }}</strong>
-              </div>
-
-              <div v-if="deleteNhaTroInfo.soGiuong > 0" class="related-item">
-                <span>Giường</span>
-                <strong>{{ deleteNhaTroInfo.soGiuong }}</strong>
-              </div>
-
-              <div v-if="deleteNhaTroInfo.soHopDong > 0" class="related-item">
-                <span>Hợp đồng</span>
-                <strong>{{ deleteNhaTroInfo.soHopDong }}</strong>
-              </div>
-
-              <div v-if="deleteNhaTroInfo.soHoaDon > 0" class="related-item">
-                <span>Hóa đơn</span>
-                <strong>{{ deleteNhaTroInfo.soHoaDon }}</strong>
-              </div>
-            </div>
-
-            <p class="delete-modal-note">
-              Hãy xóa hoặc xử lý các dữ liệu liên quan trước khi xóa nhà trọ.
-            </p>
-          </template>
-
-          <!-- Nhà trọ không có dữ liệu liên quan -->
-          <template v-else>
-            <p class="confirm-message">
-              Bạn có chắc chắn muốn xóa nhà trọ
-              <strong>
-                {{ deleteNhaTroInfo.tenNhaTro }}
-              </strong>
-              không?
-            </p>
-
-            <p class="delete-modal-note">Thao tác này không thể hoàn tác.</p>
-          </template>
-
-          <p v-if="deleteErrorMessage" class="error-message">
-            {{ deleteErrorMessage }}
-          </p>
-        </div>
-
-        <!-- CHỈ CÓ 1 KHỐI BUTTON -->
-        <div class="delete-modal-actions">
-          <button
-            class="secondary"
-            type="button"
-            @click="closeDeleteNhaTroModal"
-          >
-            Đóng
-          </button>
-
-          <button
-            v-if="
-              deleteNhaTroInfo.soPhong === 0 &&
-              deleteNhaTroInfo.soGiuong === 0 &&
-              deleteNhaTroInfo.soHopDong === 0 &&
-              deleteNhaTroInfo.soHoaDon === 0
-            "
-            class="danger-button"
-            type="button"
-            @click="confirmDeleteNhaTro"
-          >
-            Xác nhận xóa
-          </button>
-        </div>
-      </div>
-    </div>
 
     <!-- =====================================================
          MODAL XÓA PHÒNG
