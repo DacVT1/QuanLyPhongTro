@@ -19,8 +19,36 @@ export class GiuongService {
 
     @InjectRepository(Phong)
     private readonly phongRepository: Repository<Phong>,
+    
   ) {}
+  private getTrangThaiTheoHopDong(
+  hopDongs: any[] = [],
+): string {
+  if (hopDongs.length === 0) {
+    return "trong";
+  }
 
+  const coHieuLuc = hopDongs.some(
+    (hopDong) =>
+      hopDong.trangThai === "active",
+  );
+
+  if (coHieuLuc) {
+    return "da_thue";
+  }
+
+  const sapHetHieuLuc = hopDongs.some(
+    (hopDong) =>
+      hopDong.trangThai ===
+      "sap_het_hieu_luc",
+  );
+
+  if (sapHetHieuLuc) {
+    return "sap_tra_tro";
+  }
+
+  return "trong";
+}
   async findAll() {
     return this.repository.find({
       relations: {
@@ -81,7 +109,7 @@ const giuong = this.repository.create({
   maGiuong,
   giuongSo,
   giaGiuong,
-  trangThai: payload.trangThai ?? 'trong',
+  trangThai: "trong",
   phong,
 })
 
@@ -117,8 +145,18 @@ if (payload.giuongSo !== undefined) {
 }
 
     if (payload.trangThai !== undefined) {
-      item.trangThai = payload.trangThai
-    }
+  if (
+    !["trong", "da_thue", "sap_tra_tro"].includes(
+      payload.trangThai,
+    )
+  ) {
+    throw new BadRequestException(
+      "Trạng thái giường không hợp lệ.",
+    );
+  }
+
+  item.trangThai = payload.trangThai;
+}
     if (payload.giaGiuong !== undefined) {
   const giaGiuong = Number(payload.giaGiuong)
 

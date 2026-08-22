@@ -8,6 +8,8 @@ import { getImageUrl } from "./utils/image";
 ChartJS.register(ArcElement, Tooltip, Legend);
 const cccdMatTruocPreviewUrl = ref("");
 const cccdMatSauPreviewUrl = ref("");
+const showHopDongHoaDonErrorModal = ref(false);
+const hopDongHoaDonErrorMessage = ref("");
 const tabs = [
   "dashboard",
   "nhaTro",
@@ -27,6 +29,7 @@ const tienDichVuKhacDisplay = ref("0");
 const tienDienError = ref("");
 const tienNuocError = ref("");
 const tienDichVuKhacError = ref("");
+const hoaDonThangThanhToanError = ref("");
 
 function getPhongChartData(house: any) {
   return {
@@ -74,7 +77,11 @@ function getThanhToanChartData(house: any) {
       {
         data: [
           house.totalGiuongDaThanhToan,
-          Math.max(house.totalGiuong - house.totalGiuongDaThanhToan, 0),
+          Math.max(
+            house.totalGiuongCoHoaDonThangHienTai -
+              house.totalGiuongDaThanhToan,
+            0,
+          ),
         ],
 
         backgroundColor: ["#16a34a", "#e5e7eb"],
@@ -153,6 +160,104 @@ const doughnutCenterTextPlugin = {
     ctx.restore();
   },
 };
+
+function formatMonthForDisplay(value: string) {
+  if (!value) {
+    return "";
+  }
+
+  const match = value.match(/^(\d{4})-(\d{2})/);
+
+  if (!match) {
+    return value;
+  }
+
+  return `${match[2]}/${match[1]}`;
+}
+
+async function handleThemHoaDonChoCacGiuong() {
+  /*
+   * Kiểm tra tháng thanh toán
+   */
+  const thangThanhToan = hoaDonForm.value.thangThanhToan;
+
+  if (!thangThanhToan) {
+    hoaDonThangThanhToanError.value =
+      "Vui lòng chọn Tháng thanh toán trước khi tạo hóa đơn.";
+
+    return;
+  }
+
+  hoaDonThangThanhToanError.value = "";
+
+  /*
+   * Xác nhận trước khi tạo hàng loạt.
+   */
+  const confirmed = window.confirm(
+    `Bạn có chắc muốn tạo hóa đơn cho các giường đang có người thuê trong tháng ${formatMonthForDisplay(
+      thangThanhToan,
+    )} không?`,
+  );
+
+  if (!confirmed) {
+    return;
+  }
+
+  try {
+    /*
+     * Đảm bảo ngày gửi backend là ngày đầu tháng.
+     *
+     * input type="month":
+     * 2026-08
+     *
+     * API:
+     * 2026-08-01
+     */
+    const requestMonth = `${thangThanhToan}-01`;
+
+    const response = await api.post("/hoa-don/tao-cho-cac-giuong", {
+      thangThanhToan: requestMonth,
+    });
+
+    const result = response.data;
+
+    /*
+     * Load lại danh sách hóa đơn.
+     */
+    await loadData();
+
+    /*
+     * Nếu source của bạn có hàm
+     * loadDashboard() thì gọi lại.
+     */
+    if (typeof loadData === "function") {
+      await loadData();
+    }
+
+    const daTao = Number(result?.daTao ?? 0);
+
+    const daBoQua = Number(result?.daBoQua ?? 0);
+
+    /*
+     * Hiển thị kết quả.
+     */
+    alert(
+      [
+        result?.message ?? "Đã xử lý tạo hóa đơn.",
+        `Tháng: ${formatMonthForDisplay(thangThanhToan)}`,
+        `Đã tạo: ${daTao} hóa đơn`,
+        `Đã bỏ qua: ${daBoQua} giường đã có hóa đơn`,
+      ].join("\n"),
+    );
+  } catch (error: any) {
+    console.error("Lỗi tạo hóa đơn cho các giường:", error);
+
+    const message =
+      error?.response?.data?.message ?? "Không thể tạo hóa đơn cho các giường.";
+
+    alert(Array.isArray(message) ? message.join("\n") : message);
+  }
+}
 
 function handleTienDienInput(event: Event) {
   const input = event.target as HTMLInputElement;
@@ -355,6 +460,37 @@ const hoaDons = ref<any[]>([]);
 
 const nhaTroDashboard = computed(() => {
   return nhaTros.value.map((nhaTro) => {
+    const now = new Date();
+
+const currentMonth = `${now.getFullYear()}-${String(
+  now.getMonth() + 1,
+).padStart(2, "0")}`;
+
+const currentMonthHoaDons = hoaDons.value.filter((hoaDon) => {
+  const thangThanhToan = String(hoaDon.thangThanhToan ?? "");
+
+  return (
+    thangThanhToan.slice(0, 7) === currentMonth &&
+    hoaDon.hopDong?.giuong?.phong?.nhaTro?.id === nhaTro.id
+  );
+});
+
+const paidCurrentMonthHoaDons = currentMonthHoaDons.filter(
+  (hoaDon) => hoaDon.trangThai === "da_thanh_toan",
+);
+
+const currentMonthBedIds = new Set(
+  currentMonthHoaDons
+    .map((hoaDon) => hoaDon.hopDong?.giuong?.id)
+    .filter(Boolean),
+);
+
+const paidBedIds = new Set(
+  paidCurrentMonthHoaDons
+    .map((hoaDon) => hoaDon.hopDong?.giuong?.id)
+    .filter(Boolean),
+);
+
     const rooms = phongs.value.filter(
       (phong) => phong.nhaTro?.id === nhaTro.id,
     );
@@ -381,13 +517,10 @@ const nhaTroDashboard = computed(() => {
 
     const paidContracts = hoaDons.value.filter(
       (hoaDon) =>
-        hoaDon.trangThai === "DA_THANH_TOAN" &&
+        hoaDon.trangThai === "da_thanh_toan" &&
         hoaDon.hopDong?.giuong?.phong?.nhaTro?.id === nhaTro.id,
     );
 
-    const paidBedIds = new Set(
-      paidContracts.map((hoaDon) => hoaDon.hopDong?.giuong?.id).filter(Boolean),
-    );
 
     return {
       id: nhaTro.id,
@@ -407,6 +540,7 @@ const nhaTroDashboard = computed(() => {
       totalGiuongCoNguoi: occupiedBedIds.size,
 
       totalGiuongDaThanhToan: paidBedIds.size,
+      totalGiuongCoHoaDonThangHienTai: currentMonthBedIds.size,
     };
   });
 });
@@ -486,7 +620,7 @@ const giuongForm = ref({
   phongId: "",
   giuongSo: "",
   giaGiuong: 1500000,
-  trangThai: "trong",
+  // trangThai: "trong",
 });
 
 const nguoiThueForm = ref({
@@ -527,7 +661,7 @@ const hoaDonForm = ref({
   tienNuoc: 0,
   tienDichVuKhac: 0,
   tongTien: 0,
-  trangThai: "CHUA_THANH_TOAN",
+  trangThai: "chua_thanh_toan",
   ghiChu: "",
 });
 
@@ -805,7 +939,7 @@ function resetGiuongForm() {
     phongId: "",
     giuongSo: "",
     giaGiuong: 1500000,
-    trangThai: "trong",
+    // trangThai: "trong",
   };
 
   giaGiuongDisplay.value = "1,500,000";
@@ -930,6 +1064,7 @@ function resetHoaDonForm() {
   tienDienError.value = "";
   tienNuocError.value = "";
   tienDichVuKhacError.value = "";
+  hoaDonThangThanhToanError.value = "";
   editingHoaDonId.value = null;
 }
 
@@ -1081,6 +1216,21 @@ async function confirmDeleteNguoiThue() {
 }
 
 function requestDeleteHopDong(item: any) {
+  const hoaDons = item.hoaDons ?? [];
+
+  if (hoaDons.length > 0) {
+    const maHoaDon = hoaDons
+      .map((hoaDon: any) => hoaDon.maHoaDon)
+      .filter(Boolean)
+      .join(", ");
+
+    hopDongHoaDonErrorMessage.value = `Hợp đồng ${item.maHopDong ?? ""} đang nằm trong hóa đơn ${maHoaDon} và không thể xóa được`;
+
+    showHopDongHoaDonErrorModal.value = true;
+
+    return;
+  }
+
   deleteHopDongInfo.value = {
     id: item.id,
     maHopDong: item.maHopDong ?? "Hợp đồng",
@@ -1088,6 +1238,11 @@ function requestDeleteHopDong(item: any) {
 
   deleteHopDongErrorMessage.value = "";
   showDeleteHopDongModal.value = true;
+}
+
+function closeHopDongHoaDonErrorModal() {
+  showHopDongHoaDonErrorModal.value = false;
+  hopDongHoaDonErrorMessage.value = "";
 }
 
 function closeDeleteHopDongModal() {
@@ -1114,12 +1269,16 @@ async function confirmDeleteHopDong() {
     }
 
     await loadData();
+
+    alert("Xóa hợp đồng thành công.");
   } catch (error: any) {
     console.error("Không thể xóa hợp đồng:", error);
 
-    deleteHopDongErrorMessage.value =
-      error?.response?.data?.message ??
-      "Không thể xóa hợp đồng. Vui lòng thử lại.";
+    const message = error?.response?.data?.message;
+
+    deleteHopDongErrorMessage.value = Array.isArray(message)
+      ? message.join("\n")
+      : message || "Không thể xóa hợp đồng. Vui lòng thử lại.";
   }
 }
 
@@ -1127,7 +1286,6 @@ async function saveGiuong() {
   const payload = {
     giuongSo: Number(giuongForm.value.giuongSo),
     giaGiuong: Number(giuongForm.value.giaGiuong || 0),
-    trangThai: giuongForm.value.trangThai,
     phong: {
       id: giuongForm.value.phongId,
     },
@@ -1300,9 +1458,12 @@ async function saveHopDong() {
     return;
   }
 
-  if (!hopDongForm.value.maHopDong) {
-    syncHopDongCode();
+  if (!hopDongForm.value.giuongId) {
+    alert("Vui lòng chọn giường.");
+    return;
   }
+
+  syncHopDongCode();
 
   const giaThue = Number(hopDongForm.value.tienThue || 0);
   const giuongId = hopDongForm.value.giuongId;
@@ -1624,7 +1785,6 @@ function editGiuong(item: any) {
     phongId: item.phong?.id ?? "",
     giuongSo: item.giuongSo != null ? String(item.giuongSo) : "",
     giaGiuong,
-    trangThai: item.trangThai ?? "trong",
   };
 
   giaGiuongDisplay.value = giaGiuong ? giaGiuong.toLocaleString("en-US") : "";
@@ -1823,6 +1983,12 @@ function generateHopDongCode(giuongId: string) {
     return "";
   }
 
+  // Mã hợp đồng = đúng bằng Mã giường
+  //
+  // Ví dụ:
+  // Mã giường:   HM_T1_G1
+  // Mã hợp đồng: HM_T1_G1
+
   return giuong.maGiuong;
 }
 
@@ -1885,6 +2051,7 @@ function syncHopDongCode() {
     hopDongForm.value.maHopDong = "";
     return;
   }
+
   hopDongForm.value.maHopDong = generateHopDongCode(hopDongForm.value.giuongId);
 }
 
@@ -2171,7 +2338,9 @@ onMounted(() => {
 
               <div class="chart-value">
                 <strong>
-                  {{ house.totalGiuongDaThanhToan }}/{{ house.totalGiuong }}
+                  {{ house.totalGiuongDaThanhToan }}/{{
+                    house.totalGiuongCoHoaDonThangHienTai
+                  }}
                 </strong>
 
                 <span> hóa đơn </span>
@@ -2181,8 +2350,7 @@ onMounted(() => {
                 <div class="description-icon">🧾</div>
 
                 <p>
-                  Tỷ lệ giường đã thanh toán hóa đơn so với tổng số giường của
-                  nhà trọ.
+                  Tỷ lệ giường đã thanh toán hóa đơn so với tổng số giường có hóa đơn trong tháng hiện tại.
                 </p>
               </div>
             </div>
@@ -2527,7 +2695,7 @@ onMounted(() => {
               </div>
             </label>
 
-            <label>
+            <!-- <label>
               {{ requiredLabel("Trạng thái") }}
 
               <select v-model="giuongForm.trangThai">
@@ -2539,7 +2707,7 @@ onMounted(() => {
 
                 <option value="sap_tra_tro">Sắp trả trọ</option>
               </select>
-            </label>
+            </label> -->
 
             <div class="actions">
               <button class="primary" type="submit">
@@ -2581,7 +2749,9 @@ onMounted(() => {
                 </td>
 
                 <td>
-                  {{ getStatusText(item.trangThai) }}
+                  <span :class="['status-badge', item.trangThai]">
+                    {{ getStatusText(item.trangThai) }}
+                  </span>
                 </td>
 
                 <td class="row-actions">
@@ -2910,7 +3080,12 @@ onMounted(() => {
             <label>
               {{ requiredLabel("Ngày bắt đầu") }}
 
-              <input v-model="hopDongForm.ngayBatDau" type="date" required />
+              <input
+                v-model="hopDongForm.ngayBatDau"
+                type="date"
+                @change="syncHopDongCode"
+                required
+              />
             </label>
 
             <label>
@@ -3120,20 +3295,27 @@ onMounted(() => {
               <input
                 v-model="hoaDonForm.thangThanhToan"
                 type="date"
-                @change="syncHoaDonCode"
+                @change="
+                  syncHoaDonCode();
+                  hoaDonThangThanhToanError = '';
+                "
                 required
               />
+
+              <div v-if="hoaDonThangThanhToanError" class="hoa-don-thang-error">
+                <span class="hoa-don-thang-error-icon">!</span>
+
+                <span>
+                  {{ hoaDonThangThanhToanError }}
+                </span>
+              </div>
             </label>
 
             <label>
               {{ requiredLabel("Tiền phòng") }}
 
               <div class="currency-input">
-                <input
-                  :value="formatCurrency(hoaDonForm.tienPhong)"
-                  type="text"
-                  readonly
-                />
+                <input :value="hoaDonForm.tienPhong" type="text" readonly />
 
                 <span>VND</span>
               </div>
@@ -3195,7 +3377,8 @@ onMounted(() => {
 
               <div class="currency-input">
                 <input
-                  :value="formatCurrency(hoaDonForm.tongTien)"
+                  :value="hoaDonForm.tongTien"
+                  inputmode="numeric"
                   type="text"
                   readonly
                 />
@@ -3224,13 +3407,28 @@ onMounted(() => {
               ></textarea>
             </label>
 
-            <div class="actions">
-              <button class="primary" type="submit">
-                {{ editingHoaDonId ? "Cập nhật" : "Lưu" }}
-              </button>
+            <div class="invoice-form-actions">
+              <div class="invoice-form-actions-left">
+                <button class="primary" type="submit">
+                  {{ editingHoaDonId ? "Cập nhật" : "Lưu" }}
+                </button>
 
-              <button class="secondary" type="button" @click="resetHoaDonForm">
-                Hủy
+                <button
+                  class="secondary"
+                  type="button"
+                  @click="resetHoaDonForm"
+                >
+                  Hủy
+                </button>
+              </div>
+
+              <button
+                type="button"
+                class="btn-them-hoa-don"
+                @click="handleThemHoaDonChoCacGiuong"
+                :disabled="editingHoaDonId !== null"
+              >
+                Thêm HĐ cho các Giường
               </button>
             </div>
           </form>
@@ -3543,7 +3741,7 @@ onMounted(() => {
             không?
           </p>
 
-          <p v-if="deleteHopDongErrorMessage" class="error-message">
+          <p v-if="deleteHopDongErrorMessage" class="delete-error-message">
             {{ deleteHopDongErrorMessage }}
           </p>
         </div>
@@ -3563,7 +3761,31 @@ onMounted(() => {
         </div>
       </div>
     </div>
+    <div
+      v-if="showHopDongHoaDonErrorModal"
+      class="modal-overlay"
+      @click.self="closeHopDongHoaDonErrorModal"
+    >
+      <div class="modal">
+        <div class="modal-header">Không thể xóa hợp đồng</div>
 
+        <div class="modal-body">
+          <p class="delete-error-message">
+            {{ hopDongHoaDonErrorMessage }}
+          </p>
+        </div>
+
+        <div class="modal-footer">
+          <button
+            type="button"
+            class="secondary"
+            @click="closeHopDongHoaDonErrorModal"
+          >
+            Đóng
+          </button>
+        </div>
+      </div>
+    </div>
     <!-- =====================================================
          MODAL XÓA GIƯỜNG
          ===================================================== -->
@@ -4164,6 +4386,45 @@ textarea {
 
 .primary,
 .secondary,
+.btn-them-hoa-don {
+  border: none;
+  border-radius: 9px;
+  padding: 10px 14px;
+
+  background: linear-gradient(135deg, #16a34a, #22c55e);
+
+  color: #ffffff;
+
+  cursor: pointer;
+  font-weight: 600;
+
+  transition:
+    background 0.2s ease,
+    transform 0.15s ease,
+    box-shadow 0.2s ease;
+
+  box-shadow: 0 4px 10px rgba(22, 163, 74, 0.2);
+}
+
+.btn-them-hoa-don:hover {
+  background: linear-gradient(135deg, #15803d, #16a34a);
+
+  transform: translateY(-1px);
+
+  box-shadow: 0 6px 14px rgba(22, 163, 74, 0.25);
+}
+
+.btn-them-hoa-don:active {
+  transform: translateY(0);
+
+  box-shadow: 0 3px 8px rgba(22, 163, 74, 0.2);
+}
+
+.btn-them-hoa-don:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
 .table-btn {
   border: none;
 
@@ -4203,6 +4464,45 @@ textarea {
 
 .secondary:hover {
   background: #cbd5e1;
+}
+
+.btn-them-hoa-don {
+  border: none;
+  border-radius: 9px;
+
+  padding: 10px 16px;
+
+  background: linear-gradient(135deg, #16a34a, #22c55e);
+
+  color: #ffffff;
+
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+
+  white-space: nowrap;
+  width: auto;
+  min-width: max-content;
+  flex-shrink: 0;
+
+  box-shadow: 0 4px 10px rgba(22, 163, 74, 0.2);
+
+  transition:
+    background 0.2s ease,
+    transform 0.15s ease,
+    box-shadow 0.2s ease;
+}
+
+.btn-them-hoa-don:hover {
+  background: linear-gradient(135deg, #15803d, #16a34a);
+
+  transform: translateY(-1px);
+
+  box-shadow: 0 6px 14px rgba(22, 163, 74, 0.25);
+}
+
+.btn-them-hoa-don:active {
+  transform: translateY(0);
 }
 
 /* =========================================================
@@ -4661,6 +4961,20 @@ tbody tr:hover {
   background: #fef3c7;
   color: #92400e;
 }
+.status-badge.trong {
+  background: #e2e8f0;
+  color: #475569;
+}
+
+.status-badge.da_thue {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.status-badge.sap_tra_tro {
+  background: #fef3c7;
+  color: #92400e;
+}
 
 .status-paid {
   background: #dcfce7;
@@ -5113,8 +5427,7 @@ tbody tr:hover {
 .dashboard-chart-grid {
   display: grid;
 
-  grid-template-columns:
-    repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 
   gap: 20px;
 
@@ -5353,27 +5666,112 @@ tbody tr:hover {
   line-height: 1.5;
 }
 
+.delete-error-message {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: #fee2e2;
+  color: #b91c1c;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.invoice-form-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 16px;
+}
+
+.invoice-form-actions-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.invoice-form-actions > .btn-them-hoa-don {
+  margin-left: auto;
+}
+
+/* =========================================================
+   THÔNG BÁO THÁNG THANH TOÁN - FORM HÓA ĐƠN
+   ========================================================= */
+
+.hoa-don-thang-error {
+  display: flex;
+  align-items: center;
+
+  gap: 8px;
+
+  margin-top: 8px;
+  padding: 9px 11px;
+
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+
+  background: #fef2f2;
+  color: #dc2626;
+
+  font-size: 0.85rem;
+  font-weight: 500;
+  line-height: 1.4;
+
+  animation: hoaDonErrorFadeIn 0.2s ease-out;
+}
+
+.hoa-don-thang-error-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  flex: 0 0 18px;
+
+  width: 18px;
+  height: 18px;
+
+  border-radius: 50%;
+
+  background: #dc2626;
+  color: #ffffff;
+
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+@keyframes hoaDonErrorFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-3px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @media (max-width: 1200px) {
   .dashboard-chart-grid {
-    grid-template-columns:
-      repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 768px) {
-  .dashboard-house-card {
-    padding: 18px;
+  .invoice-form-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
   }
 
-  .dashboard-chart-grid {
-    grid-template-columns: 1fr;
-
-    gap: 16px;
+  .invoice-form-actions-left {
+    width: 100%;
   }
 
-  .chart-container {
-    width: 210px;
-    height: 210px;
+  .invoice-form-actions-left button,
+  .invoice-form-actions > .btn-them-hoa-don {
+    width: 100%;
   }
 }
 /* =========================================================
