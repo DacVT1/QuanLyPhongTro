@@ -460,13 +460,20 @@ const hoaDons = ref<any[]>([]);
 
 const nhaTroDashboard = computed(() => {
   return nhaTros.value.map((nhaTro) => {
-    const currentMonth = new Date().toISOString().slice(0, 7);
+    const now = new Date();
 
-const currentMonthHoaDons = hoaDons.value.filter(
-  (hoaDon) =>
-    hoaDon.thangThanhToan === currentMonth &&
-    hoaDon.hopDong?.giuong?.phong?.nhaTro?.id === nhaTro.id,
-);
+const currentMonth = `${now.getFullYear()}-${String(
+  now.getMonth() + 1,
+).padStart(2, "0")}`;
+
+const currentMonthHoaDons = hoaDons.value.filter((hoaDon) => {
+  const thangThanhToan = String(hoaDon.thangThanhToan ?? "");
+
+  return (
+    thangThanhToan.slice(0, 7) === currentMonth &&
+    hoaDon.hopDong?.giuong?.phong?.nhaTro?.id === nhaTro.id
+  );
+});
 
 const paidCurrentMonthHoaDons = currentMonthHoaDons.filter(
   (hoaDon) => hoaDon.trangThai === "da_thanh_toan",
@@ -474,6 +481,12 @@ const paidCurrentMonthHoaDons = currentMonthHoaDons.filter(
 
 const currentMonthBedIds = new Set(
   currentMonthHoaDons
+    .map((hoaDon) => hoaDon.hopDong?.giuong?.id)
+    .filter(Boolean),
+);
+
+const paidBedIds = new Set(
+  paidCurrentMonthHoaDons
     .map((hoaDon) => hoaDon.hopDong?.giuong?.id)
     .filter(Boolean),
 );
@@ -508,9 +521,6 @@ const currentMonthBedIds = new Set(
         hoaDon.hopDong?.giuong?.phong?.nhaTro?.id === nhaTro.id,
     );
 
-    const paidBedIds = new Set(
-      paidContracts.map((hoaDon) => hoaDon.hopDong?.giuong?.id).filter(Boolean),
-    );
 
     return {
       id: nhaTro.id,
@@ -2340,8 +2350,7 @@ onMounted(() => {
                 <div class="description-icon">🧾</div>
 
                 <p>
-                  Tỷ lệ giường đã thanh toán hóa đơn so với tổng số giường của
-                  nhà trọ.
+                  Tỷ lệ giường đã thanh toán hóa đơn so với tổng số giường có hóa đơn trong tháng hiện tại.
                 </p>
               </div>
             </div>
