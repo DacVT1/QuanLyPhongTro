@@ -8,6 +8,8 @@ import { getImageUrl } from "./utils/image";
 ChartJS.register(ArcElement, Tooltip, Legend);
 const cccdMatTruocPreviewUrl = ref("");
 const cccdMatSauPreviewUrl = ref("");
+const showHopDongHoaDonErrorModal = ref(false);
+const hopDongHoaDonErrorMessage = ref("");
 const tabs = [
   "dashboard",
   "nhaTro",
@@ -1181,7 +1183,6 @@ async function confirmDeleteNguoiThue() {
 }
 
 function requestDeleteHopDong(item: any) {
-  // Nếu hợp đồng đã nằm trong hóa đơn thì không hỏi xác nhận xóa.
   const hoaDons = item.hoaDons ?? [];
 
   if (hoaDons.length > 0) {
@@ -1190,12 +1191,18 @@ function requestDeleteHopDong(item: any) {
       .filter(Boolean)
       .join(", ");
 
-    alert(
-      `Hợp đồng đang nằm trong hóa đơn ${maHoaDon} và không thể xóa được`,
-    );
+    hopDongHoaDonErrorMessage.value =
+      `Hợp đồng ${item.maHopDong ?? ""} đang nằm trong hóa đơn ${maHoaDon} và không thể xóa được`;
+
+    showHopDongHoaDonErrorModal.value = true;
 
     return;
   }
+
+  function closeHopDongHoaDonErrorModal() {
+  showHopDongHoaDonErrorModal.value = false;
+  hopDongHoaDonErrorMessage.value = "";
+}
 
   deleteHopDongInfo.value = {
     id: item.id,
@@ -3738,7 +3745,33 @@ onMounted(() => {
         </div>
       </div>
     </div>
+    <div
+  v-if="showHopDongHoaDonErrorModal"
+  class="modal-overlay"
+  @click.self="closeHopDongHoaDonErrorModal"
+>
+  <div class="modal">
+    <div class="modal-header">
+      Không thể xóa hợp đồng
+    </div>
 
+    <div class="modal-body">
+      <p class="delete-error-message">
+        {{ hopDongHoaDonErrorMessage }}
+      </p>
+    </div>
+
+    <div class="modal-footer">
+      <button
+        type="button"
+        class="btn btn-secondary"
+        @click="closeHopDongHoaDonErrorModal"
+      >
+        Đóng
+      </button>
+    </div>
+  </div>
+</div>
     <!-- =====================================================
          MODAL XÓA GIƯỜNG
          ===================================================== -->
