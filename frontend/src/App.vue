@@ -1217,27 +1217,19 @@ async function confirmDeleteHopDong() {
 
     alert("Xóa hợp đồng thành công.");
   } catch (error: any) {
-    console.error("Không thể xóa hợp đồng:", error);
+    console.error(
+      "Không thể xóa hợp đồng:",
+      error,
+    );
 
     const message =
       error?.response?.data?.message;
 
-    // Backend báo Hợp đồng đang được sử dụng
-    // trong Hóa đơn
-    if (
-      typeof message === "string" &&
-      message.toLowerCase().includes("hóa đơn")
-    ) {
-      deleteHopDongErrorMessage.value =
-        "Không thể xóa hợp đồng vì Hợp đồng này đang được sử dụng trong Hóa đơn.";
-    } else if (Array.isArray(message)) {
-      deleteHopDongErrorMessage.value =
-        message.join("\n");
-    } else {
-      deleteHopDongErrorMessage.value =
-        message ??
-        "Không thể xóa hợp đồng. Vui lòng thử lại.";
-    }
+    deleteHopDongErrorMessage.value =
+      Array.isArray(message)
+        ? message.join("\n")
+        : message ||
+          "Không thể xóa hợp đồng. Vui lòng thử lại.";
   }
 }
 
@@ -3710,7 +3702,7 @@ onMounted(() => {
             không?
           </p>
 
-          <p v-if="deleteHopDongErrorMessage" class="error-message">
+          <p v-if="deleteHopDongErrorMessage" class="delete-error-message">
             {{ deleteHopDongErrorMessage }}
           </p>
         </div>
@@ -5619,6 +5611,16 @@ tbody tr:hover {
   font-size: 13px;
 
   line-height: 1.5;
+}
+
+.delete-error-message {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: #fee2e2;
+  color: #b91c1c;
+  font-size: 14px;
+  font-weight: 600;
 }
 
 .invoice-form-actions {
