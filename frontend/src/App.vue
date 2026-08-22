@@ -3442,6 +3442,7 @@ onMounted(() => {
                 type="button"
                 class="btn-them-hoa-don"
                 @click="handleThemHoaDonChoCacGiuong"
+                :disabled="editingHoaDonId  !== null"
               >
                 Thêm HĐ cho các Giường
               </button>
