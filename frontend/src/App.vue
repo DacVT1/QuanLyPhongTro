@@ -1214,12 +1214,30 @@ async function confirmDeleteHopDong() {
     }
 
     await loadData();
+
+    alert("Xóa hợp đồng thành công.");
   } catch (error: any) {
     console.error("Không thể xóa hợp đồng:", error);
 
-    deleteHopDongErrorMessage.value =
-      error?.response?.data?.message ??
-      "Không thể xóa hợp đồng. Vui lòng thử lại.";
+    const message =
+      error?.response?.data?.message;
+
+    // Backend báo Hợp đồng đang được sử dụng
+    // trong Hóa đơn
+    if (
+      typeof message === "string" &&
+      message.toLowerCase().includes("hóa đơn")
+    ) {
+      deleteHopDongErrorMessage.value =
+        "Không thể xóa hợp đồng vì Hợp đồng này đang được sử dụng trong Hóa đơn.";
+    } else if (Array.isArray(message)) {
+      deleteHopDongErrorMessage.value =
+        message.join("\n");
+    } else {
+      deleteHopDongErrorMessage.value =
+        message ??
+        "Không thể xóa hợp đồng. Vui lòng thử lại.";
+    }
   }
 }
 

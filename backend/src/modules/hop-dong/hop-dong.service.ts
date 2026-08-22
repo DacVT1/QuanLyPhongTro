@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
@@ -190,34 +190,33 @@ export class HopDongService {
     );
   }
 
-  async remove(id: string) {
-    const hopDong =
-      await this.repository.findOne({
-        where: { id },
-        relations: {
-          giuong: true,
-        },
-      });
+async remove(id: string) {
+  const hopDong =
+    await this.repository.findOne({
+      where: { id },
+      relations: {
+        giuong: true,
+        hoaDons: true,
+      },
+    });
 
-    if (!hopDong) {
-      return null;
-    }
-
-    const giuongId =
-      hopDong.giuong?.id;
-
-    await this.repository.remove(
-      hopDong,
-    );
-
-    // Sau khi xóa HĐ, kiểm tra lại
-    // tất cả HĐ còn lại của giường.
-    if (giuongId) {
-      await this.capNhatTrangThaiGiuong(
-        giuongId,
-      );
-    }
-
-    return hopDong;
+  if (!hopDong) {
+    return null;
   }
+
+  const giuongId =
+    hopDong.giuong?.id;
+
+  await this.repository.remove(
+    hopDong,
+  );
+
+  if (giuongId) {
+    await this.capNhatTrangThaiGiuong(
+      giuongId,
+    );
+  }
+
+  return hopDong;
+}
 }
