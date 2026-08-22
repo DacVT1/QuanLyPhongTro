@@ -109,7 +109,7 @@ const giuong = this.repository.create({
   maGiuong,
   giuongSo,
   giaGiuong,
-  trangThai: payload.trangThai ?? 'trong',
+  trangThai: "trong",
   phong,
 })
 
@@ -145,8 +145,18 @@ if (payload.giuongSo !== undefined) {
 }
 
     if (payload.trangThai !== undefined) {
-      item.trangThai = payload.trangThai
-    }
+  if (
+    !["trong", "da_thue", "sap_tra_tro"].includes(
+      payload.trangThai,
+    )
+  ) {
+    throw new BadRequestException(
+      "Trạng thái giường không hợp lệ.",
+    );
+  }
+
+  item.trangThai = payload.trangThai;
+}
     if (payload.giaGiuong !== undefined) {
   const giaGiuong = Number(payload.giaGiuong)
 

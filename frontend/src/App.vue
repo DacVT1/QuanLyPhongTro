@@ -586,7 +586,6 @@ const giuongForm = ref({
   giuongSo: "",
   giaGiuong: 1500000,
   // trangThai: "trong",
-  dangBaoTri: false,
 });
 
 const nguoiThueForm = ref({
@@ -906,7 +905,6 @@ function resetGiuongForm() {
     giuongSo: "",
     giaGiuong: 1500000,
     // trangThai: "trong",
-    dangBaoTri: false,
   };
 
   giaGiuongDisplay.value = "1,500,000";
@@ -1229,14 +1227,6 @@ async function saveGiuong() {
   const payload = {
   giuongSo: Number(giuongForm.value.giuongSo),
   giaGiuong: Number(giuongForm.value.giaGiuong || 0),
-
-  // Chỉ lưu trạng thái bảo trì từ checkbox.
-  // Nếu không bảo trì thì backend tự xác định
-  // trạng thái theo hợp đồng.
-  trangThai: giuongForm.value.dangBaoTri
-    ? "bao_tri"
-    : undefined,
-
   phong: {
     id: giuongForm.value.phongId,
   },
@@ -1740,7 +1730,6 @@ function editGiuong(item: any) {
         ? String(item.giuongSo)
         : "",
     giaGiuong,
-    dangBaoTri: item.trangThai === "bao_tri",
   };
 
   giaGiuongDisplay.value = giaGiuong
@@ -2742,17 +2731,7 @@ onMounted(() => {
                 <option value="sap_tra_tro">Sắp trả trọ</option>
               </select>
             </label> -->
-            <label
-  v-if="editingGiuongId"
-  class="checkbox-field"
->
-  <span>Giường đang bảo trì</span>
-
-  <input
-    v-model="giuongForm.dangBaoTri"
-    type="checkbox"
-  />
-</label>
+            
             <div class="actions">
               <button class="primary" type="submit">
                 {{ editingGiuongId ? "Cập nhật" : "Lưu" }}
