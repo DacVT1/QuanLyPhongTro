@@ -154,17 +154,12 @@ const doughnutCenterTextPlugin = {
   },
 };
 
-function formatMonthForDisplay(
-  value: string,
-) {
+function formatMonthForDisplay(value: string) {
   if (!value) {
     return "";
   }
 
-  const match =
-    value.match(
-      /^(\d{4})-(\d{2})/,
-    );
+  const match = value.match(/^(\d{4})-(\d{2})/);
 
   if (!match) {
     return value;
@@ -173,18 +168,14 @@ function formatMonthForDisplay(
   return `${match[2]}/${match[1]}`;
 }
 
-
 async function handleThemHoaDonChoCacGiuong() {
   /*
    * Kiểm tra tháng thanh toán
    */
-  const thangThanhToan =
-    hoaDonForm.value.thangThanhToan;
+  const thangThanhToan = hoaDonForm.value.thangThanhToan;
 
   if (!thangThanhToan) {
-    alert(
-      "Vui lòng chọn Tháng thanh toán trước khi tạo hóa đơn.",
-    );
+    alert("Vui lòng chọn Tháng thanh toán trước khi tạo hóa đơn.");
 
     return;
   }
@@ -212,19 +203,13 @@ async function handleThemHoaDonChoCacGiuong() {
      * API:
      * 2026-08-01
      */
-    const requestMonth =
-      `${thangThanhToan}-01`;
+    const requestMonth = `${thangThanhToan}-01`;
 
-    const response = await api.post(
-      "/hoa-don/tao-cho-cac-giuong",
-      {
-        thangThanhToan:
-          requestMonth,
-      },
-    );
+    const response = await api.post("/hoa-don/tao-cho-cac-giuong", {
+      thangThanhToan: requestMonth,
+    });
 
-    const result =
-      response.data;
+    const result = response.data;
 
     /*
      * Load lại danh sách hóa đơn.
@@ -235,48 +220,32 @@ async function handleThemHoaDonChoCacGiuong() {
      * Nếu source của bạn có hàm
      * loadDashboard() thì gọi lại.
      */
-    if (
-      typeof loadData ===
-      "function"
-    ) {
+    if (typeof loadData === "function") {
       await loadData();
     }
 
-    const daTao =
-      Number(result?.daTao ?? 0);
+    const daTao = Number(result?.daTao ?? 0);
 
-    const daBoQua =
-      Number(result?.daBoQua ?? 0);
+    const daBoQua = Number(result?.daBoQua ?? 0);
 
     /*
      * Hiển thị kết quả.
      */
     alert(
       [
-        result?.message ??
-          "Đã xử lý tạo hóa đơn.",
-        `Tháng: ${formatMonthForDisplay(
-          thangThanhToan,
-        )}`,
+        result?.message ?? "Đã xử lý tạo hóa đơn.",
+        `Tháng: ${formatMonthForDisplay(thangThanhToan)}`,
         `Đã tạo: ${daTao} hóa đơn`,
         `Đã bỏ qua: ${daBoQua} giường đã có hóa đơn`,
       ].join("\n"),
     );
   } catch (error: any) {
-    console.error(
-      "Lỗi tạo hóa đơn cho các giường:",
-      error,
-    );
+    console.error("Lỗi tạo hóa đơn cho các giường:", error);
 
     const message =
-      error?.response?.data?.message ??
-      "Không thể tạo hóa đơn cho các giường.";
+      error?.response?.data?.message ?? "Không thể tạo hóa đơn cho các giường.";
 
-    alert(
-      Array.isArray(message)
-        ? message.join("\n")
-        : message,
-    );
+    alert(Array.isArray(message) ? message.join("\n") : message);
   }
 }
 
@@ -3255,11 +3224,7 @@ onMounted(() => {
               {{ requiredLabel("Tiền phòng") }}
 
               <div class="currency-input">
-                <input
-                  :value="hoaDonForm.tienPhong"
-                  type="text"
-                  readonly
-                />
+                <input :value="hoaDonForm.tienPhong" type="text" readonly />
 
                 <span>VND</span>
               </div>
@@ -3352,28 +3317,28 @@ onMounted(() => {
             </label>
 
             <div class="invoice-form-actions">
-  <div class="invoice-form-actions-left">
-    <button class="primary" type="submit">
-      {{ editingHoaDonId ? "Cập nhật" : "Lưu" }}
-    </button>
+              <div class="invoice-form-actions-left">
+                <button class="primary" type="submit">
+                  {{ editingHoaDonId ? "Cập nhật" : "Lưu" }}
+                </button>
 
-    <button
-      class="secondary"
-      type="button"
-      @click="resetHoaDonForm"
-    >
-      Hủy
-    </button>
-  </div>
+                <button
+                  class="secondary"
+                  type="button"
+                  @click="resetHoaDonForm"
+                >
+                  Hủy
+                </button>
+              </div>
 
-  <button
-    type="button"
-    class="btn-them-hoa-don"
-    @click="handleThemHoaDonChoCacGiuong"
-  >
-    Thêm HĐ cho các Giường
-  </button>
-</div>
+              <button
+                type="button"
+                class="btn-them-hoa-don"
+                @click="handleThemHoaDonChoCacGiuong"
+              >
+                Thêm HĐ cho các Giường
+              </button>
+            </div>
           </form>
         </div>
 
@@ -4310,11 +4275,7 @@ textarea {
   border-radius: 9px;
   padding: 10px 14px;
 
-  background: linear-gradient(
-    135deg,
-    #16a34a,
-    #22c55e
-  );
+  background: linear-gradient(135deg, #16a34a, #22c55e);
 
   color: #ffffff;
 
@@ -4326,28 +4287,21 @@ textarea {
     transform 0.15s ease,
     box-shadow 0.2s ease;
 
-  box-shadow:
-    0 4px 10px rgba(22, 163, 74, 0.2);
+  box-shadow: 0 4px 10px rgba(22, 163, 74, 0.2);
 }
 
 .btn-them-hoa-don:hover {
-  background: linear-gradient(
-    135deg,
-    #15803d,
-    #16a34a
-  );
+  background: linear-gradient(135deg, #15803d, #16a34a);
 
   transform: translateY(-1px);
 
-  box-shadow:
-    0 6px 14px rgba(22, 163, 74, 0.25);
+  box-shadow: 0 6px 14px rgba(22, 163, 74, 0.25);
 }
 
 .btn-them-hoa-don:active {
   transform: translateY(0);
 
-  box-shadow:
-    0 3px 8px rgba(22, 163, 74, 0.2);
+  box-shadow: 0 3px 8px rgba(22, 163, 74, 0.2);
 }
 
 .btn-them-hoa-don:disabled {
@@ -4394,6 +4348,55 @@ textarea {
 
 .secondary:hover {
   background: #cbd5e1;
+}
+
+.btn-them-hoa-don {
+  border: none;
+  border-radius: 9px;
+
+  padding: 10px 16px;
+
+  background: linear-gradient(
+    135deg,
+    #16a34a,
+    #22c55e
+  );
+
+  color: #ffffff;
+
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+
+  white-space: nowrap;
+  width: auto;
+  min-width: max-content;
+  flex-shrink: 0;
+
+  box-shadow:
+    0 4px 10px rgba(22, 163, 74, 0.2);
+
+  transition:
+    background 0.2s ease,
+    transform 0.15s ease,
+    box-shadow 0.2s ease;
+}
+
+.btn-them-hoa-don:hover {
+  background: linear-gradient(
+    135deg,
+    #15803d,
+    #16a34a
+  );
+
+  transform: translateY(-1px);
+
+  box-shadow:
+    0 6px 14px rgba(22, 163, 74, 0.25);
+}
+
+.btn-them-hoa-don:active {
+  transform: translateY(0);
 }
 
 /* =========================================================
@@ -5304,8 +5307,7 @@ tbody tr:hover {
 .dashboard-chart-grid {
   display: grid;
 
-  grid-template-columns:
-    repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 
   gap: 20px;
 
@@ -5549,6 +5551,7 @@ tbody tr:hover {
   align-items: center;
   justify-content: space-between;
   width: 100%;
+  gap: 16px;
 }
 
 .invoice-form-actions-left {
@@ -5557,10 +5560,13 @@ tbody tr:hover {
   gap: 12px;
 }
 
+.invoice-form-actions > .btn-them-hoa-don {
+  margin-left: auto;
+}
+
 @media (max-width: 1200px) {
   .dashboard-chart-grid {
-    grid-template-columns:
-      repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
