@@ -762,10 +762,19 @@ const giaGiuongDisplay = ref("1,500,000");
 const tienThueDisplay = ref("");
 const tienDatCocDisplay = ref("1,000,000");
 const editingHopDongId = ref<string | null>(null);
+const showHopDongForm = ref(false);
 const editingHoaDonId = ref<string | null>(null);
 
 const showDeleteHoaDonModal = ref(false);
 const showDeleteHopDongModal = ref(false);
+function openAddHopDongForm() {
+  resetHopDongForm();
+  showHopDongForm.value = true;
+}
+function closeHopDongForm() {
+  resetHopDongForm();
+  showHopDongForm.value = false;
+}
 function openAddNguoiThueForm() {
   resetNguoiThueForm();
   showNguoiThueForm.value = true;
@@ -1575,6 +1584,7 @@ async function saveHopDong() {
   }
 
   resetHopDongForm();
+  showHopDongForm.value = false;
   await loadData();
 }
 
@@ -1942,7 +1952,7 @@ function editHopDong(item: any) {
   tienDatCocDisplay.value = tienDatCoc
     ? tienDatCoc.toLocaleString("en-US")
     : "";
-
+  showHopDongForm.value = true;
   currentTab.value = "hopDong";
 }
 
@@ -3215,271 +3225,373 @@ onMounted(() => {
       <!-- ===================================================
            HỢP ĐỒNG
            =================================================== -->
-      <section v-else-if="currentTab === 'hopDong'" class="panel-grid">
-        <div class="panel">
-          <h3>
-            {{ editingHopDongId ? "Sửa hợp đồng" : "Thêm hợp đồng" }}
-          </h3>
+      <section
+  v-else-if="currentTab === 'hopDong'"
+  class="panel-grid"
+>
+  <!-- ===================================================
+       FORM THÊM / SỬA HỢP ĐỒNG
+       =================================================== -->
+  <div
+    v-if="showHopDongForm"
+    class="panel"
+  >
+    <h3>
+      {{ editingHopDongId ? "Sửa hợp đồng" : "Thêm hợp đồng" }}
+    </h3>
 
-          <form @submit.prevent="saveHopDong" class="form-grid">
-            <label>
-              {{ requiredLabel("Nhà trọ") }}
+    <form
+      @submit.prevent="saveHopDong"
+      class="form-grid"
+    >
+      <label>
+        {{ requiredLabel("Nhà trọ") }}
 
-              <select
-                v-model="hopDongForm.nhaTroId"
-                @change="handleNhaTroChangeForHopDong"
-                required
-              >
-                <option value="">Chọn nhà trọ</option>
+        <select
+          v-model="hopDongForm.nhaTroId"
+          @change="handleNhaTroChangeForHopDong"
+          required
+        >
+          <option value="">
+            Chọn nhà trọ
+          </option>
 
-                <option v-for="item in nhaTros" :key="item.id" :value="item.id">
-                  {{ item.maNhaTro }} - {{ item.tenNhaTro }}
-                </option>
-              </select>
-            </label>
+          <option
+            v-for="item in nhaTros"
+            :key="item.id"
+            :value="item.id"
+          >
+            {{ item.maNhaTro }} - {{ item.tenNhaTro }}
+          </option>
+        </select>
+      </label>
 
-            <label v-if="hopDongForm.nhaTroId">
-              {{ requiredLabel("Phòng") }}
+      <label v-if="hopDongForm.nhaTroId">
+        {{ requiredLabel("Phòng") }}
 
-              <select
-                v-model="hopDongForm.phongId"
-                @change="handlePhongChangeForHopDong"
-                required
-              >
-                <option value="">Chọn phòng</option>
+        <select
+          v-model="hopDongForm.phongId"
+          @change="handlePhongChangeForHopDong"
+          required
+        >
+          <option value="">
+            Chọn phòng
+          </option>
 
-                <option
-                  v-for="item in hopDongPhongOptions"
-                  :key="item.id"
-                  :value="item.id"
-                >
-                  {{ item.maPhong }} - Tầng {{ item.tangSo }}
-                </option>
-              </select>
+          <option
+            v-for="item in hopDongPhongOptions"
+            :key="item.id"
+            :value="item.id"
+          >
+            {{ item.maPhong }} - Tầng {{ item.tangSo }}
+          </option>
+        </select>
 
-              <small v-if="hopDongPhongOptions.length === 0" class="form-hint">
-                Nhà trọ này chưa có phòng.
-              </small>
-            </label>
+        <small
+          v-if="hopDongPhongOptions.length === 0"
+          class="form-hint"
+        >
+          Nhà trọ này chưa có phòng.
+        </small>
+      </label>
 
-            <label v-if="hopDongForm.phongId">
-              {{ requiredLabel("Giường") }}
+      <label v-if="hopDongForm.phongId">
+        {{ requiredLabel("Giường") }}
 
-              <select
-                v-model="hopDongForm.giuongId"
-                @change="handleGiuongChangeForHopDong"
-                required
-              >
-                <option value="">Chọn giường</option>
+        <select
+          v-model="hopDongForm.giuongId"
+          @change="handleGiuongChangeForHopDong"
+          required
+        >
+          <option value="">
+            Chọn giường
+          </option>
 
-                <option
-                  v-for="item in hopDongGiuongOptions"
-                  :key="item.id"
-                  :value="item.id"
-                >
-                  {{ item.maGiuong }} - Giường {{ item.giuongSo }}
-                </option>
-              </select>
+          <option
+            v-for="item in hopDongGiuongOptions"
+            :key="item.id"
+            :value="item.id"
+          >
+            {{ item.maGiuong }} - Giường {{ item.giuongSo }}
+          </option>
+        </select>
 
-              <small v-if="hopDongGiuongOptions.length === 0" class="form-hint">
-                Nhà trọ này không còn giường trống để lập hợp đồng.
-              </small>
-            </label>
+        <small
+          v-if="hopDongGiuongOptions.length === 0"
+          class="form-hint"
+        >
+          Nhà trọ này không còn giường trống để lập hợp đồng.
+        </small>
+      </label>
 
-            <label>
-              {{ requiredLabel("Người thuê") }}
+      <label>
+        {{ requiredLabel("Người thuê") }}
 
-              <select v-model="hopDongForm.nguoiThueId" required>
-                <option value="">Chọn người thuê</option>
+        <select
+          v-model="hopDongForm.nguoiThueId"
+          required
+        >
+          <option value="">
+            Chọn người thuê
+          </option>
 
-                <option
-                  v-for="item in nguoiThues"
-                  :key="item.id"
-                  :value="item.id"
-                >
-                  {{ item.hoTen }}
-                </option>
-              </select>
-            </label>
+          <option
+            v-for="item in nguoiThues"
+            :key="item.id"
+            :value="item.id"
+          >
+            {{ item.hoTen }}
+          </option>
+        </select>
+      </label>
 
-            <label>
-              {{ requiredLabel("Ngày bắt đầu") }}
+      <label>
+        {{ requiredLabel("Ngày bắt đầu") }}
 
-              <input
-                v-model="hopDongForm.ngayBatDau"
-                type="date"
-                @change="syncHopDongCode"
-                required
-              />
-            </label>
+        <input
+          v-model="hopDongForm.ngayBatDau"
+          type="date"
+          @change="syncHopDongCode"
+          required
+        />
+      </label>
 
-            <label>
-              Ngày kết thúc
+      <label>
+        Ngày kết thúc
 
-              <input
-                v-model="hopDongForm.ngayKetThuc"
-                type="date"
-                :min="hopDongForm.ngayBatDau || undefined"
-                @change="validateNgayHopDong"
-              />
-            </label>
+        <input
+          v-model="hopDongForm.ngayKetThuc"
+          type="date"
+          :min="hopDongForm.ngayBatDau || undefined"
+          @change="validateNgayHopDong"
+        />
+      </label>
 
-            <label>
-              {{ requiredLabel("Giá thuê") }}
+      <label>
+        {{ requiredLabel("Giá thuê") }}
 
-              <div class="currency-input">
-                <input
-                  :value="tienThueDisplay"
-                  type="text"
-                  placeholder="Giá thuê"
-                  @input="handleTienThueInput"
-                  @blur="() => formatTienThueDisplay(tienThueDisplay)"
-                  required
-                />
+        <div class="currency-input">
+          <input
+            :value="tienThueDisplay"
+            type="text"
+            placeholder="Giá thuê"
+            @input="handleTienThueInput"
+            required
+          />
 
-                <span>VND</span>
-              </div>
-            </label>
-
-            <label>
-              {{ requiredLabel("Chu kỳ thanh toán") }}
-
-              <select v-model.number="hopDongForm.chuKyThanhToan" required>
-                <option :value="1">Hàng tháng</option>
-
-                <option :value="3">3 tháng</option>
-
-                <option :value="6">6 tháng</option>
-
-                <option :value="12">12 tháng</option>
-              </select>
-            </label>
-
-            <label>
-              Đặt cọc
-
-              <div class="currency-input">
-                <input
-                  :value="tienDatCocDisplay"
-                  type="text"
-                  placeholder="Số tiền đặt cọc"
-                />
-                <span>VND</span>
-              </div>
-            </label>
-
-            <label>
-              {{ requiredLabel("Trạng thái") }}
-
-              <select v-model="hopDongForm.trangThai">
-                <option value="active">Có hiệu lực</option>
-
-                <option value="sap_het_han">Sắp hết hiệu lực</option>
-
-                <option value="expired">Hết hiệu lực</option>
-              </select>
-            </label>
-
-            <label class="full-width">
-              Ghi chú
-
-              <textarea
-                v-model="hopDongForm.ghiChu"
-                rows="3"
-                placeholder="Nhập ghi chú cho hợp đồng..."
-              ></textarea>
-            </label>
-
-            <div class="actions">
-              <button class="primary" type="submit">
-                {{ editingHopDongId ? "Cập nhật" : "Lưu" }}
-              </button>
-
-              <button class="secondary" type="button" @click="resetHopDongForm">
-                Hủy
-              </button>
-            </div>
-          </form>
+          <span>VND</span>
         </div>
+      </label>
 
-        <div class="panel">
-          <h3>Danh sách hợp đồng</h3>
+      <label>
+        {{ requiredLabel("Chu kỳ thanh toán") }}
 
-          <table>
-            <thead>
-              <tr>
-                <th>Mã HĐ(Giường)</th>
-                <th>Người thuê</th>
-                <th>Ngày bắt đầu</th>
-                <th>Ngày kết thúc</th>
-                <th>Giá thuê</th>
-                <th>Trạng thái</th>
-                <th>Hành động</th>
-              </tr>
-            </thead>
+        <select
+          v-model.number="hopDongForm.chuKyThanhToan"
+          required
+        >
+          <option :value="1">
+            Hàng tháng
+          </option>
 
-            <tbody>
-              <tr v-for="item in hopDongs" :key="item.id">
-                <td>
-                  {{ item.maHopDong }}
-                </td>
+          <option :value="3">
+            3 tháng
+          </option>
 
-                <td>
-                  {{ item.nguoiThue?.hoTen }}
-                </td>
+          <option :value="6">
+            6 tháng
+          </option>
 
-                <td>
-                  {{
-                    item.ngayBatDau
-                      ? new Date(item.ngayBatDau).toLocaleDateString("vi-VN")
-                      : ""
-                  }}
-                </td>
+          <option :value="12">
+            12 tháng
+          </option>
+        </select>
+      </label>
 
-                <td>
-                  {{
-                    item.ngayKetThuc
-                      ? new Date(item.ngayKetThuc).toLocaleDateString("vi-VN")
-                      : "Không xác định"
-                  }}
-                </td>
+      <label>
+        Đặt cọc
 
-                <td>
-                  {{ formatCurrency(item.tienThue) }}
-                </td>
+        <div class="currency-input">
+          <input
+            :value="tienDatCocDisplay"
+            type="text"
+            placeholder="Số tiền đặt cọc"
+          />
 
-                <td>
-                  <span :class="['status-badge', item.trangThai]">
-                    {{
-                      item.trangThai === "active"
-                        ? "Có hiệu lực"
-                        : item.trangThai === "expired"
-                          ? "Hết hiệu lực"
-                          : item.trangThai === "sap_het_han"
-                            ? "Sắp hết hiệu lực"
-                            : item.trangThai
-                    }}
-                  </span>
-                </td>
-
-                <td class="row-actions">
-                  <button class="table-btn edit" @click="editHopDong(item)">
-                    Sửa
-                  </button>
-
-                  <button
-                    type="button"
-                    class="table-btn delete"
-                    @click.stop="requestDeleteHopDong(item)"
-                  >
-                    Xóa
-                  </button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+          <span>VND</span>
         </div>
-      </section>
+      </label>
+
+      <label>
+        {{ requiredLabel("Trạng thái") }}
+
+        <select
+          v-model="hopDongForm.trangThai"
+        >
+          <option value="active">
+            Có hiệu lực
+          </option>
+
+          <option value="sap_het_han">
+            Sắp hết hiệu lực
+          </option>
+
+          <option value="expired">
+            Hết hiệu lực
+          </option>
+        </select>
+      </label>
+
+      <label class="full-width">
+        Ghi chú
+
+        <textarea
+          v-model="hopDongForm.ghiChu"
+          rows="3"
+          placeholder="Nhập ghi chú cho hợp đồng..."
+        ></textarea>
+      </label>
+
+      <div class="actions">
+        <button
+          class="primary"
+          type="submit"
+        >
+          {{ editingHopDongId ? "Cập nhật" : "Lưu" }}
+        </button>
+
+        <button
+          class="secondary"
+          type="button"
+          @click="closeHopDongForm"
+        >
+          Hủy
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- ===================================================
+       DANH SÁCH HỢP ĐỒNG
+       =================================================== -->
+  <div
+    v-else
+    class="panel"
+  >
+    <div class="panel-header">
+      <h3>
+        Danh sách hợp đồng
+      </h3>
+
+      <button
+        type="button"
+        class="primary"
+        @click="openAddHopDongForm"
+      >
+        Thêm hợp đồng
+      </button>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Mã HĐ(Giường)</th>
+          <th>Người thuê</th>
+          <th>Ngày bắt đầu</th>
+          <th>Ngày kết thúc</th>
+          <th>Giá thuê</th>
+          <th>Trạng thái</th>
+          <th>Hành động</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <tr
+          v-for="item in hopDongs"
+          :key="item.id"
+        >
+          <td>
+            {{ item.maHopDong }}
+          </td>
+
+          <td>
+            {{ item.nguoiThue?.hoTen }}
+          </td>
+
+          <td>
+            {{
+              item.ngayBatDau
+                ? new Date(
+                    item.ngayBatDau,
+                  ).toLocaleDateString("vi-VN")
+                : ""
+            }}
+          </td>
+
+          <td>
+            {{
+              item.ngayKetThuc
+                ? new Date(
+                    item.ngayKetThuc,
+                  ).toLocaleDateString("vi-VN")
+                : "Không xác định"
+            }}
+          </td>
+
+          <td>
+            {{ formatCurrency(item.tienThue) }}
+          </td>
+
+          <td>
+            <span
+              :class="[
+                'status-badge',
+                item.trangThai,
+              ]"
+            >
+              {{
+                item.trangThai === "active"
+                  ? "Có hiệu lực"
+                  : item.trangThai === "expired"
+                    ? "Hết hiệu lực"
+                    : item.trangThai === "sap_het_han"
+                      ? "Sắp hết hiệu lực"
+                      : item.trangThai
+              }}
+            </span>
+          </td>
+
+          <td class="row-actions">
+            <button
+              type="button"
+              class="table-btn edit"
+              @click="editHopDong(item)"
+            >
+              Sửa
+            </button>
+
+            <button
+              type="button"
+              class="table-btn delete"
+              @click.stop="requestDeleteHopDong(item)"
+            >
+              Xóa
+            </button>
+          </td>
+        </tr>
+
+        <tr v-if="hopDongs.length === 0">
+          <td
+            colspan="7"
+            style="text-align: center"
+          >
+            Chưa có hợp đồng
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
 
       <!-- ===================================================
            HÓA ĐƠN
