@@ -480,7 +480,7 @@ const nhaTroDashboard = computed(() => {
 
     const paidContracts = hoaDons.value.filter(
       (hoaDon) =>
-        hoaDon.trangThai === "DA_THANH_TOAN" &&
+        hoaDon.trangThai === "da_thanh_toan" &&
         hoaDon.hopDong?.giuong?.phong?.nhaTro?.id === nhaTro.id,
     );
 
