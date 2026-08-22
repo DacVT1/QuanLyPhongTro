@@ -27,6 +27,7 @@ const tienDichVuKhacDisplay = ref("0");
 const tienDienError = ref("");
 const tienNuocError = ref("");
 const tienDichVuKhacError = ref("");
+const hoaDonThangThanhToanError = ref("");
 
 function getPhongChartData(house: any) {
   return {
@@ -175,10 +176,13 @@ async function handleThemHoaDonChoCacGiuong() {
   const thangThanhToan = hoaDonForm.value.thangThanhToan;
 
   if (!thangThanhToan) {
-    alert("Vui lòng chọn Tháng thanh toán trước khi tạo hóa đơn.");
+  hoaDonThangThanhToanError.value =
+    "Vui lòng chọn Tháng thanh toán trước khi tạo hóa đơn.";
 
-    return;
-  }
+  return;
+}
+
+hoaDonThangThanhToanError.value = "";
 
   /*
    * Xác nhận trước khi tạo hàng loạt.
@@ -1025,6 +1029,7 @@ function resetHoaDonForm() {
   tienDienError.value = "";
   tienNuocError.value = "";
   tienDichVuKhacError.value = "";
+  hoaDonThangThanhToanError.value = "";
   editingHoaDonId.value = null;
 }
 
@@ -3210,15 +3215,29 @@ onMounted(() => {
             </label>
 
             <label>
-              {{ requiredLabel("Tháng thanh toán") }}
+  {{ requiredLabel("Tháng thanh toán") }}
 
-              <input
-                v-model="hoaDonForm.thangThanhToan"
-                type="date"
-                @change="syncHoaDonCode"
-                required
-              />
-            </label>
+  <input
+    v-model="hoaDonForm.thangThanhToan"
+    type="date"
+    @change="
+      syncHoaDonCode();
+      hoaDonThangThanhToanError = '';
+    "
+    required
+  />
+
+  <div
+    v-if="hoaDonThangThanhToanError"
+    class="hoa-don-thang-error"
+  >
+    <span class="hoa-don-thang-error-icon">!</span>
+
+    <span>
+      {{ hoaDonThangThanhToanError }}
+    </span>
+  </div>
+</label>
 
             <label>
               {{ requiredLabel("Tiền phòng") }}
@@ -5562,6 +5581,64 @@ tbody tr:hover {
 
 .invoice-form-actions > .btn-them-hoa-don {
   margin-left: auto;
+}
+
+/* =========================================================
+   THÔNG BÁO THÁNG THANH TOÁN - FORM HÓA ĐƠN
+   ========================================================= */
+
+.hoa-don-thang-error {
+  display: flex;
+  align-items: center;
+
+  gap: 8px;
+
+  margin-top: 8px;
+  padding: 9px 11px;
+
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+
+  background: #fef2f2;
+  color: #dc2626;
+
+  font-size: 0.85rem;
+  font-weight: 500;
+  line-height: 1.4;
+
+  animation: hoaDonErrorFadeIn 0.2s ease-out;
+}
+
+.hoa-don-thang-error-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  flex: 0 0 18px;
+
+  width: 18px;
+  height: 18px;
+
+  border-radius: 50%;
+
+  background: #dc2626;
+  color: #ffffff;
+
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+@keyframes hoaDonErrorFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-3px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @media (max-width: 1200px) {
