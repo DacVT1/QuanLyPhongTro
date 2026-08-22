@@ -1199,10 +1199,7 @@ function requestDeleteHopDong(item: any) {
     return;
   }
 
-  function closeHopDongHoaDonErrorModal() {
-  showHopDongHoaDonErrorModal.value = false;
-  hopDongHoaDonErrorMessage.value = "";
-}
+
 
   deleteHopDongInfo.value = {
     id: item.id,
@@ -1211,6 +1208,11 @@ function requestDeleteHopDong(item: any) {
 
   deleteHopDongErrorMessage.value = "";
   showDeleteHopDongModal.value = true;
+}
+
+function closeHopDongHoaDonErrorModal() {
+  showHopDongHoaDonErrorModal.value = false;
+  hopDongHoaDonErrorMessage.value = "";
 }
 
 function closeDeleteHopDongModal() {
