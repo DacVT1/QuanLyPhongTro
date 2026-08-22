@@ -3359,6 +3359,15 @@ onMounted(() => {
               <button class="secondary" type="button" @click="resetHoaDonForm">
                 Hủy
               </button>
+
+              <button
+    type="button"
+    class="btn btn-primary"
+    @click="handleThemHoaDonChoCacGiuong"
+  >
+    Thêm HĐ cho các Giường
+  </button>
+
             </div>
           </form>
         </div>
@@ -5126,6 +5135,9 @@ tbody tr:hover {
   line-height: 1.4;
 }
 
+.invoice-form-actions {
+  justify-content: space-between;
+}
 /* =========================================================
    DELETE MODAL ACTIONS
    ========================================================= */
@@ -5478,6 +5490,19 @@ tbody tr:hover {
   font-size: 13px;
 
   line-height: 1.5;
+}
+
+.invoice-form-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.invoice-form-actions-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 @media (max-width: 1200px) {
