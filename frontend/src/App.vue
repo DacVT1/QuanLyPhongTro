@@ -459,12 +459,25 @@ const hopDongs = ref<any[]>([]);
 const hoaDons = ref<any[]>([]);
 
 const nhaTroDashboard = computed(() => {
-  const currentMonthBedIds = new Set(
+  return nhaTros.value.map((nhaTro) => {
+    const currentMonth = new Date().toISOString().slice(0, 7);
+
+const currentMonthHoaDons = hoaDons.value.filter(
+  (hoaDon) =>
+    hoaDon.thangThanhToan === currentMonth &&
+    hoaDon.hopDong?.giuong?.phong?.nhaTro?.id === nhaTro.id,
+);
+
+const paidCurrentMonthHoaDons = currentMonthHoaDons.filter(
+  (hoaDon) => hoaDon.trangThai === "da_thanh_toan",
+);
+
+const currentMonthBedIds = new Set(
   currentMonthHoaDons
     .map((hoaDon) => hoaDon.hopDong?.giuong?.id)
     .filter(Boolean),
 );
-  return nhaTros.value.map((nhaTro) => {
+
     const rooms = phongs.value.filter(
       (phong) => phong.nhaTro?.id === nhaTro.id,
     );
