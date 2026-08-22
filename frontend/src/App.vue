@@ -3765,12 +3765,12 @@ onMounted(() => {
 
     <div class="modal-footer">
       <button
-        type="button"
-        class="btn btn-secondary"
-        @click="closeHopDongHoaDonErrorModal"
-      >
-        Đóng
-      </button>
+  type="button"
+  class="btn-cancel"
+  @click="closeHopDongHoaDonErrorModal"
+>
+  Đóng
+</button>
     </div>
   </div>
 </div>
