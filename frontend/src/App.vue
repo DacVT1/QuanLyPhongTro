@@ -3351,24 +3351,29 @@ onMounted(() => {
               ></textarea>
             </label>
 
-            <div class="actions">
-              <button class="primary" type="submit">
-                {{ editingHoaDonId ? "Cập nhật" : "Lưu" }}
-              </button>
+            <div class="invoice-form-actions">
+  <div class="invoice-form-actions-left">
+    <button class="primary" type="submit">
+      {{ editingHoaDonId ? "Cập nhật" : "Lưu" }}
+    </button>
 
-              <button class="secondary" type="button" @click="resetHoaDonForm">
-                Hủy
-              </button>
+    <button
+      class="secondary"
+      type="button"
+      @click="resetHoaDonForm"
+    >
+      Hủy
+    </button>
+  </div>
 
-              <button
+  <button
     type="button"
-    class="btn btn-primary"
+    class="btn-them-hoa-don"
     @click="handleThemHoaDonChoCacGiuong"
   >
     Thêm HĐ cho các Giường
   </button>
-
-            </div>
+</div>
           </form>
         </div>
 
@@ -4300,6 +4305,56 @@ textarea {
 
 .primary,
 .secondary,
+.btn-them-hoa-don {
+  border: none;
+  border-radius: 9px;
+  padding: 10px 14px;
+
+  background: linear-gradient(
+    135deg,
+    #16a34a,
+    #22c55e
+  );
+
+  color: #ffffff;
+
+  cursor: pointer;
+  font-weight: 600;
+
+  transition:
+    background 0.2s ease,
+    transform 0.15s ease,
+    box-shadow 0.2s ease;
+
+  box-shadow:
+    0 4px 10px rgba(22, 163, 74, 0.2);
+}
+
+.btn-them-hoa-don:hover {
+  background: linear-gradient(
+    135deg,
+    #15803d,
+    #16a34a
+  );
+
+  transform: translateY(-1px);
+
+  box-shadow:
+    0 6px 14px rgba(22, 163, 74, 0.25);
+}
+
+.btn-them-hoa-don:active {
+  transform: translateY(0);
+
+  box-shadow:
+    0 3px 8px rgba(22, 163, 74, 0.2);
+}
+
+.btn-them-hoa-don:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
 .table-btn {
   border: none;
 
@@ -5135,9 +5190,6 @@ tbody tr:hover {
   line-height: 1.4;
 }
 
-.invoice-form-actions {
-  justify-content: space-between;
-}
 /* =========================================================
    DELETE MODAL ACTIONS
    ========================================================= */
@@ -5513,19 +5565,19 @@ tbody tr:hover {
 }
 
 @media (max-width: 768px) {
-  .dashboard-house-card {
-    padding: 18px;
+  .invoice-form-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
   }
 
-  .dashboard-chart-grid {
-    grid-template-columns: 1fr;
-
-    gap: 16px;
+  .invoice-form-actions-left {
+    width: 100%;
   }
 
-  .chart-container {
-    width: 210px;
-    height: 210px;
+  .invoice-form-actions-left button,
+  .invoice-form-actions > .btn-them-hoa-don {
+    width: 100%;
   }
 }
 /* =========================================================
