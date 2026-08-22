@@ -154,6 +154,132 @@ const doughnutCenterTextPlugin = {
   },
 };
 
+function formatMonthForDisplay(
+  value: string,
+) {
+  if (!value) {
+    return "";
+  }
+
+  const match =
+    value.match(
+      /^(\d{4})-(\d{2})/,
+    );
+
+  if (!match) {
+    return value;
+  }
+
+  return `${match[2]}/${match[1]}`;
+}
+
+
+async function handleThemHoaDonChoCacGiuong() {
+  /*
+   * Kiểm tra tháng thanh toán
+   */
+  const thangThanhToan =
+    hoaDonForm.value.thangThanhToan;
+
+  if (!thangThanhToan) {
+    alert(
+      "Vui lòng chọn Tháng thanh toán trước khi tạo hóa đơn.",
+    );
+
+    return;
+  }
+
+  /*
+   * Xác nhận trước khi tạo hàng loạt.
+   */
+  const confirmed = window.confirm(
+    `Bạn có chắc muốn tạo hóa đơn cho các giường đang có người thuê trong tháng ${formatMonthForDisplay(
+      thangThanhToan,
+    )} không?`,
+  );
+
+  if (!confirmed) {
+    return;
+  }
+
+  try {
+    /*
+     * Đảm bảo ngày gửi backend là ngày đầu tháng.
+     *
+     * input type="month":
+     * 2026-08
+     *
+     * API:
+     * 2026-08-01
+     */
+    const requestMonth =
+      `${thangThanhToan}-01`;
+
+    const response = await api.post(
+      "/hoa-don/tao-cho-cac-giuong",
+      {
+        thangThanhToan:
+          requestMonth,
+      },
+    );
+
+    const result =
+      response.data;
+
+    /*
+     * Load lại danh sách hóa đơn.
+     */
+    await loadData();
+
+    /*
+     * Nếu source của bạn có hàm
+     * loadDashboard() thì gọi lại.
+     */
+    if (
+      typeof loadData ===
+      "function"
+    ) {
+      await loadData();
+    }
+
+    const daTao =
+      Number(result?.daTao ?? 0);
+
+    const daBoQua =
+      Number(result?.daBoQua ?? 0);
+
+    /*
+     * Hiển thị kết quả.
+     */
+    alert(
+      [
+        result?.message ??
+          "Đã xử lý tạo hóa đơn.",
+        `Tháng: ${formatMonthForDisplay(
+          thangThanhToan,
+        )}`,
+        `Đã tạo: ${daTao} hóa đơn`,
+        `Đã bỏ qua: ${daBoQua} giường đã có hóa đơn`,
+      ].join("\n"),
+    );
+  } catch (error: any) {
+    console.error(
+      "Lỗi tạo hóa đơn cho các giường:",
+      error,
+    );
+
+    const message =
+      error?.response?.data?.message ??
+      "Không thể tạo hóa đơn cho các giường.";
+
+    alert(
+      Array.isArray(message)
+        ? message.join("\n")
+        : message,
+    );
+  }
+}
+
 function handleTienDienInput(event: Event) {
   const input = event.target as HTMLInputElement;
   const value = input.value;
@@ -3130,7 +3256,7 @@ onMounted(() => {
 
               <div class="currency-input">
                 <input
-                  :value="formatCurrency(hoaDonForm.tienPhong)"
+                  :value="hoaDonForm.tienPhong"
                   type="text"
                   readonly
                 />
@@ -3195,7 +3321,8 @@ onMounted(() => {
 
               <div class="currency-input">
                 <input
-                  :value="formatCurrency(hoaDonForm.tongTien)"
+                  :value="hoaDonForm.tongTien"
+                  inputmode="numeric"
                   type="text"
                   readonly
                 />
