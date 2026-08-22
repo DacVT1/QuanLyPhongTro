@@ -201,7 +201,19 @@ async remove(id: string) {
     });
 
   if (!hopDong) {
-    return null;
+    throw new NotFoundException(
+      'Không tìm thấy hợp đồng.',
+    );
+  }
+
+  // Kiểm tra Hợp đồng có đang được Hóa đơn sử dụng hay không
+  if (
+    hopDong.hoaDons &&
+    hopDong.hoaDons.length > 0
+  ) {
+    throw new BadRequestException(
+      'Không thể xóa hợp đồng vì hợp đồng này đang được sử dụng trong hóa đơn.',
+    );
   }
 
   const giuongId =
@@ -211,6 +223,8 @@ async remove(id: string) {
     hopDong,
   );
 
+  // Sau khi xóa Hợp đồng,
+  // cập nhật lại trạng thái Giường.
   if (giuongId) {
     await this.capNhatTrangThaiGiuong(
       giuongId,
