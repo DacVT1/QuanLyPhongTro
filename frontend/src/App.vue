@@ -2772,8 +2772,10 @@ onMounted(() => {
                 </td>
 
                 <td>
-                  {{ getStatusText(item.trangThai) }}
-                </td>
+  <span :class="['status-badge', item.trangThai]">
+    {{ getStatusText(item.trangThai) }}
+  </span>
+</td>
 
                 <td class="row-actions">
                   <button class="table-btn edit" @click="editGiuong(item)">
@@ -4963,6 +4965,20 @@ tbody tr:hover {
 }
 
 .status-badge.sap_het_han {
+  background: #fef3c7;
+  color: #92400e;
+}
+.status-badge.trong {
+  background: #e2e8f0;
+  color: #475569;
+}
+
+.status-badge.da_thue {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.status-badge.sap_tra_tro {
   background: #fef3c7;
   color: #92400e;
 }

@@ -422,7 +422,25 @@ private async generateMaHoaDon(
 
   const thangNam = `${Number(month)}/${year}`;
 
-  // Lấy các hóa đơn đã tồn tại của hợp đồng
+  // Mã hợp đồng:
+  // CG_T1_G1
+  //
+  // Mã hóa đơn:
+  // CG_T1_G1_TH8/2026_01
+  //
+  // Không được lấy maHopDong đã có _TH8/2026
+  // rồi nối thêm _TH8/2026 lần nữa.
+
+  const maHopDongCoSo =
+    maHopDong.replace(
+      /_TH\d{1,2}\/\d{4}$/,
+      '',
+    );
+
+  const prefix =
+    `${maHopDongCoSo}_TH${thangNam}`;
+
+  // Lấy các hóa đơn đã tồn tại
   const hoaDonsDaCo =
     await this.repository.find({
       where: {
@@ -432,42 +450,47 @@ private async generateMaHoaDon(
       },
     });
 
-  // Lấy các số thứ tự đã sử dụng
-  const soThuTuDaCo = [
+  // Lấy các hóa đơn vừa tạo trong
+  // cùng request.
+  const tatCaHoaDons = [
     ...hoaDonsDaCo,
     ...hoaDonsMoi,
-  ]
-    .map((hoaDon) => {
-      const match = hoaDon.maHoaDon?.match(
-        new RegExp(
-          `^${maHopDong}_TH${thangNam.replace(
-            '/',
-            '\\/',
-          )}_(\\d+)$`,
-        ),
-      );
+  ];
 
-      return match
-        ? Number(match[1])
-        : null;
-    })
-    .filter(
-      (value): value is number =>
-        value !== null,
-    );
+  const soThuTuDaCo =
+    tatCaHoaDons
+      .map((hoaDon) => {
+        const match =
+          hoaDon.maHoaDon?.match(
+            new RegExp(
+              `^${prefix.replace(
+                '/',
+                '\\/',
+              )}_(\\d+)$`,
+            ),
+          );
+
+        return match
+          ? Number(match[1])
+          : null;
+      })
+      .filter(
+        (value): value is number =>
+          value !== null,
+      );
 
   let soThuTu = 1;
 
   if (soThuTuDaCo.length > 0) {
     soThuTu =
-      Math.max(...soThuTuDaCo) + 1;
+      Math.max(
+        ...soThuTuDaCo,
+      ) + 1;
   }
 
-  let maHoaDon = '';
-
   while (true) {
-    maHoaDon =
-      `${maHopDong}_TH${thangNam}_${String(
+    const maHoaDon =
+      `${prefix}_${String(
         soThuTu,
       ).padStart(2, '0')}`;
 
