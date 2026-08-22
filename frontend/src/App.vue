@@ -764,9 +764,19 @@ const tienDatCocDisplay = ref("1,000,000");
 const editingHopDongId = ref<string | null>(null);
 const showHopDongForm = ref(false);
 const editingHoaDonId = ref<string | null>(null);
+const showHoaDonForm = ref(false);
 
 const showDeleteHoaDonModal = ref(false);
 const showDeleteHopDongModal = ref(false);
+
+function openAddHoaDonForm() {
+  resetHoaDonForm();
+  showHoaDonForm.value = true;
+}
+function closeHoaDonForm() {
+  resetHoaDonForm();
+  showHoaDonForm.value = false;
+}
 function openAddHopDongForm() {
   resetHopDongForm();
   showHopDongForm.value = true;
@@ -1671,6 +1681,7 @@ async function saveHoaDon() {
     }
 
     resetHoaDonForm();
+    showHoaDonForm.value = false;
     await loadData();
   } catch (error: any) {
     console.error("Không thể lưu hóa đơn:", error);
@@ -1984,7 +1995,7 @@ function editHoaDon(item: any) {
   tienDichVuKhacDisplay.value = tienDichVuKhac
     ? tienDichVuKhac.toLocaleString("en-US")
     : "0";
-
+  showHoaDonForm.value = true;
   currentTab.value = "hoaDon";
 }
 
@@ -2181,8 +2192,8 @@ onMounted(() => {
           <div class="brand-mark">N</div>
 
           <div>
-            <h1>Nhà Trọ</h1>
-            <small>Quản lý</small>
+            <h1>Nhà Trọ Ms Chi</h1>
+            <small>Hệ thống quản lý</small>
           </div>
         </div>
 
@@ -2259,7 +2270,7 @@ onMounted(() => {
       <header class="topbar">
         <div>
           <p class="eyebrow">Hệ thống</p>
-          <h2>Quản lý nhà trọ</h2>
+          <h2>Quản lý nhà trọ Ms Chi</h2>
         </div>
 
         <button class="primary" @click="loadData">Làm mới dữ liệu</button>
@@ -3596,8 +3607,14 @@ onMounted(() => {
       <!-- ===================================================
            HÓA ĐƠN
            =================================================== -->
-      <section v-else-if="currentTab === 'hoaDon'" class="panel-grid">
-        <div class="panel">
+      <section
+  v-else-if="currentTab === 'hoaDon'"
+  class="panel-grid"
+>
+        <div
+  v-if="showHoaDonForm"
+  class="panel"
+>
           <h3>
             {{ editingHoaDonId ? "Sửa hóa đơn" : "Thêm hóa đơn" }}
           </h3>
@@ -3751,12 +3768,12 @@ onMounted(() => {
                 </button>
 
                 <button
-                  class="secondary"
-                  type="button"
-                  @click="resetHoaDonForm"
-                >
-                  Hủy
-                </button>
+  class="secondary"
+  type="button"
+  @click="closeHoaDonForm"
+>
+  Hủy
+</button>
               </div>
 
               <button
@@ -3771,8 +3788,21 @@ onMounted(() => {
           </form>
         </div>
 
-        <div class="panel">
-          <h3>Danh sách hóa đơn</h3>
+        <div
+  v-else
+  class="panel"
+>
+          <div class="panel-header">
+  <h3>Danh sách hóa đơn</h3>
+
+  <button
+    type="button"
+    class="primary"
+    @click="openAddHoaDonForm"
+  >
+    Thêm hóa đơn
+  </button>
+</div>
 
           <table>
             <thead>
