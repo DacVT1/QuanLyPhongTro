@@ -1405,9 +1405,8 @@ async function saveHopDong() {
     return;
   }
 
-  if (!editingHopDongId.value) {
-    syncHopDongCode();
-  }
+  syncHopDongCode();
+  
 
   const giaThue = Number(hopDongForm.value.tienThue || 0);
   const giuongId = hopDongForm.value.giuongId;
@@ -1934,21 +1933,13 @@ function generateHopDongCode(
     return "";
   }
 
-  /*
-   * Mã hợp đồng dựa trên:
-   *
-   * Mã giường
-   * +
-   * Tháng/năm bắt đầu hợp đồng
-   *
-   * Ví dụ:
-   * CG_T4_G2 + TH8/2026
-   *
-   * => CG_T4_G2_TH8/2026
-   */
-  const date = ngayBatDau
-    ? new Date(`${ngayBatDau}T00:00:00`)
-    : new Date();
+  if (!ngayBatDau) {
+    return "";
+  }
+
+  const date = new Date(
+    `${ngayBatDau}T00:00:00`,
+  );
 
   if (Number.isNaN(date.getTime())) {
     return "";
@@ -1957,18 +1948,13 @@ function generateHopDongCode(
   const month = date.getMonth() + 1;
   const year = date.getFullYear();
 
+  // Ví dụ:
+  // CG_T4_G2_TH8/2026
   const baseCode =
     `${giuong.maGiuong}_TH${month}/${year}`;
 
-  /*
-   * Tìm các hợp đồng đã tồn tại:
-   *
-   * CG_T4_G2_TH8/2026_01
-   * CG_T4_G2_TH8/2026_02
-   * CG_T4_G2_TH8/2026_03
-   *
-   * để xác định số thứ tự tiếp theo.
-   */
+  // Tìm các hợp đồng đã tồn tại
+  // cùng giường + cùng tháng/năm
   const existingCodes = hopDongs.value
     .filter(
       (item) =>
@@ -2002,8 +1988,7 @@ function generateHopDongCode(
       continue;
     }
 
-    const sequence =
-      Number(match[1]);
+    const sequence = Number(match[1]);
 
     if (
       Number.isInteger(sequence) &&
@@ -2013,16 +1998,9 @@ function generateHopDongCode(
     }
   }
 
-  /*
-   * Luôn hiển thị 2 chữ số:
-   *
-   * 01
-   * 02
-   * 03
-   */
+  // 01, 02, 03...
   const nextSequence =
-    String(maxSequence + 1)
-      .padStart(2, "0");
+    String(maxSequence + 1).padStart(2, "0");
 
   return `${baseCode}_${nextSequence}`;
 }
@@ -2082,17 +2060,17 @@ function generateHoaDonCode(
 }
 
 function syncHopDongCode() {
-  const giuongId =
-    hopDongForm.value.giuongId;
-
-  if (!giuongId) {
+  if (
+    !hopDongForm.value.giuongId ||
+    !hopDongForm.value.ngayBatDau
+  ) {
     hopDongForm.value.maHopDong = "";
     return;
   }
 
   hopDongForm.value.maHopDong =
     generateHopDongCode(
-      giuongId,
+      hopDongForm.value.giuongId,
       hopDongForm.value.ngayBatDau,
       editingHopDongId.value ?? undefined,
     );
@@ -3120,7 +3098,7 @@ onMounted(() => {
             <label>
               {{ requiredLabel("Ngày bắt đầu") }}
 
-              <input v-model="hopDongForm.ngayBatDau" type="date" required />
+              <input v-model="hopDongForm.ngayBatDau" type="date" @change="syncHopDongCode" required />
             </label>
 
             <label>
