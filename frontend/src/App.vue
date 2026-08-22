@@ -755,6 +755,7 @@ const showPhongForm = ref(false);
 const editingGiuongId = ref<string | null>(null);
 const showGiuongForm = ref(false);
 const editingNguoiThueId = ref<string | null>(null);
+const showNguoiThueForm = ref(false);
 const cccdMatTruocInput = ref<HTMLInputElement | null>(null);
 const cccdMatSauInput = ref<HTMLInputElement | null>(null);
 const giaGiuongDisplay = ref("1,500,000");
@@ -765,6 +766,14 @@ const editingHoaDonId = ref<string | null>(null);
 
 const showDeleteHoaDonModal = ref(false);
 const showDeleteHopDongModal = ref(false);
+function openAddNguoiThueForm() {
+  resetNguoiThueForm();
+  showNguoiThueForm.value = true;
+}
+function closeNguoiThueForm() {
+  resetNguoiThueForm();
+  showNguoiThueForm.value = false;
+}
 function openAddPhongForm() {
   resetPhongForm();
   showPhongForm.value = true;
@@ -1493,7 +1502,7 @@ async function saveNguoiThue() {
     // Lưu thành công -> clear toàn bộ form,
     // bao gồm cả 2 input file
     resetNguoiThueForm();
-
+    showNguoiThueForm.value = false;
     await loadData();
   } catch (error: any) {
     console.error("Không thể lưu người thuê:", error);
@@ -1886,7 +1895,7 @@ function editNguoiThue(item: any) {
   if (cccdMatSauInput.value) {
     cccdMatSauInput.value.value = "";
   }
-
+  showNguoiThueForm.value = true;
   currentTab.value = "nguoiThue";
 }
 
@@ -2926,216 +2935,171 @@ onMounted(() => {
       <!-- ===================================================
            NGƯỜI THUÊ
            =================================================== -->
-      <section v-else-if="currentTab === 'nguoiThue'" class="panel-grid">
-        <div class="panel">
-          <h3>
-            {{ editingNguoiThueId ? "Sửa người thuê" : "Thêm người thuê" }}
-          </h3>
+      <section
+  v-else-if="currentTab === 'nguoiThue'"
+  class="panel-grid"
+>
+  <!-- FORM THÊM / SỬA NGƯỜI THUÊ -->
+  <div
+    v-if="showNguoiThueForm"
+    class="panel"
+  >
+    <h3>
+      {{ editingNguoiThueId ? "Sửa người thuê" : "Thêm người thuê" }}
+    </h3>
 
-          <form @submit.prevent="saveNguoiThue" class="form-grid">
-            <label>
-              {{ requiredLabel("Họ tên") }}
+    <form
+      @submit.prevent="saveNguoiThue"
+      class="form-grid"
+    >
+      <label>
+        {{ requiredLabel("Họ tên") }}
 
-              <input
-                v-model="nguoiThueForm.hoTen"
-                placeholder="Họ tên"
-                required
-              />
-            </label>
+        <input
+          v-model="nguoiThueForm.hoTen"
+          required
+        />
+      </label>
 
-            <label>
-              {{ requiredLabel("CCCD") }}
+      <label>
+        {{ requiredLabel("CCCD") }}
 
-              <input
-                v-model="nguoiThueForm.cccd"
-                placeholder="CCCD"
-                required
-                pattern="[0-9]{9,12}"
-              />
-            </label>
+        <input
+          v-model="nguoiThueForm.cccd"
+          required
+        />
+      </label>
 
-            <label>
-              {{ requiredLabel("Số điện thoại") }}
+      <label>
+        {{ requiredLabel("Số điện thoại") }}
 
-              <input
-                v-model="nguoiThueForm.sdt"
-                placeholder="0123456789"
-                type="text"
-                inputmode="numeric"
-                @input="handleSoDienThoaiInput"
-                @blur="validateSoDienThoai"
-              />
+        <input
+          v-model="nguoiThueForm.sdt"
+          @input="handleSoDienThoaiInput"
+          required
+        />
 
-              <span v-if="soDienThoaiError" class="form-error">
-                {{ soDienThoaiError }}
-              </span>
-            </label>
+        <small
+          v-if="soDienThoaiError"
+          class="error-text"
+        >
+          {{ soDienThoaiError }}
+        </small>
+      </label>
 
-            <label>
-              {{ requiredLabel("Email") }}
+      <label>
+        Email
 
-              <input
-                v-model="nguoiThueForm.email"
-                type="email"
-                placeholder="Email"
-                required
-              />
-            </label>
+        <input
+          v-model="nguoiThueForm.email"
+          type="email"
+        />
+      </label>
 
-            <label>
-              {{ requiredLabel("Địa chỉ") }}
+      <label>
+        Địa chỉ
 
-              <input
-                v-model="nguoiThueForm.diaChi"
-                placeholder="Địa chỉ"
-                required
-              />
-            </label>
+        <input
+          v-model="nguoiThueForm.diaChi"
+        />
+      </label>
 
-            <label>
-              {{ requiredLabel("Ngày sinh") }}
+      <label>
+        Ngày sinh
 
-              <input v-model="nguoiThueForm.ngaySinh" type="date" required />
-            </label>
+        <input
+          v-model="nguoiThueForm.ngaySinh"
+          type="date"
+        />
+      </label>
 
-            <label>
-              Biển số xe
+      <label>
+        Biển số xe
 
-              <input
-                v-model="nguoiThueForm.bienSoXe"
-                type="text"
-                placeholder="Ví dụ: 29A-123.45"
-              />
-            </label>
+        <input
+          v-model="nguoiThueForm.bienSoXe"
+        />
+      </label>
 
-            <label>
-              CCCD mặt trước
+      <label>
+        Mặt trước CCCD
 
-              <input
-                ref="cccdMatTruocInput"
-                type="file"
-                accept="image/*"
-                @change="handleCccdMatTruocChange"
-              />
+        <input
+          type="file"
+          accept="image/*"
+          @change="handleCccdMatTruocChange"
+        />
 
-              <div
-                v-if="editingNguoiThueId && nguoiThueForm.cccdMatTruocUrl"
-                class="cccd-current"
-              >
-                <span>Ảnh hiện tại:</span>
-
-                <a
-                  :href="nguoiThueForm.cccdMatTruocUrl"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Xem CCCD mặt trước
-                </a>
-              </div>
-
-              <div v-if="cccdMatTruocPreviewUrl" class="cccd-current">
-                <span>Ảnh mới:</span>
-
-                <a
-                  :href="cccdMatTruocPreviewUrl"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Xem CCCD mặt trước
-                </a>
-              </div>
-            </label>
-
-            <label>
-              CCCD mặt sau
-
-              <input
-                ref="cccdMatSauInput"
-                type="file"
-                accept="image/*"
-                @change="handleCccdMatSauChange"
-              />
-
-              <div
-                v-if="editingNguoiThueId && nguoiThueForm.cccdMatSauUrl"
-                class="cccd-current"
-              >
-                <span>Ảnh hiện tại:</span>
-
-                <a
-                  :href="nguoiThueForm.cccdMatSauUrl"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Xem CCCD mặt sau
-                </a>
-              </div>
-
-              <div v-if="cccdMatSauPreviewUrl" class="cccd-current">
-                <span>Ảnh mới:</span>
-
-                <a
-                  :href="cccdMatSauPreviewUrl"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Xem CCCD mặt sau
-                </a>
-              </div>
-            </label>
-
-            <div class="actions">
-              <button class="primary" type="submit">
-                {{ editingNguoiThueId ? "Cập nhật" : "Lưu" }}
-              </button>
-
-              <button
-                class="secondary"
-                type="button"
-                @click="resetNguoiThueForm"
-              >
-                Hủy
-              </button>
-            </div>
-          </form>
+        <div
+          v-if="cccdMatTruocPreviewUrl"
+          class="image-preview"
+        >
+          <img
+            :src="cccdMatTruocPreviewUrl"
+            alt="CCCD mặt trước"
+          />
         </div>
+      </label>
 
-        <div class="panel">
-          <h3>Danh sách người thuê</h3>
+      <label>
+        Mặt sau CCCD
 
-          <table>
-            <thead>
-              <tr>
-                <th>Họ tên</th>
-                <th>CCCD</th>
-                <th>Số điện thoại</th>
-                <th>Hành động</th>
-              </tr>
-            </thead>
+        <input
+          type="file"
+          accept="image/*"
+          @change="handleCccdMatSauChange"
+        />
 
-            <tbody>
-              <tr v-for="item in nguoiThues" :key="item.id">
-                <td>{{ item.hoTen }}</td>
-                <td>{{ item.cccd }}</td>
-                <td>{{ item.sdt }}</td>
-
-                <td class="row-actions">
-                  <button class="table-btn edit" @click="editNguoiThue(item)">
-                    Sửa
-                  </button>
-
-                  <button
-                    class="table-btn delete"
-                    @click="requestDeleteNguoiThue(item)"
-                  >
-                    Xóa
-                  </button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+        <div
+          v-if="cccdMatSauPreviewUrl"
+          class="image-preview"
+        >
+          <img
+            :src="cccdMatSauPreviewUrl"
+            alt="CCCD mặt sau"
+          />
         </div>
-      </section>
+      </label>
+
+      <div class="actions">
+        <button
+          type="submit"
+          class="primary"
+        >
+          {{ editingNguoiThueId ? "Cập nhật" : "Lưu" }}
+        </button>
+
+        <button
+          type="button"
+          class="secondary"
+          @click="closeNguoiThueForm"
+        >
+          Hủy
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- DANH SÁCH NGƯỜI THUÊ -->
+  <div
+    v-else
+    class="panel"
+  >
+    <div class="panel-header">
+      <h3>Danh sách người thuê</h3>
+
+      <button
+        type="button"
+        class="primary"
+        @click="openAddNguoiThueForm"
+      >
+        Thêm người thuê
+      </button>
+    </div>
+
+    <!-- GIỮ NGUYÊN BẢNG NGƯỜI THUÊ HIỆN TẠI -->
+  </div>
+</section>
 
       <!-- ===================================================
            HỢP ĐỒNG
