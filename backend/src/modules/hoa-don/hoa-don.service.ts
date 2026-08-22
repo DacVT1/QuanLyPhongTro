@@ -264,9 +264,11 @@ export class HoaDonService {
        * HD-202608-<8 ký tự>
        */
       const maHoaDon =
-        await this.generateMaHoaDon(
-          monthKey,
-        );
+  await this.generateMaHoaDon(
+    hopDong.maHopDong,
+    monthKey,
+    hoaDonsMoi,
+  );
 
       /*
        * Lấy tiền phòng từ giường.
@@ -411,34 +413,78 @@ export class HoaDonService {
   /**
    * Sinh mã hóa đơn duy nhất.
    */
-  private async generateMaHoaDon(
-    monthKey: string,
-  ): Promise<string> {
-    for (;;) {
-      const random =
-        Math.random()
-          .toString(36)
-          .substring(2, 10)
-          .toUpperCase();
+private async generateMaHoaDon(
+  maHopDong: string,
+  monthKey: string,
+  hoaDonsMoi: HoaDon[] = [],
+): Promise<string> {
+  const [year, month] = monthKey.split('-');
 
-      const maHoaDon =
-        `HD-${monthKey.replace(
-          '-',
-          '',
-        )}-${random}`;
+  const thangNam = `${month}/${year}`;
 
-      const exists =
-        await this.repository.exists({
-          where: {
-            maHoaDon,
-          },
-        });
+  // Lấy các hóa đơn đã tồn tại của hợp đồng
+  const hoaDonsDaCo =
+    await this.repository.find({
+      where: {
+        hopDong: {
+          maHopDong,
+        },
+      },
+    });
 
-      if (!exists) {
-        return maHoaDon;
-      }
-    }
+  // Lấy các số thứ tự đã sử dụng
+  const soThuTuDaCo = [
+    ...hoaDonsDaCo,
+    ...hoaDonsMoi,
+  ]
+    .map((hoaDon) => {
+      const match = hoaDon.maHoaDon?.match(
+        new RegExp(
+          `^${maHopDong}_TH${thangNam.replace(
+            '/',
+            '\\/',
+          )}_(\\d+)$`,
+        ),
+      );
+
+      return match
+        ? Number(match[1])
+        : null;
+    })
+    .filter(
+      (value): value is number =>
+        value !== null,
+    );
+
+  let soThuTu = 1;
+
+  if (soThuTuDaCo.length > 0) {
+    soThuTu =
+      Math.max(...soThuTuDaCo) + 1;
   }
+
+  let maHoaDon = '';
+
+  while (true) {
+    maHoaDon =
+      `${maHopDong}_TH${thangNam}_${String(
+        soThuTu,
+      ).padStart(2, '0')}`;
+
+    const exists =
+      await this.repository.exists({
+        where: {
+          maHoaDon,
+        },
+      });
+
+    if (!exists) {
+      return maHoaDon;
+    }
+
+    soThuTu++;
+  }
+}
 
   async remove(id: string) {
     const result =

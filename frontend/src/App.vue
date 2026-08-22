@@ -626,7 +626,7 @@ const hoaDonForm = ref({
   tienNuoc: 0,
   tienDichVuKhac: 0,
   tongTien: 0,
-  trangThai: "CHUA_THANH_TOAN",
+  trangThai: "chua_thanh_toan",
   ghiChu: "",
 });
 
