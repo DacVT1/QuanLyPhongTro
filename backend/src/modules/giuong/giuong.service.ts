@@ -19,8 +19,36 @@ export class GiuongService {
 
     @InjectRepository(Phong)
     private readonly phongRepository: Repository<Phong>,
+    
   ) {}
+  private getTrangThaiTheoHopDong(
+  hopDongs: any[] = [],
+): string {
+  if (hopDongs.length === 0) {
+    return "trong";
+  }
 
+  const coHieuLuc = hopDongs.some(
+    (hopDong) =>
+      hopDong.trangThai === "active",
+  );
+
+  if (coHieuLuc) {
+    return "da_thue";
+  }
+
+  const sapHetHieuLuc = hopDongs.some(
+    (hopDong) =>
+      hopDong.trangThai ===
+      "sap_het_hieu_luc",
+  );
+
+  if (sapHetHieuLuc) {
+    return "sap_tra_tro";
+  }
+
+  return "trong";
+}
   async findAll() {
     return this.repository.find({
       relations: {

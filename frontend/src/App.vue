@@ -586,6 +586,7 @@ const giuongForm = ref({
   giuongSo: "",
   giaGiuong: 1500000,
   // trangThai: "trong",
+  dangBaoTri: false,
 });
 
 const nguoiThueForm = ref({
@@ -905,6 +906,7 @@ function resetGiuongForm() {
     giuongSo: "",
     giaGiuong: 1500000,
     // trangThai: "trong",
+    dangBaoTri: false,
   };
 
   giaGiuongDisplay.value = "1,500,000";
@@ -1225,13 +1227,20 @@ async function confirmDeleteHopDong() {
 
 async function saveGiuong() {
   const payload = {
-    giuongSo: Number(giuongForm.value.giuongSo),
-    giaGiuong: Number(giuongForm.value.giaGiuong || 0),
-    trangThai: "trong",
-    phong: {
-      id: giuongForm.value.phongId,
-    },
-  };
+  giuongSo: Number(giuongForm.value.giuongSo),
+  giaGiuong: Number(giuongForm.value.giaGiuong || 0),
+
+  // Chỉ lưu trạng thái bảo trì từ checkbox.
+  // Nếu không bảo trì thì backend tự xác định
+  // trạng thái theo hợp đồng.
+  trangThai: giuongForm.value.dangBaoTri
+    ? "bao_tri"
+    : undefined,
+
+  phong: {
+    id: giuongForm.value.phongId,
+  },
+};
 
   try {
     if (editingGiuongId.value) {
@@ -1726,12 +1735,17 @@ function editGiuong(item: any) {
   giuongForm.value = {
     nhaTroId: item.phong?.nhaTro?.id ?? "",
     phongId: item.phong?.id ?? "",
-    giuongSo: item.giuongSo != null ? String(item.giuongSo) : "",
+    giuongSo:
+      item.giuongSo != null
+        ? String(item.giuongSo)
+        : "",
     giaGiuong,
-    trangThai: item.trangThai ?? "trong",
+    dangBaoTri: item.trangThai === "bao_tri",
   };
 
-  giaGiuongDisplay.value = giaGiuong ? giaGiuong.toLocaleString("en-US") : "";
+  giaGiuongDisplay.value = giaGiuong
+    ? giaGiuong.toLocaleString("en-US")
+    : "";
 
   currentTab.value = "giuong";
 }
@@ -2728,7 +2742,17 @@ onMounted(() => {
                 <option value="sap_tra_tro">Sắp trả trọ</option>
               </select>
             </label> -->
+            <label
+  v-if="editingGiuongId"
+  class="checkbox-field"
+>
+  <span>Giường đang bảo trì</span>
 
+  <input
+    v-model="giuongForm.dangBaoTri"
+    type="checkbox"
+  />
+</label>
             <div class="actions">
               <button class="primary" type="submit">
                 {{ editingGiuongId ? "Cập nhật" : "Lưu" }}
