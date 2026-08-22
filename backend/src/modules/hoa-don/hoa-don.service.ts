@@ -432,10 +432,10 @@ private async generateMaHoaDon(
   // rồi nối thêm _TH8/2026 lần nữa.
 
   const maHopDongCoSo =
-    maHopDong.replace(
-      /_TH\d{1,2}\/\d{4}$/,
-      '',
-    );
+  maHopDong.replace(
+    /_TH\d{1,2}\/\d{4}(?:_\d+)?$/,
+    '',
+  );
 
   const prefix =
     `${maHopDongCoSo}_TH${thangNam}`;

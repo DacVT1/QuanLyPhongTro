@@ -1925,8 +1925,6 @@ function handleHoaDonHopDongChange() {
 
 function generateHopDongCode(
   giuongId: string,
-  ngayBatDau: string,
-  excludeHopDongId?: string,
 ) {
   const giuong = giuongs.value.find(
     (item) => item.id === giuongId,
@@ -1936,76 +1934,13 @@ function generateHopDongCode(
     return "";
   }
 
-  if (!ngayBatDau) {
-    return "";
-  }
-
-  const date = new Date(
-    `${ngayBatDau}T00:00:00`,
-  );
-
-  if (Number.isNaN(date.getTime())) {
-    return "";
-  }
-
-  const month = date.getMonth() + 1;
-  const year = date.getFullYear();
-
+  // Mã hợp đồng = đúng bằng Mã giường
+  //
   // Ví dụ:
-  // CG_T4_G2_TH8/2026
-  const baseCode =
-    `${giuong.maGiuong}_TH${month}/${year}`;
+  // Mã giường:   HM_T1_G1
+  // Mã hợp đồng: HM_T1_G1
 
-  // Tìm các hợp đồng đã tồn tại
-  // cùng giường + cùng tháng/năm
-  const existingCodes = hopDongs.value
-    .filter(
-      (item) =>
-        item.id !== excludeHopDongId,
-    )
-    .map(
-      (item) => item.maHopDong,
-    )
-    .filter(
-      (code): code is string =>
-        typeof code === "string" &&
-        code.startsWith(`${baseCode}_`),
-    );
-
-  let maxSequence = 0;
-
-  for (const code of existingCodes) {
-    const escapedBaseCode =
-      baseCode.replace(
-        /[.*+?^${}()|[\]\\]/g,
-        "\\$&",
-      );
-
-    const match = code.match(
-      new RegExp(
-        `^${escapedBaseCode}_(\\d+)$`,
-      ),
-    );
-
-    if (!match) {
-      continue;
-    }
-
-    const sequence = Number(match[1]);
-
-    if (
-      Number.isInteger(sequence) &&
-      sequence > maxSequence
-    ) {
-      maxSequence = sequence;
-    }
-  }
-
-  // 01, 02, 03...
-  const nextSequence =
-    String(maxSequence + 1).padStart(2, "0");
-
-  return `${baseCode}_${nextSequence}`;
+  return giuong.maGiuong;
 }
 
 function generateHoaDonCode(
@@ -2063,10 +1998,7 @@ function generateHoaDonCode(
 }
 
 function syncHopDongCode() {
-  if (
-    !hopDongForm.value.giuongId ||
-    !hopDongForm.value.ngayBatDau
-  ) {
+  if (!hopDongForm.value.giuongId) {
     hopDongForm.value.maHopDong = "";
     return;
   }
@@ -2074,8 +2006,6 @@ function syncHopDongCode() {
   hopDongForm.value.maHopDong =
     generateHopDongCode(
       hopDongForm.value.giuongId,
-      hopDongForm.value.ngayBatDau,
-      editingHopDongId.value ?? undefined,
     );
 }
 
