@@ -1181,6 +1181,22 @@ async function confirmDeleteNguoiThue() {
 }
 
 function requestDeleteHopDong(item: any) {
+  // Nếu hợp đồng đã nằm trong hóa đơn thì không hỏi xác nhận xóa.
+  const hoaDons = item.hoaDons ?? [];
+
+  if (hoaDons.length > 0) {
+    const maHoaDon = hoaDons
+      .map((hoaDon: any) => hoaDon.maHoaDon)
+      .filter(Boolean)
+      .join(", ");
+
+    alert(
+      `Hợp đồng đang nằm trong hóa đơn ${maHoaDon} và không thể xóa được`,
+    );
+
+    return;
+  }
+
   deleteHopDongInfo.value = {
     id: item.id,
     maHopDong: item.maHopDong ?? "Hợp đồng",

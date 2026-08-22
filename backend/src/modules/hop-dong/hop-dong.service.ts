@@ -208,13 +208,18 @@ async remove(id: string) {
 
   // Kiểm tra Hợp đồng có đang được Hóa đơn sử dụng hay không
   if (
-    hopDong.hoaDons &&
-    hopDong.hoaDons.length > 0
-  ) {
-    throw new BadRequestException(
-      'Không thể xóa hợp đồng vì hợp đồng này đang được sử dụng trong hóa đơn.',
-    );
-  }
+  hopDong.hoaDons &&
+  hopDong.hoaDons.length > 0
+) {
+  const maHoaDon = hopDong.hoaDons
+    .map((hoaDon) => hoaDon.maHoaDon)
+    .filter(Boolean)
+    .join(', ');
+
+  throw new BadRequestException(
+    `Hợp đồng đang nằm trong hóa đơn ${maHoaDon} và không thể xóa được`,
+  );
+}
 
   const giuongId =
     hopDong.giuong?.id;
