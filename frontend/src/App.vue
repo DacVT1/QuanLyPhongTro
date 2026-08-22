@@ -77,7 +77,11 @@ function getThanhToanChartData(house: any) {
       {
         data: [
           house.totalGiuongDaThanhToan,
-          Math.max(house.totalGiuong - house.totalGiuongDaThanhToan, 0),
+          Math.max(
+            house.totalGiuongCoHoaDonThangHienTai -
+              house.totalGiuongDaThanhToan,
+            0,
+          ),
         ],
 
         backgroundColor: ["#16a34a", "#e5e7eb"],
@@ -178,13 +182,13 @@ async function handleThemHoaDonChoCacGiuong() {
   const thangThanhToan = hoaDonForm.value.thangThanhToan;
 
   if (!thangThanhToan) {
-  hoaDonThangThanhToanError.value =
-    "Vui lòng chọn Tháng thanh toán trước khi tạo hóa đơn.";
+    hoaDonThangThanhToanError.value =
+      "Vui lòng chọn Tháng thanh toán trước khi tạo hóa đơn.";
 
-  return;
-}
+    return;
+  }
 
-hoaDonThangThanhToanError.value = "";
+  hoaDonThangThanhToanError.value = "";
 
   /*
    * Xác nhận trước khi tạo hàng loạt.
@@ -455,6 +459,11 @@ const hopDongs = ref<any[]>([]);
 const hoaDons = ref<any[]>([]);
 
 const nhaTroDashboard = computed(() => {
+  const currentMonthBedIds = new Set(
+  currentMonthHoaDons
+    .map((hoaDon) => hoaDon.hopDong?.giuong?.id)
+    .filter(Boolean),
+);
   return nhaTros.value.map((nhaTro) => {
     const rooms = phongs.value.filter(
       (phong) => phong.nhaTro?.id === nhaTro.id,
@@ -508,6 +517,7 @@ const nhaTroDashboard = computed(() => {
       totalGiuongCoNguoi: occupiedBedIds.size,
 
       totalGiuongDaThanhToan: paidBedIds.size,
+      totalGiuongCoHoaDonThangHienTai: currentMonthBedIds.size,
     };
   });
 });
@@ -1191,15 +1201,12 @@ function requestDeleteHopDong(item: any) {
       .filter(Boolean)
       .join(", ");
 
-    hopDongHoaDonErrorMessage.value =
-      `Hợp đồng ${item.maHopDong ?? ""} đang nằm trong hóa đơn ${maHoaDon} và không thể xóa được`;
+    hopDongHoaDonErrorMessage.value = `Hợp đồng ${item.maHopDong ?? ""} đang nằm trong hóa đơn ${maHoaDon} và không thể xóa được`;
 
     showHopDongHoaDonErrorModal.value = true;
 
     return;
   }
-
-
 
   deleteHopDongInfo.value = {
     id: item.id,
@@ -1242,30 +1249,24 @@ async function confirmDeleteHopDong() {
 
     alert("Xóa hợp đồng thành công.");
   } catch (error: any) {
-    console.error(
-      "Không thể xóa hợp đồng:",
-      error,
-    );
+    console.error("Không thể xóa hợp đồng:", error);
 
-    const message =
-      error?.response?.data?.message;
+    const message = error?.response?.data?.message;
 
-    deleteHopDongErrorMessage.value =
-      Array.isArray(message)
-        ? message.join("\n")
-        : message ||
-          "Không thể xóa hợp đồng. Vui lòng thử lại.";
+    deleteHopDongErrorMessage.value = Array.isArray(message)
+      ? message.join("\n")
+      : message || "Không thể xóa hợp đồng. Vui lòng thử lại.";
   }
 }
 
 async function saveGiuong() {
   const payload = {
-  giuongSo: Number(giuongForm.value.giuongSo),
-  giaGiuong: Number(giuongForm.value.giaGiuong || 0),
-  phong: {
-    id: giuongForm.value.phongId,
-  },
-};
+    giuongSo: Number(giuongForm.value.giuongSo),
+    giaGiuong: Number(giuongForm.value.giaGiuong || 0),
+    phong: {
+      id: giuongForm.value.phongId,
+    },
+  };
 
   try {
     if (editingGiuongId.value) {
@@ -1440,7 +1441,6 @@ async function saveHopDong() {
   }
 
   syncHopDongCode();
-  
 
   const giaThue = Number(hopDongForm.value.tienThue || 0);
   const giuongId = hopDongForm.value.giuongId;
@@ -1760,16 +1760,11 @@ function editGiuong(item: any) {
   giuongForm.value = {
     nhaTroId: item.phong?.nhaTro?.id ?? "",
     phongId: item.phong?.id ?? "",
-    giuongSo:
-      item.giuongSo != null
-        ? String(item.giuongSo)
-        : "",
+    giuongSo: item.giuongSo != null ? String(item.giuongSo) : "",
     giaGiuong,
   };
 
-  giaGiuongDisplay.value = giaGiuong
-    ? giaGiuong.toLocaleString("en-US")
-    : "";
+  giaGiuongDisplay.value = giaGiuong ? giaGiuong.toLocaleString("en-US") : "";
 
   currentTab.value = "giuong";
 }
@@ -1958,12 +1953,8 @@ function handleHoaDonHopDongChange() {
   calculateHoaDonTongTien();
 }
 
-function generateHopDongCode(
-  giuongId: string,
-) {
-  const giuong = giuongs.value.find(
-    (item) => item.id === giuongId,
-  );
+function generateHopDongCode(giuongId: string) {
+  const giuong = giuongs.value.find((item) => item.id === giuongId);
 
   if (!giuong?.maGiuong) {
     return "";
@@ -2038,10 +2029,7 @@ function syncHopDongCode() {
     return;
   }
 
-  hopDongForm.value.maHopDong =
-    generateHopDongCode(
-      hopDongForm.value.giuongId,
-    );
+  hopDongForm.value.maHopDong = generateHopDongCode(hopDongForm.value.giuongId);
 }
 
 function syncHoaDonCode() {
@@ -2327,7 +2315,9 @@ onMounted(() => {
 
               <div class="chart-value">
                 <strong>
-                  {{ house.totalGiuongDaThanhToan }}/{{ house.totalGiuong }}
+                  {{ house.totalGiuongDaThanhToan }}/{{
+                    house.totalGiuongCoHoaDonThangHienTai
+                  }}
                 </strong>
 
                 <span> hóa đơn </span>
@@ -2696,7 +2686,7 @@ onMounted(() => {
                 <option value="sap_tra_tro">Sắp trả trọ</option>
               </select>
             </label> -->
-            
+
             <div class="actions">
               <button class="primary" type="submit">
                 {{ editingGiuongId ? "Cập nhật" : "Lưu" }}
@@ -2737,10 +2727,10 @@ onMounted(() => {
                 </td>
 
                 <td>
-  <span :class="['status-badge', item.trangThai]">
-    {{ getStatusText(item.trangThai) }}
-  </span>
-</td>
+                  <span :class="['status-badge', item.trangThai]">
+                    {{ getStatusText(item.trangThai) }}
+                  </span>
+                </td>
 
                 <td class="row-actions">
                   <button class="table-btn edit" @click="editGiuong(item)">
@@ -3068,7 +3058,12 @@ onMounted(() => {
             <label>
               {{ requiredLabel("Ngày bắt đầu") }}
 
-              <input v-model="hopDongForm.ngayBatDau" type="date" @change="syncHopDongCode" required />
+              <input
+                v-model="hopDongForm.ngayBatDau"
+                type="date"
+                @change="syncHopDongCode"
+                required
+              />
             </label>
 
             <label>
@@ -3273,29 +3268,26 @@ onMounted(() => {
             </label>
 
             <label>
-  {{ requiredLabel("Tháng thanh toán") }}
+              {{ requiredLabel("Tháng thanh toán") }}
 
-  <input
-    v-model="hoaDonForm.thangThanhToan"
-    type="date"
-    @change="
-      syncHoaDonCode();
-      hoaDonThangThanhToanError = '';
-    "
-    required
-  />
+              <input
+                v-model="hoaDonForm.thangThanhToan"
+                type="date"
+                @change="
+                  syncHoaDonCode();
+                  hoaDonThangThanhToanError = '';
+                "
+                required
+              />
 
-  <div
-    v-if="hoaDonThangThanhToanError"
-    class="hoa-don-thang-error"
-  >
-    <span class="hoa-don-thang-error-icon">!</span>
+              <div v-if="hoaDonThangThanhToanError" class="hoa-don-thang-error">
+                <span class="hoa-don-thang-error-icon">!</span>
 
-    <span>
-      {{ hoaDonThangThanhToanError }}
-    </span>
-  </div>
-</label>
+                <span>
+                  {{ hoaDonThangThanhToanError }}
+                </span>
+              </div>
+            </label>
 
             <label>
               {{ requiredLabel("Tiền phòng") }}
@@ -3412,7 +3404,7 @@ onMounted(() => {
                 type="button"
                 class="btn-them-hoa-don"
                 @click="handleThemHoaDonChoCacGiuong"
-                :disabled="editingHoaDonId  !== null"
+                :disabled="editingHoaDonId !== null"
               >
                 Thêm HĐ cho các Giường
               </button>
@@ -3748,32 +3740,30 @@ onMounted(() => {
       </div>
     </div>
     <div
-  v-if="showHopDongHoaDonErrorModal"
-  class="modal-overlay"
-  @click.self="closeHopDongHoaDonErrorModal"
->
-  <div class="modal">
-    <div class="modal-header">
-      Không thể xóa hợp đồng
-    </div>
+      v-if="showHopDongHoaDonErrorModal"
+      class="modal-overlay"
+      @click.self="closeHopDongHoaDonErrorModal"
+    >
+      <div class="modal">
+        <div class="modal-header">Không thể xóa hợp đồng</div>
 
-    <div class="modal-body">
-      <p class="delete-error-message">
-        {{ hopDongHoaDonErrorMessage }}
-      </p>
-    </div>
+        <div class="modal-body">
+          <p class="delete-error-message">
+            {{ hopDongHoaDonErrorMessage }}
+          </p>
+        </div>
 
-    <div class="modal-footer">
-      <button
-  type="button"
-  class="btn-cancel"
-  @click="closeHopDongHoaDonErrorModal"
->
-  Đóng
-</button>
+        <div class="modal-footer">
+          <button
+            type="button"
+            class="secondary"
+            @click="closeHopDongHoaDonErrorModal"
+          >
+            Đóng
+          </button>
+        </div>
+      </div>
     </div>
-  </div>
-</div>
     <!-- =====================================================
          MODAL XÓA GIƯỜNG
          ===================================================== -->
@@ -4460,11 +4450,7 @@ textarea {
 
   padding: 10px 16px;
 
-  background: linear-gradient(
-    135deg,
-    #16a34a,
-    #22c55e
-  );
+  background: linear-gradient(135deg, #16a34a, #22c55e);
 
   color: #ffffff;
 
@@ -4477,8 +4463,7 @@ textarea {
   min-width: max-content;
   flex-shrink: 0;
 
-  box-shadow:
-    0 4px 10px rgba(22, 163, 74, 0.2);
+  box-shadow: 0 4px 10px rgba(22, 163, 74, 0.2);
 
   transition:
     background 0.2s ease,
@@ -4487,16 +4472,11 @@ textarea {
 }
 
 .btn-them-hoa-don:hover {
-  background: linear-gradient(
-    135deg,
-    #15803d,
-    #16a34a
-  );
+  background: linear-gradient(135deg, #15803d, #16a34a);
 
   transform: translateY(-1px);
 
-  box-shadow:
-    0 6px 14px rgba(22, 163, 74, 0.25);
+  box-shadow: 0 6px 14px rgba(22, 163, 74, 0.25);
 }
 
 .btn-them-hoa-don:active {
