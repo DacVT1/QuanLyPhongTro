@@ -1400,7 +1400,12 @@ async function saveHopDong() {
     return;
   }
 
-  if (!hopDongForm.value.maHopDong) {
+  if (!hopDongForm.value.giuongId) {
+    alert("Vui lòng chọn giường.");
+    return;
+  }
+
+  if (!editingHopDongId.value) {
     syncHopDongCode();
   }
 
@@ -1916,14 +1921,110 @@ function handleHoaDonHopDongChange() {
   calculateHoaDonTongTien();
 }
 
-function generateHopDongCode(giuongId: string) {
-  const giuong = giuongs.value.find((item) => item.id === giuongId);
+function generateHopDongCode(
+  giuongId: string,
+  ngayBatDau: string,
+  excludeHopDongId?: string,
+) {
+  const giuong = giuongs.value.find(
+    (item) => item.id === giuongId,
+  );
 
   if (!giuong?.maGiuong) {
     return "";
   }
 
-  return giuong.maGiuong;
+  /*
+   * Mã hợp đồng dựa trên:
+   *
+   * Mã giường
+   * +
+   * Tháng/năm bắt đầu hợp đồng
+   *
+   * Ví dụ:
+   * CG_T4_G2 + TH8/2026
+   *
+   * => CG_T4_G2_TH8/2026
+   */
+  const date = ngayBatDau
+    ? new Date(`${ngayBatDau}T00:00:00`)
+    : new Date();
+
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  const month = date.getMonth() + 1;
+  const year = date.getFullYear();
+
+  const baseCode =
+    `${giuong.maGiuong}_TH${month}/${year}`;
+
+  /*
+   * Tìm các hợp đồng đã tồn tại:
+   *
+   * CG_T4_G2_TH8/2026_01
+   * CG_T4_G2_TH8/2026_02
+   * CG_T4_G2_TH8/2026_03
+   *
+   * để xác định số thứ tự tiếp theo.
+   */
+  const existingCodes = hopDongs.value
+    .filter(
+      (item) =>
+        item.id !== excludeHopDongId,
+    )
+    .map(
+      (item) => item.maHopDong,
+    )
+    .filter(
+      (code): code is string =>
+        typeof code === "string" &&
+        code.startsWith(`${baseCode}_`),
+    );
+
+  let maxSequence = 0;
+
+  for (const code of existingCodes) {
+    const escapedBaseCode =
+      baseCode.replace(
+        /[.*+?^${}()|[\]\\]/g,
+        "\\$&",
+      );
+
+    const match = code.match(
+      new RegExp(
+        `^${escapedBaseCode}_(\\d+)$`,
+      ),
+    );
+
+    if (!match) {
+      continue;
+    }
+
+    const sequence =
+      Number(match[1]);
+
+    if (
+      Number.isInteger(sequence) &&
+      sequence > maxSequence
+    ) {
+      maxSequence = sequence;
+    }
+  }
+
+  /*
+   * Luôn hiển thị 2 chữ số:
+   *
+   * 01
+   * 02
+   * 03
+   */
+  const nextSequence =
+    String(maxSequence + 1)
+      .padStart(2, "0");
+
+  return `${baseCode}_${nextSequence}`;
 }
 
 function generateHoaDonCode(
@@ -1981,11 +2082,20 @@ function generateHoaDonCode(
 }
 
 function syncHopDongCode() {
-  if (!hopDongForm.value.giuongId) {
+  const giuongId =
+    hopDongForm.value.giuongId;
+
+  if (!giuongId) {
     hopDongForm.value.maHopDong = "";
     return;
   }
-  hopDongForm.value.maHopDong = generateHopDongCode(hopDongForm.value.giuongId);
+
+  hopDongForm.value.maHopDong =
+    generateHopDongCode(
+      giuongId,
+      hopDongForm.value.ngayBatDau,
+      editingHopDongId.value ?? undefined,
+    );
 }
 
 function syncHoaDonCode() {
