@@ -420,7 +420,7 @@ private async generateMaHoaDon(
 ): Promise<string> {
   const [year, month] = monthKey.split('-');
 
-  const thangNam = `${month}/${year}`;
+  const thangNam = `${Number(month)}/${year}`;
 
   // Lấy các hóa đơn đã tồn tại của hợp đồng
   const hoaDonsDaCo =
