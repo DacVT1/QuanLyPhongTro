@@ -41,14 +41,6 @@ function formatDate(value?: string) {
   <div class="panel">
     <div class="panel-header">
       <h3>Chi tiết người thuê</h3>
-
-      <button
-        type="button"
-        class="secondary"
-        @click="emit('close')"
-      >
-        Quay lại
-      </button>
     </div>
 
     <div class="form-grid">
@@ -319,17 +311,49 @@ function formatDate(value?: string) {
    CCCD
    ========================================================= */
 
-.cccd-detail {
-  margin-top: 10px;
+.cccd-section {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  margin-top: 4px;
 }
 
-.cccd-detail h4 {
-  margin: 0 0 12px;
+.cccd-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.05);
+}
 
-  color: #1e293b;
+.cccd-image-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 
-  font-size: 1rem;
-  font-weight: 700;
+  width: 100%;
+  height: 210px;
+
+  padding: 8px;
+  box-sizing: border-box;
+
+  border: 1px solid #dbe3ee;
+  border-radius: 9px;
+
+  background: #f8fafc;
+  overflow: hidden;
+}
+
+.cccd-detail-image {
+  display: block;
+  max-width: 100%;
+  max-height: 190px;
+  width: auto;
+  object-fit: contain;
+  border-radius: 6px;
 }
 
 /* Khung ảnh CCCD nhỏ gọn */
@@ -466,36 +490,16 @@ function formatDate(value?: string) {
 }
 
 @media (max-width: 600px) {
-  .panel-header {
-    flex-direction: column;
-
-    align-items: stretch;
-
-    gap: 12px;
-  }
-
-  .panel-header .secondary {
-    width: 100%;
-  }
-
-  .form-grid {
+  .cccd-section {
     grid-template-columns: 1fr;
-
-    gap: 14px;
-  }
-
-  .form-grid .full-width {
-    grid-column: 1;
   }
 
   .cccd-image-wrapper {
-    min-height: 180px;
-
-    padding: 10px;
+    height: 180px;
   }
 
   .cccd-detail-image {
-    max-height: 350px;
+    max-height: 165px;
   }
 
   .actions {
