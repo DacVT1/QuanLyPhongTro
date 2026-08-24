@@ -937,26 +937,40 @@ function getStatusText(status: string) {
 }
 
 function getNguoiThueGiuongStatus(nguoiThueId: string | number) {
-  const activeHopDong = hopDongs.value.find((hopDong: any) => {
+  const nguoiThueHopDongs = hopDongs.value.filter((hopDong: any) => {
     const hopDongNguoiThueId =
       hopDong.nguoiThue?.id ?? hopDong.nguoiThueId;
 
-    return (
-      String(hopDongNguoiThueId) === String(nguoiThueId) &&
-      hopDong.trangThai === "active"
-    );
+    return String(hopDongNguoiThueId) === String(nguoiThueId);
   });
 
-  if (!activeHopDong) {
+  // Chưa từng có hợp đồng
+  if (nguoiThueHopDongs.length === 0) {
     return {
-      isRented: false,
+      status: "chua_thue",
+      text: "Chưa thuê",
       maHopDong: "",
     };
   }
 
+  // Có ít nhất một hợp đồng còn hiệu lực
+  const activeHopDong = nguoiThueHopDongs.find(
+    (hopDong: any) => hopDong.trangThai === "active",
+  );
+
+  if (activeHopDong) {
+    return {
+      status: "da_thue",
+      text: activeHopDong.maHopDong ?? "",
+      maHopDong: activeHopDong.maHopDong ?? "",
+    };
+  }
+
+  // Có hợp đồng nhưng tất cả đều hết hạn
   return {
-    isRented: true,
-    maHopDong: activeHopDong.maHopDong ?? "",
+    status: "het_han",
+    text: "Hết hạn hợp đồng",
+    maHopDong: "",
   };
 }
 
@@ -3226,16 +3240,10 @@ onMounted(() => {
   <span
     :class="[
       'status-badge',
-      getNguoiThueGiuongStatus(item.id).isRented
-        ? 'da_thue'
-        : 'trong',
+      getNguoiThueGiuongStatus(item.id).status,
     ]"
   >
-    {{
-      getNguoiThueGiuongStatus(item.id).isRented
-        ? getNguoiThueGiuongStatus(item.id).maHopDong
-        : "Chưa có hợp đồng"
-    }}
+    {{ getNguoiThueGiuongStatus(item.id).text }}
   </span>
 </td>
 
@@ -5437,6 +5445,26 @@ tbody tr:hover {
 
 .nha-tro-metric strong {
   font-size: 1.25rem;
+}
+
+
+/* =========================================================
+   NHÀ TRỌ
+   ========================================================= */
+
+.status-badge.chua_thue {
+  background: #e2e8f0;
+  color: #475569;
+}
+
+.status-badge.da_thue {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.status-badge.het_han {
+  background: #fee2e2;
+  color: #991b1b;
 }
 
 /* =========================================================
