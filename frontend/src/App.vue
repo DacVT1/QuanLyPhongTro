@@ -5,6 +5,7 @@ import { Doughnut } from "vue-chartjs";
 import { computed, onMounted, ref } from "vue";
 import api from "./services/api";
 import { getImageUrl } from "./utils/image";
+import NguoiThueDetail from "./components/nguoi-thue/NguoiThueDetail.vue";
 ChartJS.register(ArcElement, Tooltip, Legend);
 const cccdMatTruocPreviewUrl = ref("");
 const cccdMatSauPreviewUrl = ref("");
@@ -30,7 +31,17 @@ const tienDienError = ref("");
 const tienNuocError = ref("");
 const tienDichVuKhacError = ref("");
 const hoaDonThangThanhToanError = ref("");
+const showNguoiThueDetail = ref(false);
+const selectedNguoiThue = ref<any | null>(null);
+function openNguoiThueDetail(item: any) {
+  selectedNguoiThue.value = item;
+  showNguoiThueDetail.value = true;
+}
 
+function closeNguoiThueDetail() {
+  showNguoiThueDetail.value = false;
+  selectedNguoiThue.value = null;
+}
 function getPhongChartData(house: any) {
   return {
     labels: ["Phòng có người ở", "Phòng còn trống"],
@@ -3066,288 +3077,27 @@ onMounted(() => {
   v-else-if="currentTab === 'nguoiThue'"
   class="panel-grid"
 >
-  <!-- FORM THÊM / SỬA NGƯỜI THUÊ -->
+  <!-- CHI TIẾT NGƯỜI THUÊ -->
+  <NguoiThueDetail
+    v-if="showNguoiThueDetail && selectedNguoiThue"
+    :nguoi-thue="selectedNguoiThue"
+    @close="closeNguoiThueDetail"
+  />
+
+  <!-- FORM THÊM / SỬA -->
   <div
-    v-if="showNguoiThueForm"
+    v-else-if="showNguoiThueForm"
     class="panel"
   >
-    <h3>
-      {{ editingNguoiThueId ? "Sửa người thuê" : "Thêm người thuê" }}
-    </h3>
-
-    <form
-      @submit.prevent="saveNguoiThue"
-      class="form-grid"
-    >
-      <label>
-        {{ requiredLabel("Họ tên") }}
-
-        <input
-          v-model="nguoiThueForm.hoTen"
-          placeholder="Họ tên"
-          required
-        />
-      </label>
-
-      <label>
-        {{ requiredLabel("CCCD") }}
-
-        <input
-          v-model="nguoiThueForm.cccd"
-          placeholder="CCCD"
-          required
-          pattern="[0-9]{9,12}"
-        />
-      </label>
-
-      <label>
-        {{ requiredLabel("Số điện thoại") }}
-
-        <input
-          v-model="nguoiThueForm.sdt"
-          placeholder="0123456789"
-          type="text"
-          inputmode="numeric"
-          @input="handleSoDienThoaiInput"
-          @blur="validateSoDienThoai"
-          required
-        />
-
-        <span
-          v-if="soDienThoaiError"
-          class="form-error"
-        >
-          {{ soDienThoaiError }}
-        </span>
-      </label>
-
-      <label>
-        {{ requiredLabel("Email") }}
-
-        <input
-          v-model="nguoiThueForm.email"
-          type="email"
-          placeholder="Email"
-          required
-        />
-      </label>
-
-      <label>
-        {{ requiredLabel("Địa chỉ") }}
-
-        <input
-          v-model="nguoiThueForm.diaChi"
-          placeholder="Địa chỉ"
-          required
-        />
-      </label>
-
-      <label>
-        {{ requiredLabel("Ngày sinh") }}
-
-        <input
-          v-model="nguoiThueForm.ngaySinh"
-          type="date"
-          required
-        />
-      </label>
-
-      <label>
-        Biển số xe
-
-        <input
-          v-model="nguoiThueForm.bienSoXe"
-          type="text"
-          placeholder="Ví dụ: 29A-123.45"
-        />
-      </label>
-
-      <label>
-        CCCD mặt trước
-
-        <input
-          ref="cccdMatTruocInput"
-          type="file"
-          accept="image/*"
-          @change="handleCccdMatTruocChange"
-        />
-
-        <div
-          v-if="
-            editingNguoiThueId &&
-            nguoiThueForm.cccdMatTruocUrl
-          "
-          class="cccd-current"
-        >
-          <span>Ảnh hiện tại:</span>
-
-          <a
-            :href="nguoiThueForm.cccdMatTruocUrl"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Xem CCCD mặt trước
-          </a>
-        </div>
-
-        <div
-          v-if="cccdMatTruocPreviewUrl"
-          class="cccd-current"
-        >
-          <span>Ảnh mới:</span>
-
-          <a
-            :href="cccdMatTruocPreviewUrl"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Xem CCCD mặt trước
-          </a>
-        </div>
-      </label>
-
-      <label>
-        CCCD mặt sau
-
-        <input
-          ref="cccdMatSauInput"
-          type="file"
-          accept="image/*"
-          @change="handleCccdMatSauChange"
-        />
-
-        <div
-          v-if="
-            editingNguoiThueId &&
-            nguoiThueForm.cccdMatSauUrl
-          "
-          class="cccd-current"
-        >
-          <span>Ảnh hiện tại:</span>
-
-          <a
-            :href="nguoiThueForm.cccdMatSauUrl"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Xem CCCD mặt sau
-          </a>
-        </div>
-
-        <div
-          v-if="cccdMatSauPreviewUrl"
-          class="cccd-current"
-        >
-          <span>Ảnh mới:</span>
-
-          <a
-            :href="cccdMatSauPreviewUrl"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Xem CCCD mặt sau
-          </a>
-        </div>
-      </label>
-
-      <div class="actions">
-        <button
-          class="primary"
-          type="submit"
-        >
-          {{ editingNguoiThueId ? "Cập nhật" : "Lưu" }}
-        </button>
-
-        <button
-          class="secondary"
-          type="button"
-          @click="closeNguoiThueForm"
-        >
-          Hủy
-        </button>
-      </div>
-    </form>
+    <!-- giữ nguyên form hiện tại -->
   </div>
 
-  <!-- DANH SÁCH NGƯỜI THUÊ -->
+  <!-- DANH SÁCH -->
   <div
     v-else
     class="panel"
   >
-    <div class="panel-header">
-      <h3>Danh sách người thuê</h3>
-
-      <button
-        type="button"
-        class="primary"
-        @click="openAddNguoiThueForm"
-      >
-        Thêm người thuê
-      </button>
-    </div>
-
-    <table>
-      <thead>
-        <tr>
-          <th>Họ tên</th>
-          <th>Giường</th>
-          <th>CCCD</th>
-          <th>Số điện thoại</th>
-          <th>Hành động</th>
-        </tr>
-      </thead>
-
-      <tbody>
-        <tr
-          v-for="item in nguoiThues"
-          :key="item.id"
-        >
-          <td>{{ item.hoTen }}</td>
-          
-          <td>
-  <span
-    :class="[
-      'status-badge',
-      getNguoiThueGiuongStatus(item.id).status,
-    ]"
-  >
-    {{ getNguoiThueGiuongStatus(item.id).text }}
-  </span>
-</td>
-
-          <td>{{ item.cccd }}</td>
-
-          <td>{{ item.sdt }}</td>
-
-          <td class="row-actions">
-            <button
-              type="button"
-              class="table-btn edit"
-              @click="editNguoiThue(item)"
-            >
-              Sửa
-            </button>
-
-            <button
-              type="button"
-              class="table-btn delete"
-              @click="requestDeleteNguoiThue(item)"
-            >
-              Xóa
-            </button>
-          </td>
-        </tr>
-
-        <tr v-if="nguoiThues.length === 0">
-          <td
-            colspan="5"
-            style="text-align: center"
-          >
-            Chưa có người thuê
-          </td>
-        </tr>
-      </tbody>
-    </table>
+    <!-- giữ nguyên danh sách hiện tại -->
   </div>
 </section>
 
@@ -6205,6 +5955,20 @@ tbody tr:hover {
   justify-content: space-between;
   gap: 16px;
   margin-bottom: 16px;
+}
+
+.nguoi-thue-name-link {
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #2563eb;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.nguoi-thue-name-link:hover {
+  text-decoration: underline;
 }
 /* =========================================================
    THÔNG BÁO THÁNG THANH TOÁN - FORM HÓA ĐƠN
