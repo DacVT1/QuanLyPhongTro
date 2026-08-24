@@ -176,38 +176,334 @@ function formatDate(value?: string) {
 </template>
 
 <style scoped>
+/* =========================================================
+   CHI TIẾT NGƯỜI THUÊ
+   ========================================================= */
+
+.panel {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+/* =========================================================
+   HEADER
+   ========================================================= */
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 16px;
+
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.panel-header h3 {
+  margin: 0;
+
+  color: #0f172a;
+
+  font-size: 1.35rem;
+  font-weight: 700;
+}
+
+/* =========================================================
+   GRID THÔNG TIN
+   ========================================================= */
+
+.form-grid {
+  display: grid;
+
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+
+  gap: 18px 24px;
+
+  width: 100%;
+  min-width: 0;
+
+  box-sizing: border-box;
+}
+
+/* Mỗi trường */
+.form-grid > label {
+  display: flex;
+  flex-direction: column;
+
+  min-width: 0;
+
+  gap: 7px;
+
+  color: #334155;
+
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+/* Trường full width */
+.form-grid .full-width {
+  grid-column: 1 / -1;
+}
+
+/* =========================================================
+   INPUT / TEXTAREA - CHỈ XEM
+   ========================================================= */
+
+.form-grid input,
+.form-grid textarea {
+  width: 100%;
+  min-width: 0;
+
+  box-sizing: border-box;
+
+  padding: 11px 13px;
+
+  border: 1px solid #cbd5e1;
+  border-radius: 9px;
+
+  background: #f8fafc;
+
+  color: #0f172a;
+
+  font-family: inherit;
+  font-size: 0.92rem;
+
+  outline: none;
+
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
+}
+
+/* Input */
+.form-grid input {
+  height: 44px;
+}
+
+/* Textarea */
+.form-grid textarea {
+  min-height: 90px;
+
+  line-height: 1.5;
+
+  resize: none;
+}
+
+/* Readonly */
+.form-grid input[readonly],
+.form-grid textarea[readonly] {
+  cursor: default;
+
+  background: #f8fafc;
+
+  color: #1e293b;
+}
+
+/* Không cho cảm giác input có thể sửa */
+.form-grid input[readonly]:focus,
+.form-grid textarea[readonly]:focus {
+  border-color: #cbd5e1;
+
+  box-shadow: none;
+
+  outline: none;
+}
+
+/* =========================================================
+   CCCD
+   ========================================================= */
+
 .cccd-detail {
-  margin-top: 20px;
+  margin-top: 10px;
 }
 
 .cccd-detail h4 {
-  margin-bottom: 12px;
+  margin: 0 0 12px;
+
+  color: #1e293b;
+
+  font-size: 1rem;
+  font-weight: 700;
 }
 
+/* Khung ảnh */
 .cccd-image-wrapper {
   display: flex;
-  justify-content: center;
+
   align-items: center;
-  padding: 15px;
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
+  justify-content: center;
+
+  width: 100%;
+  min-height: 260px;
+
+  box-sizing: border-box;
+
+  padding: 18px;
+
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+
   background: #f8fafc;
+
+  overflow: hidden;
 }
 
+/* Ảnh CCCD */
 .cccd-detail-image {
   display: block;
-  width: 100%;
-  max-width: 720px;
-  max-height: 500px;
+
+  width: auto;
+  max-width: 100%;
+  max-height: 480px;
+
   object-fit: contain;
+
   border-radius: 8px;
+
+  box-shadow:
+    0 4px 12px rgba(15, 23, 42, 0.12);
 }
 
+/* Không có ảnh */
 .cccd-empty {
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  width: 100%;
+  min-height: 220px;
+
+  box-sizing: border-box;
+
   padding: 30px;
+
+  border: 1px dashed #cbd5e1;
+  border-radius: 12px;
+
+  background: #f8fafc;
+
+  color: #64748b;
+
+  font-size: 0.9rem;
+
   text-align: center;
-  border: 1px dashed #d1d5db;
-  border-radius: 10px;
-  color: #6b7280;
+}
+
+/* =========================================================
+   BUTTON
+   ========================================================= */
+
+.panel-header .secondary,
+.actions .secondary {
+  min-height: 40px;
+
+  padding: 9px 16px;
+
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+
+  background: #f8fafc;
+
+  color: #334155;
+
+  font-family: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.15s ease;
+}
+
+.panel-header .secondary:hover,
+.actions .secondary:hover {
+  background: #e2e8f0;
+
+  border-color: #94a3b8;
+
+  transform: translateY(-1px);
+}
+
+/* =========================================================
+   FOOTER ACTION
+   ========================================================= */
+
+.actions {
+  display: flex;
+
+  align-items: center;
+  justify-content: flex-end;
+
+  gap: 10px;
+
+  margin-top: 28px;
+  padding-top: 18px;
+
+  border-top: 1px solid #e2e8f0;
+}
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 900px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .form-grid .full-width {
+    grid-column: 1;
+  }
+}
+
+@media (max-width: 600px) {
+  .panel-header {
+    flex-direction: column;
+
+    align-items: stretch;
+
+    gap: 12px;
+  }
+
+  .panel-header .secondary {
+    width: 100%;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+
+    gap: 14px;
+  }
+
+  .form-grid .full-width {
+    grid-column: 1;
+  }
+
+  .cccd-image-wrapper {
+    min-height: 180px;
+
+    padding: 10px;
+  }
+
+  .cccd-detail-image {
+    max-height: 350px;
+  }
+
+  .actions {
+    justify-content: stretch;
+  }
+
+  .actions .secondary {
+    width: 100%;
+  }
 }
 </style>
