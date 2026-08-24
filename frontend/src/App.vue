@@ -1590,6 +1590,8 @@ function handleCccdMatSauChange(event: Event) {
   }
 }
 
+
+
 async function saveNguoiThue() {
   // Kiểm tra số điện thoại trước khi tạo FormData và gọi API
   if (!validateSoDienThoai()) {
@@ -2004,6 +2006,10 @@ function editGiuong(item: any) {
 }
 
 function editNguoiThue(item: any) {
+  if (!item?.id) {
+    return;
+  }
+
   editingNguoiThueId.value = item.id;
 
   nguoiThueForm.value = {
@@ -2013,28 +2019,27 @@ function editNguoiThue(item: any) {
     email: item.email ?? "",
     diaChi: item.diaChi ?? "",
     ngaySinh: item.ngaySinh
-      ? new Date(item.ngaySinh).toISOString().slice(0, 10)
+      ? String(item.ngaySinh).slice(0, 10)
       : "",
     bienSoXe: item.bienSoXe ?? "",
-
-    // File mới, chưa chọn
     cccdMatTruoc: null,
     cccdMatSau: null,
-
-    // Giữ lại URL ảnh đã upload
-    cccdMatTruocUrl: getImageUrl(item.cccdMatTruoc),
-    cccdMatSauUrl: getImageUrl(item.cccdMatSau),
+    cccdMatTruocUrl: item.cccdMatTruoc ?? "",
+    cccdMatSauUrl: item.cccdMatSau ?? "",
   };
 
-  if (cccdMatTruocInput.value) {
-    cccdMatTruocInput.value.value = "";
-  }
+  cccdMatTruocPreviewUrl.value = item.cccdMatTruoc
+    ? getImageUrl(item.cccdMatTruoc)
+    : "";
 
-  if (cccdMatSauInput.value) {
-    cccdMatSauInput.value.value = "";
-  }
+  cccdMatSauPreviewUrl.value = item.cccdMatSau
+    ? getImageUrl(item.cccdMatSau)
+    : "";
+
+  showNguoiThueDetail.value = false;
+  selectedNguoiThue.value = null;
+
   showNguoiThueForm.value = true;
-  currentTab.value = "nguoiThue";
 }
 
 function editHopDong(item: any) {
