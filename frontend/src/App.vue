@@ -3187,6 +3187,9 @@ onMounted(() => {
       />
     </label>
 
+    <div class="cccd-edit-section">
+  <!-- CCCD MẶT TRƯỚC -->
+  <div class="cccd-edit-card">
     <label>
       CCCD mặt trước
 
@@ -3196,16 +3199,29 @@ onMounted(() => {
         accept="image/*"
         @change="handleCccdMatTruocChange"
       />
-
-      <div v-if="cccdMatTruocPreviewUrl">
-        <img
-          :src="cccdMatTruocPreviewUrl"
-          alt="CCCD mặt trước"
-          class="cccd-preview"
-        />
-      </div>
     </label>
 
+    <div
+      v-if="cccdMatTruocPreviewUrl"
+      class="cccd-edit-image-wrapper"
+    >
+      <img
+        :src="cccdMatTruocPreviewUrl"
+        alt="CCCD mặt trước"
+        class="cccd-edit-image"
+      />
+    </div>
+
+    <div
+      v-else
+      class="cccd-edit-empty"
+    >
+      Chưa có ảnh CCCD mặt trước
+    </div>
+  </div>
+
+  <!-- CCCD MẶT SAU -->
+  <div class="cccd-edit-card">
     <label>
       CCCD mặt sau
 
@@ -3215,32 +3231,46 @@ onMounted(() => {
         accept="image/*"
         @change="handleCccdMatSauChange"
       />
-
-      <div v-if="cccdMatSauPreviewUrl">
-        <img
-          :src="cccdMatSauPreviewUrl"
-          alt="CCCD mặt sau"
-          class="cccd-preview"
-        />
-      </div>
     </label>
 
-    <div class="form-actions">
-      <button
-        type="button"
-        class="secondary"
-        @click="showNguoiThueForm = false"
-      >
-        Hủy
-      </button>
-
-      <button
-        type="submit"
-        class="primary"
-      >
-        {{ editingNguoiThueId ? "Cập nhật" : "Thêm" }}
-      </button>
+    <div
+      v-if="cccdMatSauPreviewUrl"
+      class="cccd-edit-image-wrapper"
+    >
+      <img
+        :src="cccdMatSauPreviewUrl"
+        alt="CCCD mặt sau"
+        class="cccd-edit-image"
+      />
     </div>
+
+    <div
+      v-else
+      class="cccd-edit-empty"
+    >
+      Chưa có ảnh CCCD mặt sau
+    </div>
+  </div>
+</div>
+
+    <div class="form-actions">
+  <div class="form-actions-right">
+    <button
+      type="button"
+      class="secondary"
+      @click="showNguoiThueForm = false"
+    >
+      Hủy
+    </button>
+
+    <button
+      type="submit"
+      class="primary"
+    >
+      {{ editingNguoiThueId ? "Cập nhật" : "Thêm" }}
+    </button>
+  </div>
+</div>
   </form>
 </div>
 
@@ -6361,62 +6391,147 @@ tbody tr:hover {
    ========================================================= */
 
 @media (max-width: 700px) {
-  .content {
-    padding: 18px 14px;
-  }
-
-  .topbar {
-    align-items: flex-start;
-
-    gap: 14px;
-
-    padding-left: 54px;
-  }
-
-  .topbar h2 {
-    font-size: 1.45rem;
-  }
-
-  .topbar .primary {
-    flex-shrink: 0;
-
-    padding: 9px 11px;
-
-    font-size: 0.8rem;
-  }
-
-  .panel-grid {
-    grid-template-columns: 1fr;
-
-    gap: 16px;
-  }
-
-  .form-grid {
+  .cccd-edit-section {
     grid-template-columns: 1fr;
   }
 
-  .full-width,
-  .actions {
-    grid-column: auto;
+  .cccd-edit-image-wrapper,
+  .cccd-edit-empty {
+    height: 180px;
   }
 
-  .metric-card {
-    min-height: 110px;
+  .cccd-edit-image {
+    max-height: 165px;
   }
 
-  .metric-card strong {
-    font-size: 1.7rem;
+  .form-actions-right {
+    width: 100%;
   }
 
-  .panel {
-    padding: 16px;
-
-    border-radius: 14px;
+  .form-actions-right button {
+    flex: 1;
   }
+}
 
-  .related-data {
-    grid-template-columns: 1fr;
-  }
+/* =========================================================
+   CCCD - FORM THÊM / SỬA NGƯỜI THUÊ
+   ========================================================= */
+
+.cccd-edit-section {
+  grid-column: 1 / -1;
+
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+
+  gap: 20px;
+
+  width: 100%;
+  margin-top: 4px;
+}
+
+.cccd-edit-card {
+  display: flex;
+  flex-direction: column;
+
+  min-width: 0;
+
+  padding: 16px;
+
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+
+  background: #ffffff;
+
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+}
+
+.cccd-edit-card label {
+  display: flex;
+  flex-direction: column;
+
+  gap: 8px;
+
+  color: #334155;
+
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.cccd-edit-image-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 100%;
+  height: 210px;
+
+  margin-top: 12px;
+  padding: 8px;
+
+  box-sizing: border-box;
+
+  border: 1px solid #dbe3ee;
+  border-radius: 10px;
+
+  background: #f8fafc;
+
+  overflow: hidden;
+}
+
+.cccd-edit-image {
+  display: block;
+
+  max-width: 100%;
+  max-height: 190px;
+
+  width: auto;
+  height: auto;
+
+  object-fit: contain;
+
+  border-radius: 6px;
+}
+
+.cccd-edit-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 100%;
+  height: 210px;
+
+  margin-top: 12px;
+
+  border: 1px dashed #cbd5e1;
+  border-radius: 10px;
+
+  background: #f8fafc;
+
+  color: #94a3b8;
+
+  font-size: 0.85rem;
+}
+
+.form-actions {
+  grid-column: 1 / -1;
+
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+
+  width: 100%;
+
+  margin-top: 4px;
+  padding-top: 18px;
+
+  border-top: 1px solid #e2e8f0;
+}
+
+.form-actions-right {
+  display: flex;
+  align-items: center;
+
+  gap: 10px;
 }
 
 /* =========================================================
