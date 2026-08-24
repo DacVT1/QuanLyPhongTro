@@ -50,6 +50,7 @@ function getPhongChartData(house: any) {
   };
 }
 
+
 function getGiuongChartData(house: any) {
   return {
     labels: ["Giường có người ở", "Giường còn trống"],
@@ -89,6 +90,63 @@ function getThanhToanChartData(house: any) {
         borderWidth: 0,
       },
     ],
+  };
+}
+
+function getTrangThaiHopDongDisplay(
+  ngayBatDau: string,
+  ngayKetThuc: string,
+) {
+  if (!ngayBatDau || !ngayKetThuc) {
+    return {
+      status: "",
+      text: "",
+    };
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const startDate = new Date(`${ngayBatDau}T00:00:00`);
+  const endDate = new Date(`${ngayKetThuc}T00:00:00`);
+
+  startDate.setHours(0, 0, 0, 0);
+  endDate.setHours(0, 0, 0, 0);
+
+  // Ngày bắt đầu > ngày hiện tại
+  if (startDate > today) {
+    return {
+      status: "chua_hieu_luc",
+      text: "Chưa hiệu lực",
+    };
+  }
+
+  // Ngày kết thúc <= ngày hiện tại
+  if (endDate <= today) {
+    return {
+      status: "het_hieu_luc",
+      text: "Hết hiệu lực",
+    };
+  }
+
+  // Ngày bắt đầu <= ngày hiện tại < ngày kết thúc
+  const daysRemaining = Math.ceil(
+    (endDate.getTime() - today.getTime()) /
+      (1000 * 60 * 60 * 24),
+  );
+
+  // Còn <= 30 ngày
+  if (daysRemaining <= 30) {
+    return {
+      status: "active",
+      text: `Còn hiệu lực(${daysRemaining} ngày)`,
+    };
+  }
+
+  // Còn > 30 ngày
+  return {
+    status: "active",
+    text: "Còn hiệu lực",
   };
 }
 
