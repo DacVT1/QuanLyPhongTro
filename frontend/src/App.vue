@@ -50,6 +50,7 @@ function getPhongChartData(house: any) {
   };
 }
 
+
 function getGiuongChartData(house: any) {
   return {
     labels: ["Giường có người ở", "Giường còn trống"],
@@ -89,6 +90,64 @@ function getThanhToanChartData(house: any) {
         borderWidth: 0,
       },
     ],
+  };
+}
+
+function getTrangThaiHopDongDisplay(
+  ngayBatDau: string,
+  ngayKetThuc: string,
+) {
+  if (!ngayBatDau || !ngayKetThuc) {
+    return {
+      status: "",
+      text: "",
+    };
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const startDate = new Date(`${ngayBatDau}T00:00:00`);
+  const endDate = new Date(`${ngayKetThuc}T00:00:00`);
+
+  startDate.setHours(0, 0, 0, 0);
+  endDate.setHours(0, 0, 0, 0);
+
+  // Ngày bắt đầu > ngày hiện tại
+  if (startDate > today) {
+    return {
+      status: "chua_hieu_luc",
+      text: "Chưa hiệu lực",
+    };
+  }
+
+  // Ngày kết thúc <= ngày hiện tại
+  if (endDate <= today) {
+    return {
+      status: "expired",
+      text: "Hết hiệu lực",
+    };
+  }
+
+  // Ngày bắt đầu <= ngày hiện tại < ngày kết thúc
+  const daysRemaining = Math.ceil(
+    (endDate.getTime() - today.getTime()) /
+      (1000 * 60 * 60 * 24),
+  );
+
+  // Còn <= 30 ngày:
+  // Chỉ thay đổi TEXT hiển thị, không thay đổi trạng thái database.
+  if (daysRemaining <= 30) {
+    return {
+      status: "active",
+      text: `Còn hiệu lực(${daysRemaining} ngày)`,
+    };
+  }
+
+  // Còn > 30 ngày
+  return {
+    status: "active",
+    text: "Còn hiệu lực",
   };
 }
 
@@ -936,6 +995,44 @@ function getStatusText(status: string) {
   return map[status] ?? status;
 }
 
+function getNguoiThueGiuongStatus(nguoiThueId: string | number) {
+  const nguoiThueHopDongs = hopDongs.value.filter((hopDong: any) => {
+    const hopDongNguoiThueId =
+      hopDong.nguoiThue?.id ?? hopDong.nguoiThueId;
+
+    return String(hopDongNguoiThueId) === String(nguoiThueId);
+  });
+
+  // Chưa từng có hợp đồng
+  if (nguoiThueHopDongs.length === 0) {
+    return {
+      status: "chua_thue",
+      text: "Chưa thuê",
+      maHopDong: "",
+    };
+  }
+
+  // Có ít nhất một hợp đồng còn hiệu lực
+  const activeHopDong = nguoiThueHopDongs.find(
+    (hopDong: any) => hopDong.trangThai === "active",
+  );
+
+  if (activeHopDong) {
+    return {
+      status: "da_thue",
+      text: activeHopDong.maHopDong ?? "",
+      maHopDong: activeHopDong.maHopDong ?? "",
+    };
+  }
+
+  // Có hợp đồng nhưng tất cả đều hết hạn
+  return {
+    status: "het_han",
+    text: "Hết hạn hợp đồng",
+    maHopDong: "",
+  };
+}
+
 async function loadData() {
   try {
     const [
@@ -1568,6 +1665,10 @@ async function saveHopDong() {
     giaGiuong: giaThue,
   });
 
+  const trangThaiTheoNgay = getTrangThaiHopDongDisplay(
+  hopDongForm.value.ngayBatDau,
+  hopDongForm.value.ngayKetThuc,
+);
   // 2. Lưu hợp đồng
   const payload = {
     maHopDong: hopDongForm.value.maHopDong,
@@ -1578,7 +1679,12 @@ async function saveHopDong() {
     chuKyThanhToan: Number(hopDongForm.value.chuKyThanhToan || 1),
     tienDatCoc: Number(hopDongForm.value.tienDatCoc || 0),
     ghiChu: hopDongForm.value.ghiChu || null,
-    trangThai: hopDongForm.value.trangThai,
+    trangThai:
+  trangThaiTheoNgay.status === "active"
+    ? "active"
+    : trangThaiTheoNgay.status === "expired"
+      ? "expired"
+      : hopDongForm.value.trangThai,
     giuong: {
       id: giuongId,
     },
@@ -3184,6 +3290,7 @@ onMounted(() => {
       <thead>
         <tr>
           <th>Họ tên</th>
+          <th>Giường</th>
           <th>CCCD</th>
           <th>Số điện thoại</th>
           <th>Hành động</th>
@@ -3196,6 +3303,17 @@ onMounted(() => {
           :key="item.id"
         >
           <td>{{ item.hoTen }}</td>
+          
+          <td>
+  <span
+    :class="[
+      'status-badge',
+      getNguoiThueGiuongStatus(item.id).status,
+    ]"
+  >
+    {{ getNguoiThueGiuongStatus(item.id).text }}
+  </span>
+</td>
 
           <td>{{ item.cccd }}</td>
 
@@ -3222,7 +3340,7 @@ onMounted(() => {
 
         <tr v-if="nguoiThues.length === 0">
           <td
-            colspan="4"
+            colspan="5"
             style="text-align: center"
           >
             Chưa có người thuê
@@ -3554,23 +3672,23 @@ onMounted(() => {
           </td>
 
           <td>
-            <span
-              :class="[
-                'status-badge',
-                item.trangThai,
-              ]"
-            >
-              {{
-                item.trangThai === "active"
-                  ? "Có hiệu lực"
-                  : item.trangThai === "expired"
-                    ? "Hết hiệu lực"
-                    : item.trangThai === "sap_het_han"
-                      ? "Sắp hết hiệu lực"
-                      : item.trangThai
-              }}
-            </span>
-          </td>
+  <span
+    :class="[
+      'status-badge',
+      getTrangThaiHopDongDisplay(
+        item.ngayBatDau,
+        item.ngayKetThuc,
+      ).status,
+    ]"
+  >
+    {{
+      getTrangThaiHopDongDisplay(
+        item.ngayBatDau,
+        item.ngayKetThuc,
+      ).text
+    }}
+  </span>
+</td>
 
           <td class="row-actions">
             <button
@@ -5395,6 +5513,26 @@ tbody tr:hover {
 
 .nha-tro-metric strong {
   font-size: 1.25rem;
+}
+
+
+/* =========================================================
+   NHÀ TRỌ
+   ========================================================= */
+
+.status-badge.chua_thue {
+  background: #e2e8f0;
+  color: #475569;
+}
+
+.status-badge.da_thue {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.status-badge.het_han {
+  background: #fee2e2;
+  color: #991b1b;
 }
 
 /* =========================================================
