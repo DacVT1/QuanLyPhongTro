@@ -936,6 +936,30 @@ function getStatusText(status: string) {
   return map[status] ?? status;
 }
 
+function getNguoiThueGiuongStatus(nguoiThueId: string | number) {
+  const activeHopDong = hopDongs.value.find((hopDong: any) => {
+    const hopDongNguoiThueId =
+      hopDong.nguoiThue?.id ?? hopDong.nguoiThueId;
+
+    return (
+      String(hopDongNguoiThueId) === String(nguoiThueId) &&
+      hopDong.trangThai === "active"
+    );
+  });
+
+  if (!activeHopDong) {
+    return {
+      isRented: false,
+      maHopDong: "",
+    };
+  }
+
+  return {
+    isRented: true,
+    maHopDong: activeHopDong.maHopDong ?? "",
+  };
+}
+
 async function loadData() {
   try {
     const [
@@ -3184,6 +3208,7 @@ onMounted(() => {
       <thead>
         <tr>
           <th>Họ tên</th>
+          <th>Giường</th>
           <th>CCCD</th>
           <th>Số điện thoại</th>
           <th>Hành động</th>
@@ -3196,6 +3221,23 @@ onMounted(() => {
           :key="item.id"
         >
           <td>{{ item.hoTen }}</td>
+          
+          <td>
+  <span
+    :class="[
+      'status-badge',
+      getNguoiThueGiuongStatus(item.id).isRented
+        ? 'da_thue'
+        : 'trong',
+    ]"
+  >
+    {{
+      getNguoiThueGiuongStatus(item.id).isRented
+        ? getNguoiThueGiuongStatus(item.id).maHopDong
+        : "Chưa thuê"
+    }}
+  </span>
+</td>
 
           <td>{{ item.cccd }}</td>
 
@@ -3222,7 +3264,7 @@ onMounted(() => {
 
         <tr v-if="nguoiThues.length === 0">
           <td
-            colspan="4"
+            colspan="5"
             style="text-align: center"
           >
             Chưa có người thuê
