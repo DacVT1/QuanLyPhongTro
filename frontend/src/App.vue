@@ -3077,7 +3077,7 @@ onMounted(() => {
   v-else-if="currentTab === 'nguoiThue'"
   class="panel-grid"
 >
-  <!-- CHI TIẾT NGƯỜI THUÊ -->
+  <!-- CHI TIẾT -->
   <NguoiThueDetail
     v-if="showNguoiThueDetail && selectedNguoiThue"
     :nguoi-thue="selectedNguoiThue"
@@ -3089,7 +3089,7 @@ onMounted(() => {
     v-else-if="showNguoiThueForm"
     class="panel"
   >
-    <!-- giữ nguyên form hiện tại -->
+    ...
   </div>
 
   <!-- DANH SÁCH -->
@@ -3097,7 +3097,73 @@ onMounted(() => {
     v-else
     class="panel"
   >
-    <!-- giữ nguyên danh sách hiện tại -->
+    <div class="panel-header">
+      <h3>Danh sách người thuê</h3>
+
+      <button
+        type="button"
+        class="primary"
+        @click="openAddNguoiThueForm"
+      >
+        Thêm người thuê
+      </button>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Họ tên</th>
+          <th>CCCD</th>
+          <th>Số điện thoại</th>
+          <th>Email</th>
+          <th>Biển số xe</th>
+          <th>Hành động</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <tr
+          v-for="item in nguoiThues"
+          :key="item.id"
+        >
+          <td>
+            <button
+              type="button"
+              class="nguoi-thue-name-link"
+              @click="openNguoiThueDetail(item)"
+            >
+              {{ item.hoTen }}
+            </button>
+          </td>
+
+          <td>{{ item.cccd }}</td>
+
+          <td>{{ item.sdt }}</td>
+
+          <td>{{ item.email }}</td>
+
+          <td>{{ item.bienSoXe }}</td>
+
+          <td class="row-actions">
+            <button
+              type="button"
+              class="table-btn edit"
+              @click="editNguoiThue(item)"
+            >
+              Sửa
+            </button>
+
+            <button
+              type="button"
+              class="table-btn delete"
+              @click="requestDeleteNguoiThue(item)"
+            >
+              Xóa
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
   </div>
 </section>
 
