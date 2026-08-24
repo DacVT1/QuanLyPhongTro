@@ -176,6 +176,7 @@ function formatDate(value?: string) {
 </template>
 
 <style scoped>
+
 /* =========================================================
    CHI TIẾT NGƯỜI THUÊ
    ========================================================= */
@@ -331,22 +332,22 @@ function formatDate(value?: string) {
   font-weight: 700;
 }
 
-/* Khung ảnh */
+/* Khung ảnh CCCD nhỏ gọn */
 .cccd-image-wrapper {
   display: flex;
-
   align-items: center;
   justify-content: center;
 
-  width: 100%;
-  min-height: 260px;
+  width: fit-content;
+  max-width: 100%;
+  min-height: 0;
 
   box-sizing: border-box;
 
-  padding: 18px;
+  padding: 8px;
 
-  border: 1px solid #cbd5e1;
-  border-radius: 12px;
+  border: 1px solid #dbe3ee;
+  border-radius: 10px;
 
   background: #f8fafc;
 
@@ -358,17 +359,16 @@ function formatDate(value?: string) {
   display: block;
 
   width: auto;
-  max-width: 100%;
-  max-height: 480px;
+  max-width: 360px;
+  max-height: 220px;
 
   object-fit: contain;
 
-  border-radius: 8px;
+  border-radius: 6px;
 
   box-shadow:
-    0 4px 12px rgba(15, 23, 42, 0.12);
+    0 2px 8px rgba(15, 23, 42, 0.12);
 }
-
 /* Không có ảnh */
 .cccd-empty {
   display: flex;

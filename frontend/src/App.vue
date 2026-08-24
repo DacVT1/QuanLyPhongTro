@@ -4471,6 +4471,31 @@ onMounted(() => {
 
 <style scoped>
 /* =========================================================
+   ẢNH CCCD - FORM THÊM / SỬA NGƯỜI THUÊ
+   ========================================================= */
+
+.cccd-preview {
+  display: block;
+
+  width: auto;
+  max-width: 320px;
+  max-height: 190px;
+
+  margin-top: 8px;
+
+  padding: 6px;
+
+  object-fit: contain;
+
+  border: 1px solid #dbe3ee;
+  border-radius: 8px;
+
+  background: #f8fafc;
+
+  box-shadow:
+    0 2px 8px rgba(15, 23, 42, 0.1);
+}
+/* =========================================================
    RESET + GLOBAL
    ========================================================= */
 
