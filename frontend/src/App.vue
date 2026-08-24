@@ -124,7 +124,7 @@ function getTrangThaiHopDongDisplay(
   // Ngày kết thúc <= ngày hiện tại
   if (endDate <= today) {
     return {
-      status: "het_hieu_luc",
+      status: "expired",
       text: "Hết hiệu lực",
     };
   }
@@ -135,7 +135,8 @@ function getTrangThaiHopDongDisplay(
       (1000 * 60 * 60 * 24),
   );
 
-  // Còn <= 30 ngày
+  // Còn <= 30 ngày:
+  // Chỉ thay đổi TEXT hiển thị, không thay đổi trạng thái database.
   if (daysRemaining <= 30) {
     return {
       status: "active",
@@ -1664,6 +1665,10 @@ async function saveHopDong() {
     giaGiuong: giaThue,
   });
 
+  const trangThaiTheoNgay = getTrangThaiHopDongDisplay(
+  hopDongForm.value.ngayBatDau,
+  hopDongForm.value.ngayKetThuc,
+);
   // 2. Lưu hợp đồng
   const payload = {
     maHopDong: hopDongForm.value.maHopDong,
@@ -1674,7 +1679,12 @@ async function saveHopDong() {
     chuKyThanhToan: Number(hopDongForm.value.chuKyThanhToan || 1),
     tienDatCoc: Number(hopDongForm.value.tienDatCoc || 0),
     ghiChu: hopDongForm.value.ghiChu || null,
-    trangThai: hopDongForm.value.trangThai,
+    trangThai:
+  trangThaiTheoNgay.status === "active"
+    ? "active"
+    : trangThaiTheoNgay.status === "expired"
+      ? "expired"
+      : hopDongForm.value.trangThai,
     giuong: {
       id: giuongId,
     },
@@ -3662,23 +3672,23 @@ onMounted(() => {
           </td>
 
           <td>
-            <span
-              :class="[
-                'status-badge',
-                item.trangThai,
-              ]"
-            >
-              {{
-                item.trangThai === "active"
-                  ? "Có hiệu lực"
-                  : item.trangThai === "expired"
-                    ? "Hết hiệu lực"
-                    : item.trangThai === "sap_het_han"
-                      ? "Sắp hết hiệu lực"
-                      : item.trangThai
-              }}
-            </span>
-          </td>
+  <span
+    :class="[
+      'status-badge',
+      getTrangThaiHopDongDisplay(
+        item.ngayBatDau,
+        item.ngayKetThuc,
+      ).status,
+    ]"
+  >
+    {{
+      getTrangThaiHopDongDisplay(
+        item.ngayBatDau,
+        item.ngayKetThuc,
+      ).text
+    }}
+  </span>
+</td>
 
           <td class="row-actions">
             <button
