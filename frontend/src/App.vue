@@ -995,6 +995,7 @@ const requiredLabel = (label: string) => `${label} *`;
 function getStatusText(status: string) {
   const map: Record<string, string> = {
     trong: "Trống",
+    chua_thue: "Chưa thuê",
     da_thue: "Đã thuê",
     bao_tri: "Bảo trì",
     sap_tra_tro: "Sắp trả trọ",
@@ -1003,6 +1004,7 @@ function getStatusText(status: string) {
     chua_thanh_toan: "Chưa thanh toán",
     da_thanh_toan: "Đã thanh toán",
   };
+
   return map[status] ?? status;
 }
 
@@ -3023,6 +3025,7 @@ onMounted(() => {
           <th>Phòng</th>
           <th>Giường số</th>
           <th>Giá giường</th>
+          <th>Trạng thái</th>
           <th>Hành động</th>
         </tr>
       </thead>
@@ -3047,11 +3050,13 @@ onMounted(() => {
           <td>
             {{ item.giuongSo }}
           </td>
-
+          
           <td>
             {{ Number(item.giaGiuong ?? 0).toLocaleString("vi-VN") }}
           </td>
-
+          <td>
+  {{ getStatusText(item.status ?? item.trangThai) }}
+</td>
           <td class="row-actions">
             <button
               type="button"

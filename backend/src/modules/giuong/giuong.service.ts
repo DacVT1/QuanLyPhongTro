@@ -21,56 +21,87 @@ export class GiuongService {
     private readonly phongRepository: Repository<Phong>,
     
   ) {}
-  private getTrangThaiTheoHopDong(
+private getTrangThaiTheoHopDong(
   hopDongs: any[] = [],
-): string {
-  if (hopDongs.length === 0) {
-    return "trong";
-  }
+): 'da_thue' | 'chua_thue' {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
 
-  const coHieuLuc = hopDongs.some(
-    (hopDong) =>
-      hopDong.trangThai === "active",
-  );
+  const coHopDongHieuLuc = hopDongs.some((hopDong) => {
+    // Hợp đồng phải đang active
+    if (hopDong.trangThai !== 'active') {
+      return false;
+    }
 
-  if (coHieuLuc) {
-    return "da_thue";
-  }
+    if (!hopDong.ngayBatDau) {
+      return false;
+    }
 
-  const sapHetHieuLuc = hopDongs.some(
-    (hopDong) =>
-      hopDong.trangThai ===
-      "sap_het_hieu_luc",
-  );
+    const ngayBatDau = new Date(hopDong.ngayBatDau);
+    ngayBatDau.setHours(0, 0, 0, 0);
 
-  if (sapHetHieuLuc) {
-    return "sap_tra_tro";
-  }
+    // Chưa đến ngày bắt đầu
+    if (ngayBatDau > today) {
+      return false;
+    }
 
-  return "trong";
+    // Không có ngày kết thúc => vẫn đang thuê
+    if (!hopDong.ngayKetThuc) {
+      return true;
+    }
+
+    const ngayKetThuc = new Date(hopDong.ngayKetThuc);
+    ngayKetThuc.setHours(0, 0, 0, 0);
+
+    // Ngày hiện tại phải nhỏ hơn ngày kết thúc
+    return today < ngayKetThuc;
+  });
+
+  return coHopDongHieuLuc ? 'da_thue' : 'chua_thue';
 }
-  async findAll() {
-    return this.repository.find({
-      relations: {
-        phong: {
-          nhaTro: true,
-        },
-        hopDongs: true,
-      },
-    })
-  }
 
-  async findOne(id: string) {
-    return this.repository.findOne({
-      where: { id },
-      relations: {
-        phong: {
-          nhaTro: true,
-        },
-        hopDongs: true,
+private mapTrangThai(giuong: Giuong) {
+  const status = this.getTrangThaiTheoHopDong(
+    giuong.hopDongs ?? [],
+  );
+
+  return {
+    ...giuong,
+    trangThai: status,
+    status,
+  };
+}
+
+async findAll() {
+  const giuongs = await this.repository.find({
+    relations: {
+      phong: {
+        nhaTro: true,
       },
-    })
-  }
+      hopDongs: true,
+    },
+  });
+
+  return giuongs.map((giuong) =>
+    this.mapTrangThai(giuong),
+  );
+}
+
+async findOne(id: string) {
+  const giuong = await this.repository.findOne({
+    where: { id },
+    relations: {
+      phong: {
+        nhaTro: true,
+      },
+      hopDongs: true,
+    },
+  });
+
+  return giuong
+    ? this.mapTrangThai(giuong)
+    : null;
+}
 
   async create(payload: Partial<Giuong>) {
     if (!payload.phong?.id) {
