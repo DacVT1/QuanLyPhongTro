@@ -3234,7 +3234,7 @@ onMounted(() => {
     {{
       getNguoiThueGiuongStatus(item.id).isRented
         ? getNguoiThueGiuongStatus(item.id).maHopDong
-        : "Chưa thuê"
+        : "Chưa có hợp đồng"
     }}
   </span>
 </td>
