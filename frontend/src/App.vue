@@ -6,6 +6,9 @@ import { computed, onMounted, ref } from "vue";
 import api from "./services/api";
 import { getImageUrl } from "./utils/image";
 import NguoiThueDetail from "./components/nguoi-thue/NguoiThueDetail.vue";
+import Login from '@/components/auth/Login.vue'
+import Register from './components/auth/Register.vue'
+
 ChartJS.register(ArcElement, Tooltip, Legend);
 const cccdMatTruocPreviewUrl = ref("");
 const cccdMatSauPreviewUrl = ref("");
@@ -23,6 +26,43 @@ const tabs = [
 const currentTab = ref("dashboard");
 const isMenuOpen = ref(false);
 const soDienThoaiError = ref("");
+
+const authMode = ref<'login' | 'register'>('login')
+
+const accessToken = ref(
+  localStorage.getItem('accessToken'),
+)
+
+const currentUser = ref<any | null>(
+  JSON.parse(
+    localStorage.getItem('currentUser') || 'null',
+  ),
+)
+
+function handleLogin(data: any) {
+  accessToken.value = data.accessToken
+
+  currentUser.value = data.user
+
+  localStorage.setItem(
+    'accessToken',
+    data.accessToken,
+  )
+
+  localStorage.setItem(
+    'currentUser',
+    JSON.stringify(data.user),
+  )
+}
+
+function logout() {
+  localStorage.removeItem('accessToken')
+  localStorage.removeItem('currentUser')
+
+  accessToken.value = null
+  currentUser.value = null
+  authMode.value = 'login'
+}
 
 const tienDienDisplay = ref("0");
 const tienNuocDisplay = ref("0");
@@ -2314,7 +2354,18 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="app-shell" :class="{ 'menu-open': isMenuOpen }">
+  <Login
+    v-if="!accessToken && authMode === 'login'"
+    @login-success="handleLogin"
+    @register="authMode = 'register'"
+  />
+
+  <Register
+    v-else-if="!accessToken && authMode === 'register'"
+    @login="authMode = 'login'"
+  />
+
+  <div v-else class="app-shell" :class="{ 'menu-open': isMenuOpen }">
     <!-- =====================================================
          NÚT MỞ MENU
          ===================================================== -->
@@ -2338,7 +2389,7 @@ onMounted(() => {
           <div class="brand-mark">N</div>
 
           <div>
-            <h1>Nhà Trọ Ms Chi</h1>
+            <h1>Nhà Trọ {{ currentUser.tenHienThi || currentUser.username }}</h1>
             <small>Hệ thống quản lý</small>
           </div>
         </div>
@@ -2416,10 +2467,20 @@ onMounted(() => {
       <header class="topbar">
         <div>
           <p class="eyebrow">Hệ thống</p>
-          <h2>Quản lý nhà trọ Ms Chi</h2>
+          <h2>Quản lý nhà trọ {{ currentUser.tenHienThi || currentUser.username }}</h2>
         </div>
+        <div class="header-actions">
 
+    
+  </div>
         <button class="primary" @click="loadData">Làm mới dữ liệu</button>
+        <button
+      type="button"
+      class="logout-button"
+      @click="logout"
+    >
+      Đăng xuất
+    </button>
       </header>
 
       <!-- ===================================================
@@ -4382,6 +4443,7 @@ onMounted(() => {
       </div>
     </div>
   </div>
+
 </template>
 
 <style scoped>
@@ -6143,6 +6205,40 @@ tbody tr:hover {
 
 .nguoi-thue-name-link:hover {
   text-decoration: underline;
+}
+.logout-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  height: 38px;
+  padding: 0 16px;
+
+  border: 1px solid #dc2626;
+  border-radius: 8px;
+
+  background: #ffffff;
+  color: #dc2626;
+
+  font-size: 14px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.logout-button:hover {
+  background: #dc2626;
+  color: #ffffff;
+  border-color: #dc2626;
+}
+
+.logout-button:active {
+  transform: translateY(1px);
 }
 /* =========================================================
    THÔNG BÁO THÁNG THANH TOÁN - FORM HÓA ĐƠN
