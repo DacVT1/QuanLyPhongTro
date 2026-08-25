@@ -17,7 +17,23 @@ import { NhaTroModule } from './modules/nha-tro/nha-tro.module';
 import { NguoiThueModule } from './modules/nguoi-thue/nguoi-thue.module';
 import { PhongModule } from './modules/phong/phong.module';
 import { TaiKhoanModule } from './modules/tai-khoan/tai-khoan.module';
+import { AuthModule } from './modules/auth/auth.module';
+imports: [
+  TypeOrmModule.forRoot({
+    ...
+  }),
 
+  AuthModule,
+
+  TaiKhoanModule,
+  NhaTroModule,
+  PhongModule,
+  GiuongModule,
+  NguoiThueModule,
+  HopDongModule,
+  HoaDonModule,
+  DashboardModule,
+],
 @Module({
   imports: [
     TypeOrmModule.forRoot({
