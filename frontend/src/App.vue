@@ -8,6 +8,7 @@ import { getImageUrl } from "./utils/image";
 import NguoiThueDetail from "./components/nguoi-thue/NguoiThueDetail.vue";
 import Login from '@/components/auth/Login.vue'
 import Register from './components/auth/Register.vue'
+import Footer from "./components/Footer.vue";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 const cccdMatTruocPreviewUrl = ref("");
@@ -2386,8 +2387,9 @@ onMounted(() => {
     <aside class="sidebar" :class="{ open: isMenuOpen }">
       <div class="sidebar-header">
         <div class="brand">
-          <div class="brand-mark">N</div>
-
+          <div class="brand-mark">
+  <img src="/images/nhatroicon.jpg" alt="Nhà trọ" />
+</div>
           <div>
             <h1>Nhà Trọ {{ currentUser.tenHienThi || currentUser.username }}</h1>
             <small>Hệ thống quản lý</small>
@@ -4443,7 +4445,7 @@ onMounted(() => {
       </div>
     </div>
   </div>
-
+  <Footer />
 </template>
 
 <style scoped>
@@ -4522,15 +4524,32 @@ textarea {
 
   grid-template-columns: 260px minmax(0, 1fr);
 
-  grid-template-rows: minmax(100vh, auto);
+  /* Chiều cao tự tăng theo nội dung + Footer */
+  grid-template-rows: auto;
 
   width: 100%;
   min-width: 0;
   min-height: 100vh;
 
   overflow-x: hidden;
+
+  align-items: stretch;
+}
+.content-column {
+  grid-column: 2;
+  grid-row: 1;
+
+  min-width: 0;
+  min-height: 100%;
+
+  display: flex;
+  flex-direction: column;
 }
 
+.content {
+  flex: 1;
+  min-width: 0;
+}
 /* =========================================================
    SIDEBAR
    ========================================================= */
@@ -4541,16 +4560,16 @@ textarea {
 
   position: sticky;
   top: 0;
+  align-self: stretch;
 
   width: 260px;
-  height: 100vh;
+  min-height: 100%;
 
   padding: 24px 16px;
 
   background: #0f172a;
   color: white;
 
-  overflow-y: auto;
   overflow-x: hidden;
 
   z-index: 1000;
@@ -4576,22 +4595,21 @@ textarea {
 }
 
 .brand-mark {
-  flex: 0 0 42px;
-
   width: 42px;
   height: 42px;
+  border-radius: 10px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
 
-  border-radius: 12px;
-
-  background: linear-gradient(135deg, #38bdf8, #2563eb);
-
-  display: grid;
-  place-items: center;
-
-  font-size: 1rem;
-  font-weight: 700;
-
-  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.25);
+.brand-mark img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .brand h1 {
