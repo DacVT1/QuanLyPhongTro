@@ -539,6 +539,7 @@ const filteredNguoiThues = computed(() => {
     .toLowerCase()
     .trim();
 
+  // Không nhập gì → hiển thị toàn bộ
   if (!keyword) {
     return nguoiThues.value;
   }
@@ -549,8 +550,10 @@ const filteredNguoiThues = computed(() => {
       .replace(/[\u0300-\u036f]/g, "")
       .toLowerCase();
 
-    const cccd = String(item.cccd ?? "").toLowerCase();
+    const cccd = String(item.cccd ?? "")
+      .toLowerCase();
 
+    // Tìm chuỗi ở BẤT KỲ vị trí nào
     return (
       hoTen.includes(keyword) ||
       cccd.includes(keyword)
@@ -3227,11 +3230,11 @@ onMounted(() => {
   <div class="nguoi-thue-header-actions">
     <div class="nguoi-thue-search">
       <input
-        v-model="nguoiThueSearch"
-        type="text"
-        placeholder="Tìm Họ tên hoặc CCCD..."
-        aria-label="Tìm kiếm người thuê"
-      />
+  :value="nguoiThueSearch"
+  @input="nguoiThueSearch = ($event.target as HTMLInputElement).value"
+  type="text"
+  placeholder="Tìm Họ tên hoặc CCCD..."
+/>
 
       <button
         v-if="nguoiThueSearch"
