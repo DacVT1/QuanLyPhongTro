@@ -18,11 +18,12 @@ import { NguoiThueModule } from './modules/nguoi-thue/nguoi-thue.module';
 import { PhongModule } from './modules/phong/phong.module';
 import { TaiKhoanModule } from './modules/tai-khoan/tai-khoan.module';
 import { AuthModule } from './modules/auth/auth.module';
-
+import { ConfigModule } from '@nestjs/config';
 
 
 @Module({
   imports: [
+    ConfigModule.forRoot(),
     TypeOrmModule.forRoot({
       type: 'better-sqlite3',
       database: 'database.sqlite',

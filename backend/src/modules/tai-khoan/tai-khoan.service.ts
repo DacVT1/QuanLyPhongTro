@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { TaiKhoan } from '../../entities/tai-khoan.entity';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class TaiKhoanService {
@@ -19,8 +20,19 @@ export class TaiKhoanService {
   }
 
   async create(payload: Partial<TaiKhoan>) {
-    return this.repository.save(this.repository.create(payload));
+  const data = { ...payload };
+
+  if (data.passwordHash) {
+    data.passwordHash = await bcrypt.hash(
+      data.passwordHash,
+      10,
+    );
   }
+
+  return this.repository.save(
+    this.repository.create(data),
+  );
+}
 
   async update(id: string, payload: Partial<TaiKhoan>) {
     await this.repository.update(id, payload);
