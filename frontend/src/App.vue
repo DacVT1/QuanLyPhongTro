@@ -3066,28 +3066,15 @@ onMounted(() => {
             {{ item.giuongSo }}
           </td>
           <td class="dat-coc-cell">
-  <label
-    :class="[
-      'dat-coc-display',
-      item.datCocSom
-        ? 'dat-coc-display-yes'
-        : 'dat-coc-display-no'
-    ]"
-  >
-    <input
-      type="checkbox"
-      :checked="Boolean(item.datCocSom)"
-      disabled
-      :class="{
+  <input
+    type="checkbox"
+    :checked="Boolean(item.datCocSom)"
+    disabled
+    :class="{
       'dat-coc-checked': Boolean(item.datCocSom),
       'dat-coc-unchecked': !Boolean(item.datCocSom)
     }"
-    />
-
-    <span>
-      {{ item.datCocSom ? "Đã đặt cọc" : "Chưa đặt cọc" }}
-    </span>
-  </label>
+  />
 </td>
           <td>
             {{ Number(item.giaGiuong ?? 0).toLocaleString("vi-VN") }}
@@ -6404,6 +6391,8 @@ tbody tr:hover {
 }
 
 .dat-coc-cell {
+  width: 100px;
+  min-width: 100px;
   text-align: center;
   vertical-align: middle;
 }
