@@ -3250,14 +3250,6 @@ onMounted(() => {
 
             <tbody>
               <tr v-for="item in filteredNguoiThues" :key="item.id">
-                <tr v-if="filteredNguoiThues.length === 0">
-  <td
-    colspan="6"
-    class="nguoi-thue-empty"
-  >
-    Không tìm thấy người thuê phù hợp.
-  </td>
-</tr>
                 <td>
                   <button
                     type="button"
@@ -3294,6 +3286,14 @@ onMounted(() => {
                   </button>
                 </td>
               </tr>
+              <tr v-if="filteredNguoiThues.length === 0">
+  <td
+    colspan="6"
+    class="nguoi-thue-empty"
+  >
+    Không tìm thấy người thuê phù hợp.
+  </td>
+</tr>
             </tbody>
           </table>
         </div>
