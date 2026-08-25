@@ -11,9 +11,7 @@ import { AuthService } from './auth.service';
     TypeOrmModule.forFeature([TaiKhoan]),
 
     JwtModule.register({
-      secret:
-        process.env.JWT_SECRET ||
-        'quan-ly-phong-tro-secret-key',
+      secret: process.env.JWT_SECRET,
       signOptions: {
         expiresIn: '1d',
       },

@@ -6,6 +6,9 @@ import { computed, onMounted, ref } from "vue";
 import api from "./services/api";
 import { getImageUrl } from "./utils/image";
 import NguoiThueDetail from "./components/nguoi-thue/NguoiThueDetail.vue";
+import Login from './components/auth/Login.vue'
+import Register from './components/auth/Register.vue'
+
 ChartJS.register(ArcElement, Tooltip, Legend);
 const cccdMatTruocPreviewUrl = ref("");
 const cccdMatSauPreviewUrl = ref("");
@@ -23,6 +26,24 @@ const tabs = [
 const currentTab = ref("dashboard");
 const isMenuOpen = ref(false);
 const soDienThoaiError = ref("");
+
+const authMode = ref<'login' | 'register'>('login')
+
+const accessToken = ref(
+  localStorage.getItem('accessToken'),
+)
+
+function handleLogin(data: any) {
+  accessToken.value = data.accessToken
+}
+
+function logout() {
+  localStorage.removeItem('accessToken')
+  localStorage.removeItem('currentUser')
+
+  accessToken.value = null
+  authMode.value = 'login'
+}
 
 const tienDienDisplay = ref("0");
 const tienNuocDisplay = ref("0");
@@ -2314,7 +2335,18 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="app-shell" :class="{ 'menu-open': isMenuOpen }">
+  <Login
+    v-if="!accessToken && authMode === 'login'"
+    @login-success="handleLogin"
+    @register="authMode = 'register'"
+  />
+
+  <Register
+    v-else-if="!accessToken && authMode === 'register'"
+    @login="authMode = 'login'"
+  />
+
+  <div v-else class="app-shell" :class="{ 'menu-open': isMenuOpen }">
     <!-- =====================================================
          NÚT MỞ MENU
          ===================================================== -->
@@ -2418,7 +2450,19 @@ onMounted(() => {
           <p class="eyebrow">Hệ thống</p>
           <h2>Quản lý nhà trọ Ms Chi</h2>
         </div>
+        <div class="header-actions">
+    <span v-if="currentUser">
+      Xin chào, {{ currentUser.tenHienThi }}
+    </span>
 
+    <button
+      type="button"
+      class="logout-button"
+      @click="logout"
+    >
+      Đăng xuất
+    </button>
+  </div>
         <button class="primary" @click="loadData">Làm mới dữ liệu</button>
       </header>
 
@@ -4382,6 +4426,7 @@ onMounted(() => {
       </div>
     </div>
   </div>
+
 </template>
 
 <style scoped>
