@@ -22,6 +22,11 @@ export class Giuong {
   @Column({ default: 1 })
   giuongSo: number;
 
+  @Column({
+  default: false,
+})
+datCocSom: boolean;
+
   @Column({ type: 'integer', default: 0 })
   giaGiuong: number;
 
