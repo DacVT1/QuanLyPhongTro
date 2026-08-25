@@ -6609,10 +6609,10 @@ tbody tr:hover {
   }
 
   .content {
-    width: 100%;
-
-    padding: 22px 18px;
-  }
+  width: 100%;
+  padding: 10px;
+  box-sizing: border-box;
+}
 
   .topbar {
     padding-left: 58px;
@@ -6841,19 +6841,349 @@ tbody tr:hover {
     min-height: 40px;
   }
 }
+/* =========================================================
+   MOBILE - FORM FULL SCREEN
+   ========================================================= */
+
+/* =========================================================
+   MOBILE - FORM / MODAL FULL SCREEN
+   ========================================================= */
+
 @media (max-width: 600px) {
-  .delete-modal,
+
+  /* =========================
+     BODY
+     ========================= */
+
+  .content {
+    width: 100%;
+    max-width: 100%;
+    padding: 8px;
+    box-sizing: border-box;
+  }
+
+
+  /* =========================
+     PANEL / FORM CONTAINER
+     ========================= */
+
+  .panel {
+    width: 100%;
+    max-width: 100%;
+
+    margin-left: 0;
+    margin-right: 0;
+
+    box-sizing: border-box;
+  }
+
+
+  /* =========================
+     FORM GRID
+     ========================= */
+
+  .form-grid {
+    width: 100%;
+
+    grid-template-columns: 1fr;
+
+    gap: 12px;
+
+    box-sizing: border-box;
+  }
+
+  .form-grid > * {
+    min-width: 0;
+  }
+
+  .form-grid label {
+    width: 100%;
+    min-width: 0;
+  }
+
+
+  /* =========================
+     INPUT / SELECT / TEXTAREA
+     ========================= */
+
+  .form-grid input,
+  .form-grid select,
+  .form-grid textarea,
+  .panel input,
+  .panel select,
+  .panel textarea {
+    width: 100%;
+    max-width: 100%;
+
+    min-width: 0;
+
+    box-sizing: border-box;
+  }
+
+
+  /* =========================
+     BUTTON FORM
+     ========================= */
+
+  .form-grid .actions,
+  .actions {
+    width: 100%;
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 8px;
+
+    box-sizing: border-box;
+  }
+
+  .form-grid .actions button,
+  .actions button {
+    width: 100%;
+  }
+
+
+  /* =========================
+     MODAL BACKDROP
+     ========================= */
+
+  .modal-backdrop,
+  .modal-overlay {
+    position: fixed;
+
+    inset: 0;
+
+    width: 100vw;
+    height: 100vh;
+
+    padding: 0;
+
+    margin: 0;
+
+    display: flex;
+
+    align-items: stretch;
+    justify-content: stretch;
+
+    box-sizing: border-box;
+  }
+
+
+  /* =========================
+     MODAL
+     ========================= */
+
   .modal-backdrop .modal,
-  .modal-overlay > .modal {
+  .modal-overlay > .modal,
+  .delete-modal {
+
     width: 100vw;
     max-width: 100vw;
 
     height: 100vh;
     max-height: 100vh;
 
+    min-height: 100vh;
+
     margin: 0;
 
     border-radius: 0;
+
+    box-sizing: border-box;
+
+    overflow: hidden;
+
+    display: flex;
+
+    flex-direction: column;
+  }
+
+
+  /* =========================
+     MODAL HEADER
+     ========================= */
+
+  .modal-header {
+    flex-shrink: 0;
+
+    width: 100%;
+
+    box-sizing: border-box;
+  }
+
+
+  /* =========================
+     MODAL BODY
+     ========================= */
+
+  .modal-body {
+    flex: 1;
+
+    width: 100%;
+
+    min-height: 0;
+
+    overflow-y: auto;
+    overflow-x: hidden;
+
+    box-sizing: border-box;
+  }
+
+
+  /* =========================
+     MODAL FOOTER
+     ========================= */
+
+  .modal-footer,
+  .modal-actions,
+  .delete-modal-actions {
+
+    flex-shrink: 0;
+
+    width: 100%;
+
+    box-sizing: border-box;
+  }
+
+
+  /* =========================
+     CCCD
+     ========================= */
+
+  .cccd-edit-section {
+    width: 100%;
+
+    grid-template-columns: 1fr;
+
+    gap: 12px;
+
+    box-sizing: border-box;
+  }
+
+  .cccd-edit-card {
+    width: 100%;
+
+    min-width: 0;
+
+    box-sizing: border-box;
+  }
+
+
+  /* =========================
+     TABLE
+     ========================= */
+
+  .table-wrapper {
+    width: 100%;
+
+    max-width: 100%;
+
+    overflow-x: auto;
+
+    box-sizing: border-box;
+  }
+}
+
+@media (max-width: 600px) {
+  .app-shell {
+    display: block;
+
+    width: 100%;
+    min-width: 0;
+    min-height: 100vh;
+
+    overflow-x: hidden;
+  }
+
+  .sidebar {
+    width: 260px;
+    max-width: 85vw;
+  }
+
+  .content-column {
+    display: block;
+
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+
+    margin: 0;
+    padding: 0;
+  }
+
+  .content {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+
+    margin: 0;
+    padding: 10px;
+
+    box-sizing: border-box;
+  }
+}
+
+@media (max-width: 600px) {
+  .modal-backdrop,
+  .modal-overlay {
+    position: fixed;
+
+    inset: 0;
+
+    width: 100vw;
+    height: 100vh;
+
+    margin: 0;
+    padding: 0;
+
+    display: flex;
+    align-items: stretch;
+    justify-content: stretch;
+
+    box-sizing: border-box;
+  }
+
+  .modal,
+  .modal-backdrop .modal,
+  .modal-overlay > .modal,
+  .delete-modal {
+    width: 100vw !important;
+    max-width: 100vw !important;
+
+    height: 100vh;
+    max-height: 100vh;
+
+    margin: 0 !important;
+
+    border-radius: 0;
+
+    box-sizing: border-box;
+  }
+}
+
+@media (max-width: 600px) {
+  .form-grid {
+    display: grid;
+
+    grid-template-columns: 1fr !important;
+
+    width: 100%;
+    max-width: 100%;
+
+    box-sizing: border-box;
+  }
+
+  .form-grid > * {
+    min-width: 0;
+  }
+
+  .form-grid input,
+  .form-grid select,
+  .form-grid textarea {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
 
     box-sizing: border-box;
   }
