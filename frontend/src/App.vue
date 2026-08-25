@@ -2465,7 +2465,7 @@ onMounted(() => {
     <!-- =====================================================
          NỘI DUNG CHÍNH
          ===================================================== -->
-    <div class="content-column"></div>
+    <div class="content-column">
     <main class="content">
       <header class="topbar">
         <div>
@@ -4446,7 +4446,7 @@ onMounted(() => {
       </div>
     </div>
     <Footer />
-
+  </div>
 </div>
 </template>
 
