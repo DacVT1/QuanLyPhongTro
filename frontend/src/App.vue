@@ -3211,30 +3211,37 @@ onMounted(() => {
         <!-- DANH SÁCH -->
         <div v-else class="panel">
           <div class="panel-header">
-            <h3>Danh sách người thuê</h3>
+  <h3>Danh sách người thuê</h3>
 
-            <button type="button" class="primary" @click="openAddNguoiThueForm">
-              Thêm người thuê
-            </button>
-          </div>
-          <div class="nguoi-thue-search">
-            <input
-              v-model="nguoiThueSearch"
-              type="text"
-              placeholder="Tìm theo Họ tên hoặc CCCD..."
-              aria-label="Tìm kiếm người thuê"
-            />
+  <div class="nguoi-thue-header-actions">
+    <div class="nguoi-thue-search">
+      <input
+        v-model="nguoiThueSearch"
+        type="text"
+        placeholder="Tìm Họ tên hoặc CCCD..."
+        aria-label="Tìm kiếm người thuê"
+      />
 
-            <button
-              v-if="nguoiThueSearch"
-              type="button"
-              class="nguoi-thue-search-clear"
-              @click="nguoiThueSearch = ''"
-              title="Xóa tìm kiếm"
-            >
-              ×
-            </button>
-          </div>
+      <button
+        v-if="nguoiThueSearch"
+        type="button"
+        class="nguoi-thue-search-clear"
+        @click="nguoiThueSearch = ''"
+        title="Xóa tìm kiếm"
+      >
+        ×
+      </button>
+    </div>
+
+    <button
+      type="button"
+      class="primary"
+      @click="openAddNguoiThueForm"
+    >
+      Thêm người thuê
+    </button>
+  </div>
+</div>
 
           <table>
             <thead>
@@ -3287,13 +3294,10 @@ onMounted(() => {
                 </td>
               </tr>
               <tr v-if="filteredNguoiThues.length === 0">
-  <td
-    colspan="6"
-    class="nguoi-thue-empty"
-  >
-    Không tìm thấy người thuê phù hợp.
-  </td>
-</tr>
+                <td colspan="6" class="nguoi-thue-empty">
+                  Không tìm thấy người thuê phù hợp.
+                </td>
+              </tr>
             </tbody>
           </table>
         </div>
@@ -6322,26 +6326,32 @@ tbody tr:hover {
   text-decoration: underline;
 }
 
+.nguoi-thue-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .nguoi-thue-search {
   position: relative;
 
-  width: 100%;
+  width:70%;
   margin-bottom: 16px;
 }
 
 .nguoi-thue-search input {
   width: 100%;
+  box-sizing: border-box;
 
-  padding: 12px 42px 12px 14px;
+  padding: 10px 38px 10px 12px;
 
   border: 1px solid #cbd5e1;
-  border-radius: 10px;
+  border-radius: 8px;
 
-  background: #ffffff;
+  background: #fff;
   color: #0f172a;
 
   font-size: 0.9rem;
-
   outline: none;
 
   transition:
@@ -6364,10 +6374,10 @@ tbody tr:hover {
   position: absolute;
 
   top: 50%;
-  right: 10px;
+  right: 8px;
 
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
 
   transform: translateY(-50%);
 
@@ -6375,13 +6385,15 @@ tbody tr:hover {
   align-items: center;
   justify-content: center;
 
+  padding: 0;
+
   border: none;
   border-radius: 50%;
 
   background: #e2e8f0;
   color: #475569;
 
-  font-size: 18px;
+  font-size: 16px;
   line-height: 1;
 
   cursor: pointer;
@@ -6389,7 +6401,6 @@ tbody tr:hover {
 
 .nguoi-thue-search-clear:hover {
   background: #cbd5e1;
-  color: #0f172a;
 }
 
 .nguoi-thue-empty {
