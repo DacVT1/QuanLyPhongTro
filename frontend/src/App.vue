@@ -3054,8 +3054,17 @@ onMounted(() => {
           <td>
             {{ Number(item.giaGiuong ?? 0).toLocaleString("vi-VN") }}
           </td>
-          <td>
-  {{ getStatusText(item.status ?? item.trangThai) }}
+          <td class="status-cell">
+  <span
+    :class="[
+      'status-badge',
+      item.trangThai === 'da_thue'
+        ? 'status-active'
+        : 'status-empty'
+    ]"
+  >
+    {{ item.trangThai === 'da_thue' ? 'Đã thuê' : 'Chưa thuê' }}
+  </span>
 </td>
           <td class="row-actions">
             <button
@@ -6327,6 +6336,16 @@ tbody tr:hover {
   .invoice-form-actions > .btn-them-hoa-don {
     width: 100%;
   }
+}
+
+.status-active {
+  color: #166534;
+  background-color: #dcfce7;
+}
+
+.status-empty {
+  color: #475569;
+  background-color: #f1f5f9;
 }
 /* =========================================================
    MOBILE
