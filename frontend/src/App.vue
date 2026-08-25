@@ -4560,7 +4560,7 @@ textarea {
   grid-column: 1;
   grid-row: 1;
 
-  position: sticky;
+  position: relative;
   top: 0;
   align-self: stretch;
 
