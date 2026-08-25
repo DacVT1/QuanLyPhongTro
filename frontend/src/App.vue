@@ -3684,7 +3684,7 @@ onMounted(() => {
           <td>
   <button
     type="button"
-    class="nguoi-thue-link"
+    class="nguoi-thue-name"
     @click="openNguoiThueDetail(item.nguoiThue)"
   >
     {{ item.nguoiThue?.hoTen || "" }}
@@ -6274,6 +6274,24 @@ tbody tr:hover {
   justify-content: space-between;
   gap: 16px;
   margin-bottom: 16px;
+}
+
+.nguoi-thue-name {
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: transparent;
+
+  color: #2563eb;
+  font: inherit;
+  font-weight: 600;
+
+  cursor: pointer;
+  text-align: left;
+}
+
+.nguoi-thue-name:hover {
+  text-decoration: underline;
 }
 
 .nguoi-thue-name-link {
