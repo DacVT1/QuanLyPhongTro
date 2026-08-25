@@ -2389,7 +2389,7 @@ onMounted(() => {
           <div class="brand-mark">N</div>
 
           <div>
-            <h1>Nhà Trọ Ms Chi</h1>
+            <h1>Nhà Trọ {{ currentUser.tenHienThi || currentUser.username }}</h1>
             <small>Hệ thống quản lý</small>
           </div>
         </div>
@@ -2471,15 +2471,16 @@ onMounted(() => {
         </div>
         <div class="header-actions">
 
-    <button
+    
+  </div>
+        <button class="primary" @click="loadData">Làm mới dữ liệu</button>
+        <button
       type="button"
       class="logout-button"
       @click="logout"
     >
       Đăng xuất
     </button>
-  </div>
-        <button class="primary" @click="loadData">Làm mới dữ liệu</button>
       </header>
 
       <!-- ===================================================
@@ -6204,6 +6205,40 @@ tbody tr:hover {
 
 .nguoi-thue-name-link:hover {
   text-decoration: underline;
+}
+.logout-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  height: 38px;
+  padding: 0 16px;
+
+  border: 1px solid #dc2626;
+  border-radius: 8px;
+
+  background: #ffffff;
+  color: #dc2626;
+
+  font-size: 14px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.logout-button:hover {
+  background: #dc2626;
+  color: #ffffff;
+  border-color: #dc2626;
+}
+
+.logout-button:active {
+  transform: translateY(1px);
 }
 /* =========================================================
    THÔNG BÁO THÁNG THANH TOÁN - FORM HÓA ĐƠN
