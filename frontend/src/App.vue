@@ -3406,7 +3406,7 @@ onMounted(() => {
        FORM THÊM / SỬA HỢP ĐỒNG
        =================================================== -->
   <div
-    v-if="showHopDongForm"
+    v-else-if="showHopDongForm"
     class="panel"
   >
     <h3>
