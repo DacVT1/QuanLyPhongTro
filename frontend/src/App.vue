@@ -706,6 +706,7 @@ const giuongForm = ref({
   giuongSo: "",
   giaGiuong: 1500000,
   // trangThai: "trong",
+  datCocSom: false,
 });
 
 const nguoiThueForm = ref({
@@ -1123,6 +1124,7 @@ function resetGiuongForm() {
     giuongSo: "",
     giaGiuong: 1500000,
     // trangThai: "trong",
+    datCocSom: false,
   };
 
   giaGiuongDisplay.value = "1,500,000";
@@ -1485,6 +1487,7 @@ async function saveGiuong() {
   const payload = {
     giuongSo: Number(giuongForm.value.giuongSo),
     giaGiuong: Number(giuongForm.value.giaGiuong || 0),
+    datCocSom: Boolean(giuongForm.value.datCocSom),
     phong: {
       id: giuongForm.value.phongId,
     },
@@ -1999,6 +2002,7 @@ function editGiuong(item: any) {
     nhaTroId: item.phong?.nhaTro?.id ?? "",
     phongId: item.phong?.id ?? "",
     giuongSo: item.giuongSo != null ? String(item.giuongSo) : "",
+    datCocSom: Boolean(item.datCocSom),
     giaGiuong,
   };
 
@@ -2970,6 +2974,16 @@ onMounted(() => {
         </select>
       </label>
 
+      <div class="form-group">
+  <label class="checkbox-label">
+    <input
+      v-model="giuongForm.datCocSom"
+      type="checkbox"
+    />
+    Đặt cọc sớm
+  </label>
+</div>
+
       <label>
         {{ requiredLabel("Giá giường") }}
 
@@ -3024,6 +3038,7 @@ onMounted(() => {
           <th>Nhà trọ</th>
           <th>Phòng</th>
           <th>Giường số</th>
+          <th class="dat-coc-header">Cọc sớm</th>
           <th>Giá giường</th>
           <th>Trạng thái</th>
           <th>Hành động</th>
@@ -3046,11 +3061,30 @@ onMounted(() => {
           <td>
             {{ item.phong?.maPhong }}
           </td>
-
+   
           <td>
             {{ item.giuongSo }}
           </td>
-          
+          <td class="dat-coc-cell">
+  <label
+    :class="[
+      'dat-coc-display',
+      item.datCocSom
+        ? 'dat-coc-display-yes'
+        : 'dat-coc-display-no'
+    ]"
+  >
+    <input
+      type="checkbox"
+      :checked="Boolean(item.datCocSom)"
+      disabled
+    />
+
+    <span>
+      {{ item.datCocSom ? "Đã đặt cọc" : "Chưa đặt cọc" }}
+    </span>
+  </label>
+</td>
           <td>
             {{ Number(item.giaGiuong ?? 0).toLocaleString("vi-VN") }}
           </td>
@@ -6347,6 +6381,64 @@ tbody tr:hover {
   color: #475569;
   background-color: #f1f5f9;
 }
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+.dat-coc-header {
+  width: 140px;
+  text-align: center;
+}
+
+.dat-coc-cell {
+  text-align: center;
+  vertical-align: middle;
+}
+
+.dat-coc-display {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Checkbox */
+.dat-coc-display input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+}
+
+/* ĐÃ ĐẶT CỌC - màu đỏ */
+.dat-coc-display-yes {
+  color: #dc2626;
+}
+
+.dat-coc-display-yes input[type="checkbox"] {
+  accent-color: #dc2626;
+}
+
+/* CHƯA ĐẶT CỌC - màu xám */
+.dat-coc-display-no {
+  color: #6b7280;
+}
+
+.dat-coc-display-no input[type="checkbox"] {
+  accent-color: #9ca3af;
+}
 /* =========================================================
    MOBILE
    ========================================================= */
@@ -6609,7 +6701,7 @@ tbody tr:hover {
   .delete-modal-header {
     padding: 18px;
   }
-
+  
   .delete-modal-body {
     padding: 18px;
   }
