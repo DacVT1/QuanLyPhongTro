@@ -3035,9 +3035,9 @@ onMounted(() => {
       <thead>
         <tr>
           <th>Mã giường</th>
-          <th>Nhà trọ</th>
+          <!-- <th>Nhà trọ</th>
           <th>Phòng</th>
-          <th>Giường số</th>
+          <th>Giường số</th> -->
           <th class="dat-coc-header">Cọc sớm</th>
           <th>Giá giường</th>
           <th>Trạng thái</th>
@@ -3052,7 +3052,7 @@ onMounted(() => {
         >
           <td>{{ item.maGiuong }}</td>
 
-          <td>
+          <!-- <td>
             {{ item.phong?.nhaTro?.maNhaTro }}
             -
             {{ item.phong?.nhaTro?.tenNhaTro }}
@@ -3064,7 +3064,7 @@ onMounted(() => {
    
           <td>
             {{ item.giuongSo }}
-          </td>
+          </td> -->
           <td class="dat-coc-cell">
   <input
     type="checkbox"
@@ -3682,8 +3682,14 @@ onMounted(() => {
           </td>
 
           <td>
-            {{ item.nguoiThue?.hoTen }}
-          </td>
+  <button
+    type="button"
+    class="nguoi-thue-link"
+    @click="openNguoiThueDetail(item.nguoiThue)"
+  >
+    {{ item.nguoiThue?.hoTen || "" }}
+  </button>
+</td>
 
           <td>
             {{
@@ -6456,6 +6462,22 @@ tbody tr:hover {
 /* Không đặt cọc → checkbox màu xám */
 .dat-coc-unchecked {
   accent-color: #9ca3af;
+}
+.nguoi-thue-link {
+  padding: 0;
+  border: none;
+  background: transparent;
+
+  color: #2563eb;
+  font: inherit;
+  font-weight: 600;
+
+  cursor: pointer;
+  text-align: left;
+}
+
+.nguoi-thue-link:hover {
+  text-decoration: underline;
 }
 /* =========================================================
    MOBILE
