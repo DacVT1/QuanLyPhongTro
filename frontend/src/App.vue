@@ -3396,6 +3396,12 @@ onMounted(() => {
   v-else-if="currentTab === 'hopDong'"
   class="panel-grid"
 >
+<!-- Chi tiết người thuê -->
+<NguoiThueDetail
+  v-if="showNguoiThueDetail && selectedNguoiThue"
+  :nguoi-thue="selectedNguoiThue"
+  @close="closeNguoiThueDetail"
+/>
   <!-- ===================================================
        FORM THÊM / SỬA HỢP ĐỒNG
        =================================================== -->
