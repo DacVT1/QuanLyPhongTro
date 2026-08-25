@@ -3069,7 +3069,8 @@ onMounted(() => {
   <input
     type="checkbox"
     :checked="Boolean(item.datCocSom)"
-    disabled
+    tabindex="-1"
+    aria-readonly="true"
     :class="{
       'dat-coc-checked': Boolean(item.datCocSom),
       'dat-coc-unchecked': !Boolean(item.datCocSom)
@@ -6444,6 +6445,7 @@ tbody tr:hover {
   width: 17px;
   height: 17px;
   margin: 0;
+  pointer-events: none;
 }
 
 /* Có đặt cọc → checkbox màu đỏ */
