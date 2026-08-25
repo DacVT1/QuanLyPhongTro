@@ -550,14 +550,10 @@ const filteredNguoiThues = computed(() => {
       .replace(/[\u0300-\u036f]/g, "")
       .toLowerCase();
 
-    const cccd = String(item.cccd ?? "")
-      .toLowerCase();
+    const cccd = String(item.cccd ?? "").toLowerCase();
 
     // Tìm chuỗi ở BẤT KỲ vị trí nào
-    return (
-      hoTen.includes(keyword) ||
-      cccd.includes(keyword)
-    );
+    return hoTen.includes(keyword) || cccd.includes(keyword);
   });
 });
 
@@ -3230,18 +3226,17 @@ onMounted(() => {
   <div class="nguoi-thue-header-actions">
     <div class="nguoi-thue-search">
       <input
-  :value="nguoiThueSearch"
-  @input="nguoiThueSearch = ($event.target as HTMLInputElement).value"
-  type="text"
-  placeholder="Tìm Họ tên hoặc CCCD..."
-/>
+        v-model="nguoiThueSearch"
+        type="text"
+        placeholder="Tìm Họ tên hoặc CCCD..."
+        autocomplete="off"
+      />
 
       <button
         v-if="nguoiThueSearch"
         type="button"
         class="nguoi-thue-search-clear"
         @click="nguoiThueSearch = ''"
-        title="Xóa tìm kiếm"
       >
         ×
       </button>
@@ -6355,36 +6350,42 @@ tbody tr:hover {
 
 .nguoi-thue-search {
   position: relative;
-
-  width:70%;
-  margin-bottom: 16px;
+  width: 300px;
+  flex-shrink: 0;
 }
 
 .nguoi-thue-search input {
   width: 100%;
+  height: 40px;
   box-sizing: border-box;
 
-  padding: 10px 38px 10px 12px;
+  padding: 0 38px 0 12px;
 
   border: 1px solid #cbd5e1;
   border-radius: 8px;
 
-  background: #fff;
-  color: #0f172a;
-
   font-size: 0.9rem;
   outline: none;
+}
 
-  transition:
-    border-color 0.2s ease,
-    box-shadow 0.2s ease;
+.nguoi-thue-header-actions > .primary {
+  height: 40px;
+
+  margin: 0;
+  padding: 0 14px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .nguoi-thue-search input:focus {
   border-color: #3b82f6;
 
-  box-shadow:
-    0 0 0 3px rgba(59, 130, 246, 0.12);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
 }
 
 .nguoi-thue-search input::placeholder {
