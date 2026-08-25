@@ -172,6 +172,7 @@ async function register() {
 
 .auth-card {
   width: 400px;
+  max-width: 100%;
 
   padding: 30px;
 
@@ -180,6 +181,8 @@ async function register() {
 
   box-shadow:
     0 10px 30px rgba(0, 0, 0, 0.1);
+
+  box-sizing: border-box;
 }
 
 .auth-card h2 {
@@ -251,5 +254,29 @@ async function register() {
 
   cursor: pointer;
   font-weight: 600;
+}
+
+@media (max-width: 600px) {
+  .auth-page {
+    width: 100vw;
+    max-width: 100vw;
+    min-height: 100vh;
+
+    margin: 0;
+    padding: 16px;
+
+    box-sizing: border-box;
+    overflow-x: hidden;
+  }
+
+  .auth-card {
+    width: 100%;
+    max-width: 100%;
+
+    margin: 0;
+    padding: 24px 16px;
+
+    box-sizing: border-box;
+  }
 }
 </style>

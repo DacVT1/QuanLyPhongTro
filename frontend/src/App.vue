@@ -8,6 +8,7 @@ import { getImageUrl } from "./utils/image";
 import NguoiThueDetail from "./components/nguoi-thue/NguoiThueDetail.vue";
 import Login from '@/components/auth/Login.vue'
 import Register from './components/auth/Register.vue'
+import Footer from "./components/Footer.vue";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 const cccdMatTruocPreviewUrl = ref("");
@@ -2386,8 +2387,9 @@ onMounted(() => {
     <aside class="sidebar" :class="{ open: isMenuOpen }">
       <div class="sidebar-header">
         <div class="brand">
-          <div class="brand-mark">N</div>
-
+          <div class="brand-mark">
+  <img src="/images/nhatroicon.jpg" alt="Nhà trọ" />
+</div>
           <div>
             <h1>Nhà Trọ {{ currentUser.tenHienThi || currentUser.username }}</h1>
             <small>Hệ thống quản lý</small>
@@ -2463,6 +2465,7 @@ onMounted(() => {
     <!-- =====================================================
          NỘI DUNG CHÍNH
          ===================================================== -->
+    <div class="content-column">
     <main class="content">
       <header class="topbar">
         <div>
@@ -4442,8 +4445,9 @@ onMounted(() => {
         </div>
       </div>
     </div>
+    <Footer />
   </div>
-
+</div>
 </template>
 
 <style scoped>
@@ -4519,18 +4523,26 @@ textarea {
   position: relative;
 
   display: grid;
-
   grid-template-columns: 260px minmax(0, 1fr);
-
-  grid-template-rows: minmax(100vh, auto);
 
   width: 100%;
   min-width: 0;
   min-height: 100vh;
 
+  align-items: stretch;
+
   overflow-x: hidden;
 }
+.content-column {
+  grid-column: 2;
+  grid-row: 1;
 
+  min-width: 0;
+  min-height: 100vh;
+
+  display: flex;
+  flex-direction: column;
+}
 /* =========================================================
    SIDEBAR
    ========================================================= */
@@ -4539,18 +4551,18 @@ textarea {
   grid-column: 1;
   grid-row: 1;
 
-  position: sticky;
+  position: relative;
   top: 0;
+  align-self: stretch;
 
   width: 260px;
-  height: 100vh;
+  min-height: 100%;
 
   padding: 24px 16px;
 
   background: #0f172a;
   color: white;
 
-  overflow-y: auto;
   overflow-x: hidden;
 
   z-index: 1000;
@@ -4576,22 +4588,21 @@ textarea {
 }
 
 .brand-mark {
-  flex: 0 0 42px;
-
   width: 42px;
   height: 42px;
+  border-radius: 10px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
 
-  border-radius: 12px;
-
-  background: linear-gradient(135deg, #38bdf8, #2563eb);
-
-  display: grid;
-  place-items: center;
-
-  font-size: 1rem;
-  font-weight: 700;
-
-  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.25);
+.brand-mark img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .brand h1 {
@@ -4783,13 +4794,14 @@ textarea {
 .content {
   grid-column: 2;
   grid-row: 1;
-
+  flex: 1 0 auto;
   min-width: 0;
   width: 100%;
 
   padding: 28px;
 
   overflow-x: hidden;
+  box-sizing: border-box;
 }
 
 /* =========================================================
@@ -6534,6 +6546,26 @@ tbody tr:hover {
    ========================================================= */
 
 @media (max-width: 900px) {
+    .form-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .form-grid .full-width,
+  .form-grid .actions {
+    grid-column: 1;
+  }
+
+  .form-grid label {
+    width: 100%;
+  }
+
+  input,
+  select,
+  textarea {
+    box-sizing: border-box;
+    width: 100%;
+  }
   .app-shell {
     display: block;
 
@@ -6574,10 +6606,10 @@ tbody tr:hover {
   }
 
   .content {
-    width: 100%;
-
-    padding: 22px 18px;
-  }
+  width: 100%;
+  padding: 10px;
+  box-sizing: border-box;
+}
 
   .topbar {
     padding-left: 58px;
@@ -6804,6 +6836,353 @@ tbody tr:hover {
   .delete-modal-actions button,
   .modal-actions button {
     min-height: 40px;
+  }
+}
+/* =========================================================
+   MOBILE - FORM FULL SCREEN
+   ========================================================= */
+
+/* =========================================================
+   MOBILE - FORM / MODAL FULL SCREEN
+   ========================================================= */
+
+@media (max-width: 600px) {
+
+  /* =========================
+     BODY
+     ========================= */
+
+  .content {
+    width: 100%;
+    max-width: 100%;
+    padding: 8px;
+    box-sizing: border-box;
+  }
+
+
+  /* =========================
+     PANEL / FORM CONTAINER
+     ========================= */
+
+  .panel {
+    width: 100%;
+    max-width: 100%;
+
+    margin-left: 0;
+    margin-right: 0;
+
+    box-sizing: border-box;
+  }
+
+
+  /* =========================
+     FORM GRID
+     ========================= */
+
+  .form-grid {
+    width: 100%;
+
+    grid-template-columns: 1fr;
+
+    gap: 12px;
+
+    box-sizing: border-box;
+  }
+
+  .form-grid > * {
+    min-width: 0;
+  }
+
+  .form-grid label {
+    width: 100%;
+    min-width: 0;
+  }
+
+
+  /* =========================
+     INPUT / SELECT / TEXTAREA
+     ========================= */
+
+  .form-grid input,
+  .form-grid select,
+  .form-grid textarea,
+  .panel input,
+  .panel select,
+  .panel textarea {
+    width: 100%;
+    max-width: 100%;
+
+    min-width: 0;
+
+    box-sizing: border-box;
+  }
+
+
+  /* =========================
+     BUTTON FORM
+     ========================= */
+
+  .form-grid .actions,
+  .actions {
+    width: 100%;
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 8px;
+
+    box-sizing: border-box;
+  }
+
+  .form-grid .actions button,
+  .actions button {
+    width: 100%;
+  }
+
+
+  /* =========================
+     MODAL BACKDROP
+     ========================= */
+
+  .modal-backdrop,
+  .modal-overlay {
+    position: fixed;
+
+    inset: 0;
+
+    width: 100vw;
+    height: 100vh;
+
+    padding: 0;
+
+    margin: 0;
+
+    display: flex;
+
+    align-items: stretch;
+    justify-content: stretch;
+
+    box-sizing: border-box;
+  }
+
+
+  /* =========================
+     MODAL
+     ========================= */
+
+  .modal-backdrop .modal,
+  .modal-overlay > .modal,
+  .delete-modal {
+
+    width: 100vw;
+    max-width: 100vw;
+
+    height: 100vh;
+    max-height: 100vh;
+
+    min-height: 100vh;
+
+    margin: 0;
+
+    border-radius: 0;
+
+    box-sizing: border-box;
+
+    overflow: hidden;
+
+    display: flex;
+
+    flex-direction: column;
+  }
+
+
+  /* =========================
+     MODAL HEADER
+     ========================= */
+
+  .modal-header {
+    flex-shrink: 0;
+
+    width: 100%;
+
+    box-sizing: border-box;
+  }
+
+
+  /* =========================
+     MODAL BODY
+     ========================= */
+
+  .modal-body {
+    flex: 1;
+
+    width: 100%;
+
+    min-height: 0;
+
+    overflow-y: auto;
+    overflow-x: hidden;
+
+    box-sizing: border-box;
+  }
+
+
+  /* =========================
+     MODAL FOOTER
+     ========================= */
+
+  .modal-footer,
+  .modal-actions,
+  .delete-modal-actions {
+
+    flex-shrink: 0;
+
+    width: 100%;
+
+    box-sizing: border-box;
+  }
+
+
+  /* =========================
+     CCCD
+     ========================= */
+
+  .cccd-edit-section {
+    width: 100%;
+
+    grid-template-columns: 1fr;
+
+    gap: 12px;
+
+    box-sizing: border-box;
+  }
+
+  .cccd-edit-card {
+    width: 100%;
+
+    min-width: 0;
+
+    box-sizing: border-box;
+  }
+
+
+  /* =========================
+     TABLE
+     ========================= */
+
+  .table-wrapper {
+    width: 100%;
+
+    max-width: 100%;
+
+    overflow-x: auto;
+
+    box-sizing: border-box;
+  }
+}
+
+@media (max-width: 600px) {
+  .app-shell {
+    display: block;
+
+    width: 100%;
+    min-width: 0;
+    min-height: 100vh;
+
+    overflow-x: hidden;
+  }
+
+  .sidebar {
+    width: 260px;
+    max-width: 85vw;
+  }
+
+  .content-column {
+    display: block;
+
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+
+    margin: 0;
+    padding: 0;
+  }
+
+  .content {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+
+    margin: 0;
+    padding: 10px;
+
+    box-sizing: border-box;
+  }
+}
+
+@media (max-width: 600px) {
+  .modal-backdrop,
+  .modal-overlay {
+    position: fixed;
+
+    inset: 0;
+
+    width: 100vw;
+    height: 100vh;
+
+    margin: 0;
+    padding: 0;
+
+    display: flex;
+    align-items: stretch;
+    justify-content: stretch;
+
+    box-sizing: border-box;
+  }
+
+  .modal,
+  .modal-backdrop .modal,
+  .modal-overlay > .modal,
+  .delete-modal {
+    width: 100vw !important;
+    max-width: 100vw !important;
+
+    height: 100vh;
+    max-height: 100vh;
+
+    margin: 0 !important;
+
+    border-radius: 0;
+
+    box-sizing: border-box;
+  }
+}
+
+@media (max-width: 600px) {
+  .form-grid {
+    display: grid;
+
+    grid-template-columns: 1fr !important;
+
+    width: 100%;
+    max-width: 100%;
+
+    box-sizing: border-box;
+  }
+
+  .form-grid > * {
+    min-width: 0;
+  }
+
+  .form-grid input,
+  .form-grid select,
+  .form-grid textarea {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+
+    box-sizing: border-box;
   }
 }
 </style>
