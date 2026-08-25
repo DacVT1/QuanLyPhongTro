@@ -533,17 +533,28 @@ function normalizeSearchText(value: unknown) {
 }
 
 const filteredNguoiThues = computed(() => {
-  const keyword = normalizeSearchText(nguoiThueSearch.value);
+  const keyword = nguoiThueSearch.value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
 
   if (!keyword) {
     return nguoiThues.value;
   }
 
   return nguoiThues.value.filter((item) => {
-    const hoTen = normalizeSearchText(item.hoTen);
-    const cccd = normalizeSearchText(item.cccd);
+    const hoTen = String(item.hoTen ?? "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase();
 
-    return hoTen.includes(keyword) || cccd.includes(keyword);
+    const cccd = String(item.cccd ?? "").toLowerCase();
+
+    return (
+      hoTen.includes(keyword) ||
+      cccd.includes(keyword)
+    );
   });
 });
 
@@ -3393,7 +3404,7 @@ onMounted(() => {
                 <option value="">Chọn người thuê</option>
 
                 <option
-                  v-for="item in nguoiThues"
+                  v-for="item in filteredNguoiThues"
                   :key="item.id"
                   :value="item.id"
                 >
