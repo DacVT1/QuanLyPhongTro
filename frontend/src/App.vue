@@ -33,8 +33,26 @@ const accessToken = ref(
   localStorage.getItem('accessToken'),
 )
 
+const currentUser = ref<any | null>(
+  JSON.parse(
+    localStorage.getItem('currentUser') || 'null',
+  ),
+)
+
 function handleLogin(data: any) {
   accessToken.value = data.accessToken
+
+  currentUser.value = data.user
+
+  localStorage.setItem(
+    'accessToken',
+    data.accessToken,
+  )
+
+  localStorage.setItem(
+    'currentUser',
+    JSON.stringify(data.user),
+  )
 }
 
 function logout() {
@@ -42,6 +60,7 @@ function logout() {
   localStorage.removeItem('currentUser')
 
   accessToken.value = null
+  currentUser.value = null
   authMode.value = 'login'
 }
 
@@ -2448,12 +2467,9 @@ onMounted(() => {
       <header class="topbar">
         <div>
           <p class="eyebrow">Hệ thống</p>
-          <h2>Quản lý nhà trọ Ms Chi</h2>
+          <h2>Quản lý nhà trọ {{ currentUser.tenHienThi || currentUser.username }}</h2>
         </div>
         <div class="header-actions">
-    <span v-if="currentUser">
-      Xin chào, {{ currentUser.tenHienThi }}
-    </span>
 
     <button
       type="button"
