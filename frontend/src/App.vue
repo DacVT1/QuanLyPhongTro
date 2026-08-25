@@ -6,7 +6,7 @@ import { computed, onMounted, ref } from "vue";
 import api from "./services/api";
 import { getImageUrl } from "./utils/image";
 import NguoiThueDetail from "./components/nguoi-thue/NguoiThueDetail.vue";
-import Login from './components/auth/Login.vue'
+import Login from ''
 import Register from './components/auth/Register.vue'
 
 ChartJS.register(ArcElement, Tooltip, Legend);
