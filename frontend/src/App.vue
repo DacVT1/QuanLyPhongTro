@@ -3078,6 +3078,10 @@ onMounted(() => {
       type="checkbox"
       :checked="Boolean(item.datCocSom)"
       disabled
+      :class="{
+      'dat-coc-checked': Boolean(item.datCocSom),
+      'dat-coc-unchecked': !Boolean(item.datCocSom)
+    }"
     />
 
     <span>
@@ -6437,6 +6441,29 @@ tbody tr:hover {
 }
 
 .dat-coc-display-no input[type="checkbox"] {
+  accent-color: #9ca3af;
+}
+
+.dat-coc-cell {
+  width: 100px;
+  min-width: 100px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.dat-coc-cell input[type="checkbox"] {
+  width: 17px;
+  height: 17px;
+  margin: 0;
+}
+
+/* Có đặt cọc → checkbox màu đỏ */
+.dat-coc-checked {
+  accent-color: #dc2626;
+}
+
+/* Không đặt cọc → checkbox màu xám */
+.dat-coc-unchecked {
   accent-color: #9ca3af;
 }
 /* =========================================================

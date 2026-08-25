@@ -140,6 +140,7 @@ const giuong = this.repository.create({
   maGiuong,
   giuongSo,
   giaGiuong,
+  datCocSom: Boolean(payload.datCocSom),
   trangThai: "trong",
   phong,
 })
@@ -187,6 +188,9 @@ if (payload.giuongSo !== undefined) {
   }
 
   item.trangThai = payload.trangThai;
+}
+if (payload.datCocSom !== undefined) {
+  item.datCocSom = Boolean(payload.datCocSom);
 }
     if (payload.giaGiuong !== undefined) {
   const giaGiuong = Number(payload.giaGiuong)
