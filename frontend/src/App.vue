@@ -4523,26 +4523,22 @@ textarea {
   position: relative;
 
   display: grid;
-
   grid-template-columns: 260px minmax(0, 1fr);
-
-  /* Chiều cao tự tăng theo nội dung + Footer */
-  grid-template-rows: auto;
 
   width: 100%;
   min-width: 0;
   min-height: 100vh;
 
-  overflow-x: hidden;
-
   align-items: stretch;
+
+  overflow-x: hidden;
 }
 .content-column {
   grid-column: 2;
   grid-row: 1;
 
   min-width: 0;
-  min-height: 100%;
+  min-height: 100vh;
 
   display: flex;
   flex-direction: column;
@@ -4798,13 +4794,14 @@ textarea {
 .content {
   grid-column: 2;
   grid-row: 1;
-
+  flex: 1 0 auto;
   min-width: 0;
   width: 100%;
 
   padding: 28px;
 
   overflow-x: hidden;
+  box-sizing: border-box;
 }
 
 /* =========================================================
