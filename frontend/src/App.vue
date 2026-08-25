@@ -4547,11 +4547,6 @@ textarea {
   display: flex;
   flex-direction: column;
 }
-
-.content {
-  flex: 1;
-  min-width: 0;
-}
 /* =========================================================
    SIDEBAR
    ========================================================= */
@@ -6554,6 +6549,26 @@ tbody tr:hover {
    ========================================================= */
 
 @media (max-width: 900px) {
+    .form-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .form-grid .full-width,
+  .form-grid .actions {
+    grid-column: 1;
+  }
+
+  .form-grid label {
+    width: 100%;
+  }
+
+  input,
+  select,
+  textarea {
+    box-sizing: border-box;
+    width: 100%;
+  }
   .app-shell {
     display: block;
 
@@ -6824,6 +6839,23 @@ tbody tr:hover {
   .delete-modal-actions button,
   .modal-actions button {
     min-height: 40px;
+  }
+}
+@media (max-width: 600px) {
+  .delete-modal,
+  .modal-backdrop .modal,
+  .modal-overlay > .modal {
+    width: 100vw;
+    max-width: 100vw;
+
+    height: 100vh;
+    max-height: 100vh;
+
+    margin: 0;
+
+    border-radius: 0;
+
+    box-sizing: border-box;
   }
 }
 </style>
