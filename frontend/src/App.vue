@@ -6344,6 +6344,13 @@ tbody tr:hover {
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-wrap: nowrap;
+}
+
+.nguoi-thue-header-actions .primary {
+  white-space: nowrap;
+  min-width: max-content;
+  flex-shrink: 0;
 }
 
 .nguoi-thue-search {
