@@ -18,53 +18,62 @@ async function bootstrap() {
   );
 
   const corsOrigins = (
-  process.env.CORS_ORIGINS ||
-  'http://localhost:5173,http://127.0.0.1:5173'
-)
+    process.env.CORS_ORIGINS ||
+    'http://localhost:5173,http://127.0.0.1:5173'
+  )
     .split(',')
-    .map((origin) => origin.trim())
+    .map((origin) => origin.trim().replace(/\/$/, ''))
     .filter(Boolean);
 
   const isAllowedOrigin = (origin?: string) => {
     if (!origin) return true;
 
-    if (corsOrigins.includes(origin)) return true;
+    const normalizedOrigin = origin.trim().replace(/\/$/, '');
+
+    if (corsOrigins.includes(normalizedOrigin)) return true;
 
     // Allow Vercel preview deployments for this project.
     // Vercel generates a different *.vercel.app hostname for each deployment.
     try {
-      const url = new URL(origin);
+      const url = new URL(normalizedOrigin);
       return (
         url.protocol === 'https:' &&
         url.hostname.endsWith('.vercel.app') &&
-        url.hostname.startsWith('quan-ly-phong-tro-')
+        (url.hostname.startsWith('quan-ly-phong-tro-') ||
+          url.hostname === 'homeforme.vercel.app')
       );
     } catch {
       return false;
     }
   };
 
-app.enableCors({
-  origin: corsOrigins,
-  credentials: true,
-  methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
-  allowedHeaders: [
-    'Content-Type',
-    'Authorization',
-    'Accept',
-    'Origin',
-    'X-Requested-With',
-  ],
-});
+  app.enableCors({
+    origin: (
+      origin: string | undefined,
+      callback: (error: Error | null, allow?: boolean) => void,
+    ) => {
+      if (isAllowedOrigin(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error(`CORS origin not allowed: ${origin}`), false);
+      }
+    },
+    credentials: true,
+    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'Accept',
+      'Origin',
+      'X-Requested-With',
+    ],
+  });
 
   const storageDir =
     process.env.STORAGE_DIR ||
     join(process.cwd(), 'uploads');
 
-  app.use(
-    '/uploads',
-    express.static(storageDir),
-  );
+  app.use('/uploads', express.static(storageDir));
 
   // Railway provides process.env.PORT in production.
   const port = process.env.PORT ?? 3000;
