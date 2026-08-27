@@ -45,15 +45,18 @@ async function bootstrap() {
   };
 
   app.enableCors({
-    origin: (origin, callback) => {
-      if (isAllowedOrigin(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error(`CORS origin not allowed: ${origin}`));
-      }
-    },
-    credentials: true,
-  });
+  origin: (
+    origin: string | undefined,
+    callback: (err: Error | null, allow?: boolean) => void,
+  ) => {
+    if (isAllowedOrigin(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error(`CORS origin not allowed: ${origin}`));
+    }
+  },
+  credentials: true,
+});
 
   const storageDir =
     process.env.STORAGE_DIR ||
