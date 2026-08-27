@@ -7,22 +7,8 @@ import express from 'express';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  /**
-   * ==========================================
-   * 1. Prefix cho toàn bộ API
-   * ==========================================
-   *
-   * Ví dụ:
-   * GET /api/rooms
-   * POST /api/auth/login
-   */
   app.setGlobalPrefix('api');
 
-  /**
-   * ==========================================
-   * 2. Validation
-   * ==========================================
-   */
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -31,26 +17,9 @@ async function bootstrap() {
     }),
   );
 
-  /**
-   * ==========================================
-   * 3. CORS
-   * ==========================================
-   *
-   * Local:
-   *   http://localhost:5173
-   *   http://127.0.0.1:5173
-   *
-   * Production:
-   *   https://nhatro.vn
-   *   https://www.nhatro.vn
-   *
-   * Có thể cấu hình qua:
-   *
-   * CORS_ORIGINS=https://nhatro.vn,https://www.nhatro.vn
-   */
   const corsOrigins = (
     process.env.CORS_ORIGINS ||
-    'http://localhost:5173,http://127.0.0.1:5173'
+    'http://localhost:5173,http://127.0.0.1:5173,https://quan-ly-phong-tro-eight.vercel.app'
   )
     .split(',')
     .map((origin) => origin.trim())
@@ -61,21 +30,6 @@ async function bootstrap() {
     credentials: true,
   });
 
-  /**
-   * ==========================================
-   * 4. Static files
-   * ==========================================
-   *
-   * Local:
-   *   ./uploads
-   *
-   * Railway:
-   *   /data/uploads
-   *
-   * Cấu hình bằng:
-   *
-   * STORAGE_DIR=/data/uploads
-   */
   const storageDir =
     process.env.STORAGE_DIR ||
     join(process.cwd(), 'uploads');
@@ -85,39 +39,14 @@ async function bootstrap() {
     express.static(storageDir),
   );
 
-  /**
-   * ==========================================
-   * 5. PORT
-   * ==========================================
-   *
-   * Railway tự cấp process.env.PORT.
-   *
-   * Local:
-   *   PORT không có → 3000
-   *
-   * Railway:
-   *   PORT = Railway cấp
-   */
+  // Railway provides process.env.PORT in production.
   const port = process.env.PORT ?? 3000;
 
-  /**
-   * ==========================================
-   * 6. Listen
-   * ==========================================
-   */
   await app.listen(port, '0.0.0.0');
 
-  console.log(
-    `Backend running on http://localhost:${port}`,
-  );
-
-  console.log(
-    `CORS origins: ${corsOrigins.join(', ')}`,
-  );
-
-  console.log(
-    `Storage directory: ${storageDir}`,
-  );
+  console.log(`Backend running on port ${port}`);
+  console.log(`CORS origins: ${corsOrigins.join(', ')}`);
+  console.log(`Storage directory: ${storageDir}`);
 }
 
 bootstrap();
