@@ -18,9 +18,9 @@ async function bootstrap() {
   );
 
   const corsOrigins = (
-    process.env.CORS_ORIGINS ||
-    'http://localhost:5173,http://127.0.0.1:5173,https://quan-ly-phong-tro-eight.vercel.app'
-  )
+  process.env.CORS_ORIGINS ||
+  'http://localhost:5173,http://127.0.0.1:5173'
+)
     .split(',')
     .map((origin) => origin.trim())
     .filter(Boolean);
@@ -44,18 +44,17 @@ async function bootstrap() {
     }
   };
 
-  app.enableCors({
-  origin: (
-    origin: string | undefined,
-    callback: (err: Error | null, allow?: boolean) => void,
-  ) => {
-    if (isAllowedOrigin(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error(`CORS origin not allowed: ${origin}`));
-    }
-  },
+app.enableCors({
+  origin: corsOrigins,
   credentials: true,
+  methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+  allowedHeaders: [
+    'Content-Type',
+    'Authorization',
+    'Accept',
+    'Origin',
+    'X-Requested-With',
+  ],
 });
 
   const storageDir =
