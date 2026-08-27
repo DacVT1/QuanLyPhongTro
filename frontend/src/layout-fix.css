@@ -95,3 +95,27 @@ main.panel-grid,
     padding: 14px;
   }
 }
+/* =========================================================
+   MOBILE - ĐƯA NÚT ĐĂNG XUẤT SÁT BÊN PHẢI
+   ========================================================= */
+
+@media (max-width: 480px) {
+  .topbar .logout-button {
+    align-self: flex-end;
+    margin-left: auto;
+    margin-right: 0;
+    flex-shrink: 0;
+  }
+}
+
+.panel-grid:has(> .metric-card) {
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  gap: 16px;
+  align-items: stretch;
+}
+
+.panel-grid:has(> .metric-card) > .metric-card {
+  grid-column: auto;
+  width: 100%;
+  min-width: 0;
+}
