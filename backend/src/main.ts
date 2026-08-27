@@ -25,8 +25,33 @@ async function bootstrap() {
     .map((origin) => origin.trim())
     .filter(Boolean);
 
+  const isAllowedOrigin = (origin?: string) => {
+    if (!origin) return true;
+
+    if (corsOrigins.includes(origin)) return true;
+
+    // Allow Vercel preview deployments for this project.
+    // Vercel generates a different *.vercel.app hostname for each deployment.
+    try {
+      const url = new URL(origin);
+      return (
+        url.protocol === 'https:' &&
+        url.hostname.endsWith('.vercel.app') &&
+        url.hostname.startsWith('quan-ly-phong-tro-')
+      );
+    } catch {
+      return false;
+    }
+  };
+
   app.enableCors({
-    origin: corsOrigins,
+    origin: (origin, callback) => {
+      if (isAllowedOrigin(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error(`CORS origin not allowed: ${origin}`));
+      }
+    },
     credentials: true,
   });
 
