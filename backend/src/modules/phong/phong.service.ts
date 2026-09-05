@@ -4,35 +4,53 @@ import { Repository } from 'typeorm'
 
 import { Phong } from '../../entities/phong.entity'
 import { NhaTro } from '../../entities/nha-tro.entity'
+import { Tenant } from '../../entities/tenant.entity';
+
 
 @Injectable()
 export class PhongService {
   constructor(
-    @InjectRepository(Phong)
-    private readonly repository: Repository<Phong>,
+  @InjectRepository(Phong)
+  private readonly repository: Repository<Phong>,
 
-    @InjectRepository(NhaTro)
-    private readonly nhaTroRepository: Repository<NhaTro>,
-  ) {}
+  @InjectRepository(NhaTro)
+  private readonly nhaTroRepository: Repository<NhaTro>,
 
-  async findAll() {
-    return this.repository.find({
-      relations: {
-        nhaTro: true,
-        giuongs: true,
+  @InjectRepository(Tenant)
+  private readonly tenantRepository: Repository<Tenant>,
+) {}
+
+  async findAll(tenantId: string) {
+  return this.repository.find({
+    where: {
+      tenant: {
+        id: tenantId,
       },
-    })
-  }
+    },
+    relations: {
+      nhaTro: true,
+      giuongs: true,
+    },
+  });
+}
 
-  async findOne(id: string) {
-    return this.repository.findOne({
-      where: { id },
-      relations: {
-        nhaTro: true,
-        giuongs: true,
+  async findOne(
+  id: string,
+  tenantId: string,
+) {
+  return this.repository.findOne({
+    where: {
+      id,
+      tenant: {
+        id: tenantId,
       },
-    })
-  }
+    },
+    relations: {
+      nhaTro: true,
+      giuongs: true,
+    },
+  });
+}
 
   private normalizeFloor(value: unknown): string {
     const floor = String(value ?? '').trim()
@@ -46,43 +64,88 @@ export class PhongService {
     return `${maNhaTro.trim()}_T${this.normalizeFloor(floor)}`
   }
   
-  async create(payload: Partial<Phong> & { nhaTro?: { id: string }; nhaTroId?: string; tangSo?: string | number }) {
-    const nhaTroId = payload.nhaTro?.id ?? payload.nhaTroId
+  async create(
+  payload: Partial<Phong> & {
+    nhaTro?: { id: string };
+    nhaTroId?: string;
+    tangSo?: string | number;
+  },
+  tenantId: string,
+) {
+  const nhaTroId =
+    payload.nhaTro?.id ?? payload.nhaTroId;
 
-    if (!nhaTroId) {
-      throw new NotFoundException('Vui lòng chọn nhà trọ')
-    }
-
-    const nhaTro = await this.nhaTroRepository.findOne({
-      where: { id: nhaTroId },
-    })
-
-    if (!nhaTro) {
-      throw new NotFoundException('Không tìm thấy nhà trọ')
-    }
-
-    const floor = this.normalizeFloor(payload.tangSo ?? payload.maPhong,)
-    const maPhong = this.buildRoomCode(nhaTro.maNhaTro, floor)
-
-    const existing = await this.repository.findOne({
-      where: { maPhong },
-    })
-
-    if (existing) {
-      throw new ConflictException(`Phòng ${maPhong} đã tồn tại`)
-    }
-
-    const phong = this.repository.create({
-      maPhong,
-      tangSo: Number(floor),
-      soGiuongToiDa: payload.soGiuongToiDa,
-      loaiPhong: payload.loaiPhong,
-      dienTich: payload.dienTich,
-      nhaTro,
-    })
-
-    return this.repository.save(phong)
+  if (!nhaTroId) {
+    throw new NotFoundException('Vui lòng chọn nhà trọ');
   }
+
+  // Kiểm tra Tenant từ JWT
+  const tenant = await this.tenantRepository.findOne({
+    where: { id: tenantId },
+  });
+
+  if (!tenant) {
+    throw new NotFoundException(
+      'Không tìm thấy tenant',
+    );
+  }
+
+  // Chỉ cho phép tạo phòng trong nhà trọ
+  // thuộc tenant hiện tại
+  const nhaTro = await this.nhaTroRepository.findOne({
+    where: {
+      id: nhaTroId,
+      tenant: {
+        id: tenantId,
+      },
+    },
+  });
+
+  if (!nhaTro) {
+    throw new NotFoundException(
+      'Không tìm thấy nhà trọ hoặc nhà trọ không thuộc tài khoản hiện tại',
+    );
+  }
+
+  const floor = this.normalizeFloor(
+    payload.tangSo ?? payload.maPhong,
+  );
+
+  const maPhong = this.buildRoomCode(
+    nhaTro.maNhaTro,
+    floor,
+  );
+
+  const existing = await this.repository.findOne({
+    where: {
+      maPhong,
+      tenant: {
+        id: tenantId,
+      },
+    },
+  });
+
+  if (existing) {
+    throw new ConflictException(
+      `Phòng ${maPhong} đã tồn tại`,
+    );
+  }
+
+  const phong = this.repository.create({
+    maPhong,
+    tangSo: Number(floor),
+    soGiuongToiDa: payload.soGiuongToiDa,
+    loaiPhong: payload.loaiPhong,
+    dienTich: payload.dienTich,
+
+    nhaTro,
+
+    // QUAN TRỌNG
+    tenant,
+  });
+
+  return this.repository.save(phong);
+}
 
   async update(
     id: string,
@@ -91,9 +154,15 @@ export class PhongService {
       nhaTroId?: string
       tangSo?: string | number
     },
+    tenantId: string,
   ) {
     const phong = await this.repository.findOne({
-      where: { id },
+      where: {
+        id,
+        tenant: {
+          id: tenantId,
+        },
+      },
       relations: { nhaTro: true },
     })
 
@@ -170,18 +239,24 @@ if (
 
     await this.repository.save(phong)
 
-    return this.findOne(id)
+    return this.findOne(id, tenantId)
   }
 
-  async remove(id: string) {
-    const item = await this.findOne(id)
+  async remove(
+  id: string,
+  tenantId: string,
+) {
+  const item = await this.findOne(
+    id,
+    tenantId,
+  );
 
-    if (!item) {
-      return null
-    }
-
-    await this.repository.remove(item)
-
-    return item
+  if (!item) {
+    return null;
   }
+
+  await this.repository.remove(item);
+
+  return item;
+}
 }

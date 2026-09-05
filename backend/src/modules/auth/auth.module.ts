@@ -6,7 +6,7 @@ import { TaiKhoan } from '../../entities/tai-khoan.entity';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
-import { Tenant } from 'src/entities/tenant.entity';
+import { Tenant } from '../../entities/tenant.entity';
 
 @Module({
   imports: [
@@ -32,6 +32,7 @@ import { Tenant } from 'src/entities/tenant.entity';
   exports: [
     AuthService,
     JwtModule,
+    JwtAuthGuard,
   ],
 })
 export class AuthModule {}
