@@ -20,22 +20,45 @@ export class HoaDon {
   @Column({ type: 'date', nullable: true })
   thangThanhToan?: Date;
 
-  @Column({ type: 'float', default: 0 })
-  tienPhong: number;
+@Column({
+  type: 'decimal',
+  precision: 15,
+  scale: 2,
+  default: 0,
+})
+tienPhong: number;
 
-  @Column({ type: 'float', default: 0 })
-  tienDien: number;
+@Column({
+  type: 'decimal',
+  precision: 15,
+  scale: 2,
+  default: 0,
+})
+tienDien: number;
 
-  @Column({ type: 'float', default: 0 })
-  tienNuoc: number;
+@Column({
+  type: 'decimal',
+  precision: 15,
+  scale: 2,
+  default: 0,
+})
+tienNuoc: number;
 
-  @Column({ type: 'float', default: 0 })
-  tienDichVuKhac: number;
-
-  @Column({ type: 'float', default: 0 })
-  tongTien: number;
+@Column({
+  type: 'decimal',
+  precision: 15,
+  scale: 2,
+  default: 0,
+})
+tienDichVuKhac: number;
   
-
+@Column({
+  type: 'decimal',
+  precision: 15,
+  scale: 2,
+  default: 0,
+})
+tongTien: number;
 
 
   @Column({ default: 'chua_thanh_toan' })

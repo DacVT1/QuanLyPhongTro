@@ -26,23 +26,47 @@ export class HopDong {
   @Column({ type: 'date', nullable: true })
   ngayKetThuc?: Date;
 
-  @Column({ type: 'float', default: 0 })
-  tienThue: number;
+@Column({
+  type: 'decimal',
+  precision: 15,
+  scale: 2,
+  default: 0,
+})
+tienThue: number;
 
   @Column({ type: 'integer', default: 1 })
   chuKyThanhToan: number;
+@Column({
+  type: 'decimal',
+  precision: 15,
+  scale: 2,
+  default: 0,
+})
+tienDatCoc: number;
 
-  @Column({ type: 'float', default: 0 })
-  tienDatCoc: number;
+@Column({
+  type: 'decimal',
+  precision: 15,
+  scale: 2,
+  default: 0,
+})
+tienDien: number;
 
-  @Column({ type: 'float', default: 0 })
-  tienDien: number;
+@Column({
+  type: 'decimal',
+  precision: 15,
+  scale: 2,
+  default: 0,
+})
+tienNuoc: number;
 
-  @Column({ type: 'float', default: 0 })
-  tienNuoc: number;
-
-  @Column({ type: 'float', default: 0 })
-  tienDichVu: number;
+@Column({
+  type: 'decimal',
+  precision: 15,
+  scale: 2,
+  default: 0,
+})
+tienDichVu: number;
 
   @Column({ default: 'active' })
   trangThai: string;
