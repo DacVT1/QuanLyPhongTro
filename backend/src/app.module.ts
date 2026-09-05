@@ -19,6 +19,7 @@ import { PhongModule } from './modules/phong/phong.module';
 import { TaiKhoanModule } from './modules/tai-khoan/tai-khoan.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
+import { Tenant } from './entities/tenant.entity';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { ConfigModule } from '@nestjs/config';
     NguoiThue,
     HopDong,
     HoaDon,
+    Tenant,
   ],
 
   synchronize: true,

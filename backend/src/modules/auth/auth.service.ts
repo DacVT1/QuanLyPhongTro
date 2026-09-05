@@ -11,6 +11,7 @@ import { Repository } from 'typeorm';
 import { TaiKhoan } from '../../entities/tai-khoan.entity';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { Tenant } from 'src/entities/tenant.entity';
 
 @Injectable()
 export class AuthService {
@@ -18,6 +19,8 @@ export class AuthService {
     @InjectRepository(TaiKhoan)
     private readonly taiKhoanRepository: Repository<TaiKhoan>,
 
+    @InjectRepository(Tenant)
+private readonly tenantRepository: Repository<Tenant>,
     private readonly jwtService: JwtService,
   ) {}
 

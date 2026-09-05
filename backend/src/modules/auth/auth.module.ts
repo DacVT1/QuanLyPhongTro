@@ -6,10 +6,11 @@ import { TaiKhoan } from '../../entities/tai-khoan.entity';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { Tenant } from 'src/entities/tenant.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([TaiKhoan]),
+    TypeOrmModule.forFeature([TaiKhoan,Tenant,]),
 
     JwtModule.register({
   secret: process.env.JWT_SECRET || 'quan-ly-phong-tro-secret-key',

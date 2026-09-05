@@ -8,6 +8,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { HopDong } from './hop-dong.entity';
+import { Tenant } from './tenant.entity';
 
 @Entity({ name: 'hoa_don' })
 export class HoaDon {
@@ -79,4 +80,8 @@ tongTien: number;
 
   @UpdateDateColumn()
   updatedAt: Date;
+
+  @ManyToOne(() => Tenant, { nullable: false })
+@JoinColumn({ name: 'tenant_id' })
+tenant: Tenant;
 }
