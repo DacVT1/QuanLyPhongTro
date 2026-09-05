@@ -2,6 +2,8 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  JoinColumn,
+  ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
@@ -39,7 +41,7 @@ export class TaiKhoan {
   @OneToMany(() => NhaTro, (nhaTro) => nhaTro.taiKhoan)
   nhaTros: NhaTro[];
 
-  @ManyToOne(() => Tenant, (tenant) => tenant.taiKhoans, {
+  @ManyToOne(() => Tenant, (tenant: Tenant) => tenant.taiKhoans, {
   nullable: false,
 })
 @JoinColumn({ name: 'tenant_id' })

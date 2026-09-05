@@ -68,9 +68,12 @@ export class AuthService {
     const username = dto.username.trim();
 
     const taiKhoan =
-      await this.taiKhoanRepository.findOne({
-        where: { username },
-      });
+  await this.taiKhoanRepository.findOne({
+    where: { username },
+    relations: {
+      tenant: true,
+    },
+  });
 
     if (!taiKhoan) {
       throw new UnauthorizedException(
@@ -91,10 +94,11 @@ export class AuthService {
     }
 
     const payload = {
-      sub: taiKhoan.id,
-      username: taiKhoan.username,
-      role: taiKhoan.role,
-    };
+  sub: taiKhoan.id,
+  username: taiKhoan.username,
+  role: taiKhoan.role,
+  tenantId: taiKhoan.tenant.id,
+};
 
     const accessToken =
       await this.jwtService.signAsync(payload);

@@ -6,6 +6,7 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { TaiKhoan } from './tai-khoan.entity';
 
 @Entity({ name: 'tenant' })
 export class Tenant {
@@ -26,4 +27,10 @@ export class Tenant {
 
   @UpdateDateColumn()
   updatedAt: Date;
+
+  @OneToMany(
+  () => TaiKhoan,
+  (taiKhoan: TaiKhoan) => taiKhoan.tenant,
+)
+taiKhoans: TaiKhoan[];
 }
