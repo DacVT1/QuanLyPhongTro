@@ -39,7 +39,7 @@ findOne(
   @Post()
 create(
   @Body() payload: any,
-  @CurrentUser() user: any,
+  @CurrentUser() user: JwtPayload,
 ) {
   return this.giuongService.create(
     payload,
@@ -51,7 +51,7 @@ create(
 update(
   @Param('id') id: string,
   @Body() payload: any,
-  @CurrentUser() user: any,
+  @CurrentUser() user: JwtPayload,
 ) {
   return this.giuongService.update(
     id,
@@ -63,7 +63,7 @@ update(
   @Delete(':id')
 remove(
   @Param('id') id: string,
-  @CurrentUser() user: any,
+  @CurrentUser() user: JwtPayload,
 ) {
   return this.giuongService.remove(
     id,
