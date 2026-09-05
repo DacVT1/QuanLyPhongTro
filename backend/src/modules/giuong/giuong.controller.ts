@@ -12,6 +12,7 @@ import {
 import { GiuongService } from './giuong.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import type { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 
 @Controller('giuong')
 @UseGuards(JwtAuthGuard)
@@ -19,7 +20,7 @@ export class GiuongController {
   constructor(private readonly giuongService: GiuongService) {}
 
   @Get()
-findAll(@CurrentUser() user: any) {
+findAll(@CurrentUser() user: JwtPayload) {
   return this.giuongService.findAll(
     user.tenantId,
   );
@@ -28,7 +29,7 @@ findAll(@CurrentUser() user: any) {
   @Get(':id')
 findOne(
   @Param('id') id: string,
-  @CurrentUser() user: any,
+  @CurrentUser() user: JwtPayload,
 ) {
   return this.giuongService.findOne(
     id,
