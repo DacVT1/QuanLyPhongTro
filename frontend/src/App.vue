@@ -2476,7 +2476,6 @@ onMounted(() => {
 
     
   </div>
-        <button class="primary" @click="loadData">Làm mới dữ liệu</button>
         <button
       type="button"
       class="logout-button"

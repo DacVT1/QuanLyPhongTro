@@ -20,17 +20,26 @@ import { TaiKhoanModule } from './modules/tai-khoan/tai-khoan.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
 
-
 @Module({
   imports: [
     ConfigModule.forRoot(),
     TypeOrmModule.forRoot({
-      type: 'better-sqlite3',
-      database: 'database.sqlite',
-      entities: [TaiKhoan, NhaTro, Phong, Giuong, NguoiThue, HopDong, HoaDon],
-      synchronize: true,
-      logging: false,
-    }),
+  type: 'postgres',
+  url: process.env.DATABASE_URL,
+
+  entities: [
+    TaiKhoan,
+    NhaTro,
+    Phong,
+    Giuong,
+    NguoiThue,
+    HopDong,
+    HoaDon,
+  ],
+
+  synchronize: true,
+  logging: false,
+}),
     AuthModule,
     TaiKhoanModule,
     NhaTroModule,

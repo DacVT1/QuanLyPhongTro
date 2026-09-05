@@ -1,99 +1,88 @@
-import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { DataSource } from 'typeorm';
-import { join } from 'path';
-import * as express from 'express';
-
 import { AppModule } from './app.module';
-import { seedDatabase } from './database/seed';
+import { ValidationPipe } from '@nestjs/common';
+import { join } from 'path';
+import express from 'express';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-app.use(
-  '/uploads',
-  express.static(join(process.cwd(), 'uploads')),
-);
-  app.enableCors({
-    origin: [
-      'http://localhost:5173',
-      'http://127.0.0.1:5173',
-    ],
-    credentials: true,
-  });
 
-  // ==============================
-  // Global API prefix
-  // ==============================
   app.setGlobalPrefix('api');
 
-  // ==============================
-  // Validation
-  // ==============================
   app.useGlobalPipes(
     new ValidationPipe({
-      transform: true,
       whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
     }),
   );
 
-  // ==============================
-  // Static files - Uploads
-  // ==============================
-  app.use(
-    '/uploads',
-    express.static(
-      join(process.cwd(), 'uploads'),
-    ),
-  );
+  const corsOrigins = (
+    process.env.CORS_ORIGINS ||
+    'http://localhost:5173,http://127.0.0.1:5173'
+  )
+    .split(',')
+    .map((origin) => origin.trim().replace(/\/$/, ''))
+    .filter(Boolean);
 
-  // ==============================
-  // Swagger
-  // ==============================
-  const config = new DocumentBuilder()
-    .setTitle('Quản lý nhà trọ')
-    .setDescription(
-      'API quản lý nhà trọ, phòng, giường, hợp đồng và hóa đơn',
-    )
-    .setVersion('1.0')
-    .build();
+  const isAllowedOrigin = (origin?: string) => {
+    if (!origin) return true;
 
-  const document = SwaggerModule.createDocument(
-    app,
-    config,
-  );
+    const normalizedOrigin = origin.trim().replace(/\/$/, '');
 
-  SwaggerModule.setup(
-    'api/docs',
-    app,
-    document,
-  );
+    if (corsOrigins.includes(normalizedOrigin)) return true;
 
-  // ==============================
-  // Database seed
-  // ==============================
-  const dataSource = app.get(DataSource);
+    // Allow Vercel preview deployments for this project.
+    // Vercel generates a different *.vercel.app hostname for each deployment.
+    try {
+      const url = new URL(normalizedOrigin);
+      return (
+        url.protocol === 'https:' &&
+        url.hostname.endsWith('.vercel.app') &&
+        (url.hostname.startsWith('quan-ly-phong-tro-') ||
+          url.hostname === 'homeforme.vercel.app')
+      );
+    } catch {
+      return false;
+    }
+  };
 
-  await seedDatabase(dataSource);
+  app.enableCors({
+    origin: (
+      origin: string | undefined,
+      callback: (error: Error | null, allow?: boolean) => void,
+    ) => {
+      if (isAllowedOrigin(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error(`CORS origin not allowed: ${origin}`), false);
+      }
+    },
+    credentials: true,
+    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'Accept',
+      'Origin',
+      'X-Requested-With',
+    ],
+  });
 
-  // ==============================
-  // Start server
-  // ==============================
+  const storageDir =
+    process.env.STORAGE_DIR ||
+    join(process.cwd(), 'uploads');
+
+  app.use('/uploads', express.static(storageDir));
+
+  // Railway provides process.env.PORT in production.
   const port = process.env.PORT ?? 3000;
 
-  await app.listen(port);
+  await app.listen(port, '0.0.0.0');
 
-  console.log(
-    `Application is running on: http://localhost:${port}`,
-  );
-
-  console.log(
-    `Swagger: http://localhost:${port}/api/docs`,
-  );
-
-  console.log(
-    `Uploads: http://localhost:${port}/uploads/`,
-  );
+  console.log(`Backend running on port ${port}`);
+  console.log(`CORS origins: ${corsOrigins.join(', ')}`);
+  console.log(`Storage directory: ${storageDir}`);
 }
 
 bootstrap();

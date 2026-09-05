@@ -1,0 +1,121 @@
+/* =========================================================
+   FULL-WIDTH CONTENT / FORM / LIST FIX
+   ========================================================= */
+
+html,
+body,
+#app {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+}
+
+.app-shell {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+}
+
+.content-column,
+.content {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+}
+
+.content {
+  box-sizing: border-box;
+}
+
+/* Mỗi tab/form/list phải chiếm toàn bộ vùng content bên phải sidebar. */
+.content > main,
+.content > section,
+main.panel-grid,
+.panel-grid {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  box-sizing: border-box;
+
+  /* FIX: panel chỉ có 1 phần tử nhưng grid vẫn chia thành nhiều cột */
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+
+.panel-grid > .panel,
+.panel-grid > .panel:only-child {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  grid-column: 1 / -1;
+  box-sizing: border-box;
+}
+
+/* Khi panel-grid chỉ có 1 panel (form hoặc danh sách), panel luôn full width. */
+.panel-grid > .panel:only-child,
+.panel-grid > .panel {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+/* Không để nội dung bảng bị co còn một nửa vùng hiển thị. */
+.panel > table,
+.panel > .table-responsive {
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
+}
+
+/* Bảng rộng theo panel; trên màn hình nhỏ vẫn cho phép cuộn ngang. */
+.panel > table {
+  min-width: 650px;
+}
+
+/* Form 2 cột sử dụng toàn bộ chiều rộng panel. */
+.panel > .form-grid {
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
+}
+
+@media (max-width: 900px) {
+  .content {
+    padding: 20px;
+  }
+}
+
+@media (max-width: 640px) {
+  .content {
+    padding: 14px;
+  }
+
+  .panel {
+    padding: 14px;
+  }
+}
+/* =========================================================
+   MOBILE - ĐƯA NÚT ĐĂNG XUẤT SÁT BÊN PHẢI
+   ========================================================= */
+
+@media (max-width: 480px) {
+  .topbar .logout-button {
+    align-self: flex-end;
+    margin-left: auto;
+    margin-right: 0;
+    flex-shrink: 0;
+  }
+}
+
+.panel-grid:has(> .metric-card) {
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  gap: 16px;
+  align-items: stretch;
+}
+
+.panel-grid:has(> .metric-card) > .metric-card {
+  grid-column: auto;
+  width: 100%;
+  min-width: 0;
+}
