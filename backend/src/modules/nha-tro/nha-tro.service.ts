@@ -11,6 +11,7 @@ import { Phong } from '../../entities/phong.entity';
 import { Giuong } from '../../entities/giuong.entity';
 import { HopDong } from '../../entities/hop-dong.entity';
 import { HoaDon } from '../../entities/hoa-don.entity';
+import { Tenant } from '../../entities/tenant.entity';
 
 @Injectable()
 export class NhaTroService {
@@ -19,26 +20,42 @@ export class NhaTroService {
     private readonly repository: Repository<NhaTro>,
   ) {}
 
-  async findAll() {
-    return this.repository.find({
-      relations: {
-        taiKhoan: true,
-        phongs: true,
+  async findAll(tenantId: string) {
+  return this.repository.find({
+    where: {
+      tenant: {
+        id: tenantId,
       },
-    });
-  }
+    },
+    relations: {
+      taiKhoan: true,
+      phongs: true,
+    },
+  });
+}
 
-  async findOne(id: string) {
-    return this.repository.findOne({
-      where: { id },
-      relations: {
-        taiKhoan: true,
-        phongs: true,
+ async findOne(
+  id: string,
+  tenantId: string,
+) {
+  return this.repository.findOne({
+    where: {
+      id,
+      tenant: {
+        id: tenantId,
       },
-    });
-  }
+    },
+    relations: {
+      taiKhoan: true,
+      phongs: true,
+    },
+  });
+}
 
-  async create(payload: Partial<NhaTro>) {
+  async create(
+  payload: Partial<NhaTro>,
+  tenantId: string,
+) {
     const maNhaTro = String(payload.maNhaTro ?? '').trim();
 
     if (!maNhaTro) {
@@ -53,16 +70,32 @@ export class NhaTroService {
       throw new ConflictException(`Mã nhà trọ ${maNhaTro} đã tồn tại`);
     }
 
-    return this.repository.save(
-      this.repository.create({
-        ...payload,
-        maNhaTro,
-      }),
-    );
+    const tenant = await this.repository.manager
+  .getRepository(Tenant)
+  .findOne({
+    where: { id: tenantId },
+  });
+
+if (!tenant) {
+  throw new NotFoundException(
+    'Khong tim thay tenant',
+  );
+}
+
+return this.repository.save(
+  this.repository.create({
+    ...payload,
+    maNhaTro,
+    tenant,
+  }),
+);
   }
 
-  async update(id: string, payload: Partial<NhaTro>) {
-    const item = await this.findOne(id);
+  async update(id: string, payload: Partial<NhaTro>, tenantId: string) {
+    const item = await this.findOne(
+  id,
+  tenantId,
+);
 
     if (!item) {
       throw new NotFoundException('Khong tim thay nha tro');
@@ -87,11 +120,11 @@ export class NhaTroService {
     }
 
     await this.repository.update(id, payload);
-    return this.findOne(id);
+    return this.findOne(id,tenantId);
   }
 
-  async remove(id: string) {
-    const item = await this.findOne(id);
+  async remove(id: string, tenantId: string) {
+    const item = await this.findOne(id, tenantId);
 
     if (!item) {
       throw new NotFoundException('Khong tim thay nha tro');
