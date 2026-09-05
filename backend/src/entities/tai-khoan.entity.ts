@@ -7,6 +7,8 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { NhaTro } from './nha-tro.entity';
+import { Tenant } from './tenant.entity';
+
 
 @Entity({ name: 'tai_khoan' })
 export class TaiKhoan {
@@ -36,4 +38,10 @@ export class TaiKhoan {
 
   @OneToMany(() => NhaTro, (nhaTro) => nhaTro.taiKhoan)
   nhaTros: NhaTro[];
+
+  @ManyToOne(() => Tenant, (tenant) => tenant.taiKhoans, {
+  nullable: false,
+})
+@JoinColumn({ name: 'tenant_id' })
+tenant: Tenant;
 }
