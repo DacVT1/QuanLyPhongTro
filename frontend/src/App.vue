@@ -332,13 +332,16 @@ async function handleThemHoaDonChoCacGiuong() {
      */
     await loadData();
 
-    /*
-     * Nếu source của bạn có hàm
-     * loadDashboard() thì gọi lại.
-     */
-    if (typeof loadData === "function") {
-      await loadData();
-    }
+       // Chuyển sang module Hóa đơn
+    currentTab.value = "hoaDon";
+
+    // Quan trọng: đóng form Thêm hóa đơn
+    // để hiển thị Danh sách hóa đơn
+    resetHoaDonForm();
+    showHoaDonForm.value = false;
+
+    // Chuyển sang tab Danh sách hóa đơn
+    currentTab.value = "hoaDon";
 
     const daTao = Number(result?.daTao ?? 0);
 

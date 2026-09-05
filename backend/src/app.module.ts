@@ -19,16 +19,14 @@ import { PhongModule } from './modules/phong/phong.module';
 import { TaiKhoanModule } from './modules/tai-khoan/tai-khoan.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
-import { join } from 'path';
 
 @Module({
   imports: [
     ConfigModule.forRoot(),
     TypeOrmModule.forRoot({
-  type: 'better-sqlite3',
-  database:
-    process.env.DATABASE_PATH ||
-    join(process.cwd(), 'database.sqlite'),
+  type: 'postgres',
+  url: process.env.DATABASE_URL,
+
   entities: [
     TaiKhoan,
     NhaTro,
@@ -38,6 +36,7 @@ import { join } from 'path';
     HopDong,
     HoaDon,
   ],
+
   synchronize: true,
   logging: false,
 }),
