@@ -6,68 +6,35 @@ import {
   Param,
   Patch,
   Post,
-  UseGuards,
 } from '@nestjs/common';
-
 import { GiuongService } from './giuong.service';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import type { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 
 @Controller('giuong')
-@UseGuards(JwtAuthGuard)
 export class GiuongController {
   constructor(private readonly giuongService: GiuongService) {}
 
   @Get()
-findAll(@CurrentUser() user: JwtPayload) {
-  return this.giuongService.findAll(
-    user.tenantId,
-  );
-}
+  findAll() {
+    return this.giuongService.findAll();
+  }
 
   @Get(':id')
-findOne(
-  @Param('id') id: string,
-  @CurrentUser() user: JwtPayload,
-) {
-  return this.giuongService.findOne(
-    id,
-    user.tenantId,
-  );
-}
+  findOne(@Param('id') id: string) {
+    return this.giuongService.findOne(id);
+  }
+
   @Post()
-create(
-  @Body() payload: any,
-  @CurrentUser() user: JwtPayload,
-) {
-  return this.giuongService.create(
-    payload,
-    user.tenantId,
-  );
-}
+  create(@Body() payload: any) {
+    return this.giuongService.create(payload);
+  }
 
   @Patch(':id')
-update(
-  @Param('id') id: string,
-  @Body() payload: any,
-  @CurrentUser() user: JwtPayload,
-) {
-  return this.giuongService.update(
-    id,
-    payload,
-    user.tenantId,
-  );
-}
+  update(@Param('id') id: string, @Body() payload: any) {
+    return this.giuongService.update(id, payload);
+  }
 
   @Delete(':id')
-remove(
-  @Param('id') id: string,
-  @CurrentUser() user: JwtPayload,
-) {
-  return this.giuongService.remove(
-    id,
-    user.tenantId,
-  );
-}
+  remove(@Param('id') id: string) {
+    return this.giuongService.remove(id);
+  }
 }
