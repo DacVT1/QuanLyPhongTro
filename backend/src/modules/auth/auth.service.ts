@@ -25,47 +25,60 @@ private readonly tenantRepository: Repository<Tenant>,
   ) {}
 
   async register(dto: RegisterDto) {
-    const username = dto.username.trim();
+  const username = dto.username.trim();
 
-    const existingAccount =
-      await this.taiKhoanRepository.findOne({
-        where: { username },
-      });
+  const existingAccount =
+    await this.taiKhoanRepository.findOne({
+      where: { username },
+    });
 
-    if (existingAccount) {
-      throw new ConflictException(
-        'Tên đăng nhập đã tồn tại',
-      );
-    }
-
-    const passwordHash = await bcrypt.hash(
-      dto.password,
-      10,
+  if (existingAccount) {
+    throw new ConflictException(
+      'Tên đăng nhập đã tồn tại',
     );
-
-    const taiKhoan =
-      this.taiKhoanRepository.create({
-        username,
-        passwordHash,
-        tenHienThi: dto.tenHienThi.trim(),
-        email: dto.email?.trim() || undefined,
-        role: 'admin',
-      });
-
-    const saved =
-      await this.taiKhoanRepository.save(taiKhoan);
-
-    return {
-      message: 'Đăng ký tài khoản thành công',
-      account: {
-        id: saved.id,
-        username: saved.username,
-        tenHienThi: saved.tenHienThi,
-        email: saved.email,
-        role: saved.role,
-      },
-    };
   }
+
+  const passwordHash = await bcrypt.hash(
+    dto.password,
+    10,
+  );
+
+  // 1. Tạo Tenant cho tài khoản đăng ký
+  const tenant = this.tenantRepository.create({
+    maTenant: `TENANT-${Date.now()}`,
+    ten: dto.tenHienThi.trim(),
+    trangThai: 'active',
+  });
+
+  const savedTenant =
+    await this.tenantRepository.save(tenant);
+
+  // 2. Tạo tài khoản và gán Tenant
+  const taiKhoan =
+    this.taiKhoanRepository.create({
+      username,
+      passwordHash,
+      tenHienThi: dto.tenHienThi.trim(),
+      email: dto.email?.trim() || undefined,
+      role: 'admin',
+      tenant: savedTenant,
+    });
+
+  const saved =
+    await this.taiKhoanRepository.save(taiKhoan);
+
+  return {
+    message: 'Đăng ký tài khoản thành công',
+    account: {
+      id: saved.id,
+      username: saved.username,
+      tenHienThi: saved.tenHienThi,
+      email: saved.email,
+      role: saved.role,
+      tenantId: savedTenant.id,
+    },
+  };
+}
 
   async login(dto: LoginDto) {
     const username = dto.username.trim();
