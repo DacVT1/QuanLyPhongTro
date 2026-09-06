@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
@@ -253,7 +253,7 @@ export class HopDongService {
      *
      * Không sử dụng payload trực tiếp.
      */
-    const hopDong =
+    const hopDong: HopDong =
       this.repository.create({
         ...data,
         tenant,
@@ -265,17 +265,11 @@ export class HopDongService {
      * 9. Lưu database
      */
 
-    const savedHopDong =
+    const savedHopDong: HopDong =
       await this.repository.save(hopDong);
     /**
      * 10. Cập nhật trạng thái giường
      */
-    await this.capNhatTrangThaiGiuong(
-      giuong.id,
-      tenantId,
-    );
-    // Khi tạo HĐ mới có hiệu lực,
-    // cập nhật giường thành Đã thuê.
     await this.capNhatTrangThaiGiuong(
       giuong.id,
       tenantId,
