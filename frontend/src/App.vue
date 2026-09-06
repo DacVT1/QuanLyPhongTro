@@ -75,6 +75,7 @@ const hoaDonThangThanhToanError = ref("");
 const showNguoiThueDetail = ref(false);
 const selectedNguoiThue = ref<any | null>(null);
 const tienPhongDisplay = ref("");
+const tongTienDisplay = ref("");
 function openNguoiThueDetail(item: any) {
   selectedNguoiThue.value = item;
   showNguoiThueDetail.value = true;
@@ -2166,6 +2167,7 @@ function editHoaDon(item: any) {
   const tienDien = Number(item.tienDien ?? 0);
   const tienNuoc = Number(item.tienNuoc ?? 0);
   const tienDichVuKhac = Number(item.tienDichVuKhac ?? 0);
+  const tongTien = Number(item.tongTien ?? 0);
   hoaDonForm.value = {
     maHoaDon: item.maHoaDon ?? "",
     thangThanhToan: item.thangThanhToan
@@ -2190,6 +2192,9 @@ function editHoaDon(item: any) {
     : "0";
   tienPhongDisplay.value = tienPhong
   ? tienPhong.toLocaleString("en-US")
+  : "";
+  tongTienDisplay.value = tongTien
+  ? tongTien.toLocaleString("en-US")
   : "";
   showHoaDonForm.value = true;
   currentTab.value = "hoaDon";
@@ -2223,15 +2228,17 @@ function updateHoaDonTienPhong() {
 }
 
 function calculateHoaDonTongTien() {
-  const tienPhong = Number(hoaDonForm.value.tienPhong || 0);
+  const tongTien =
+    Number(hoaDonForm.value.tienPhong ?? 0) +
+    Number(hoaDonForm.value.tienDien ?? 0) +
+    Number(hoaDonForm.value.tienNuoc ?? 0) +
+    Number(hoaDonForm.value.tienDichVuKhac ?? 0);
 
-  const tienDien = Number(hoaDonForm.value.tienDien || 0);
+  hoaDonForm.value.tongTien = tongTien;
 
-  const tienNuoc = Number(hoaDonForm.value.tienNuoc || 0);
-
-  const tienDichVuKhac = Number(hoaDonForm.value.tienDichVuKhac || 0);
-
-  hoaDonForm.value.tongTien = tienPhong + tienDien + tienNuoc + tienDichVuKhac;
+  tongTienDisplay.value = tongTien
+    ? tongTien.toLocaleString("en-US")
+    : "";
 }
 
 function formatCurrency(value: number | string | undefined) {
@@ -2241,40 +2248,6 @@ function formatCurrency(value: number | string | undefined) {
     currency: "VND",
     maximumFractionDigits: 0,
   }).format(numberValue);
-}
-
-const filteredPhongsByNhaTro = computed(() => {
-  if (!giuongForm.value.nhaTroId) return [];
-  return phongs.value.filter(
-    (item) => item.nhaTro?.id === giuongForm.value.nhaTroId,
-  );
-});
-
-function handleNhaTroChangeForGiuong() {
-  giuongForm.value.phongId = "";
-  giuongForm.value.giuongSo = "";
-}
-
-function handleHoaDonHopDongChange() {
-  const hopDongId = hoaDonForm.value.hopDongId;
-
-  if (!hopDongId) {
-    hoaDonForm.value.tienPhong = 0;
-    calculateHoaDonTongTien();
-    return;
-  }
-
-  const hopDong = hopDongs.value.find((item: any) => item.id === hopDongId);
-
-  if (!hopDong) {
-    hoaDonForm.value.tienPhong = 0;
-    calculateHoaDonTongTien();
-    return;
-  }
-
-  hoaDonForm.value.tienPhong = Number(hopDong.tienThue ?? 0);
-
-  calculateHoaDonTongTien();
 }
 
 function generateHopDongCode(giuongId: string) {
@@ -3825,12 +3798,7 @@ onMounted(() => {
               {{ requiredLabel("Tổng tiền") }}
 
               <div class="currency-input">
-                <input
-                  :value="hoaDonForm.tongTien"
-                  inputmode="numeric"
-                  type="text"
-                  readonly
-                />
+                <input :value="tongTienDisplay" type="text" readonly />
 
                 <span>VND</span>
               </div>
