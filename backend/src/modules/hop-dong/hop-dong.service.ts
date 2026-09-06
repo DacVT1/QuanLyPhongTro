@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 
 import { HopDong } from '../../entities/hop-dong.entity';
 import { Giuong } from '../../entities/giuong.entity';
+import { Tenant } from 'src/entities/tenant.entity';
 
 @Injectable()
 export class HopDongService {
@@ -13,10 +14,23 @@ export class HopDongService {
 
     @InjectRepository(Giuong)
     private readonly giuongRepository: Repository<Giuong>,
+
+    @InjectRepository(Tenant)
+    private readonly tenantRepository: Repository<Tenant>,
   ) {}
 
-  async findAll() {
+  async findAll(tenantId: string) {
+    if (!tenantId) {
+      throw new BadRequestException(
+        'Không xác định được tenant.',
+      );
+    }
     return this.repository.find({
+      where: {
+        tenant: {
+          id: tenantId,
+        },
+      },
       relations: {
         giuong: {
           phong: {
@@ -29,9 +43,19 @@ export class HopDongService {
     });
   }
 
-  async findOne(id: string) {
+  async findOne(id: string, tenantId: string) {
+    if (!tenantId) {
+      throw new BadRequestException(
+        'Không xác định được tenant.',
+      );
+    }
     return this.repository.findOne({
-      where: { id },
+      where: {
+        id,
+        tenant: {
+          id: tenantId,
+        },
+      },
       relations: {
         giuong: {
           phong: {
@@ -53,11 +77,15 @@ export class HopDongService {
    */
   private async capNhatTrangThaiGiuong(
     giuongId: string,
+    tenantId: string,
   ) {
     const giuong =
       await this.giuongRepository.findOne({
         where: {
           id: giuongId,
+          tenant: {
+            id: tenantId,
+          },
         },
         relations: {
           hopDongs: true,
@@ -115,7 +143,56 @@ export class HopDongService {
     );
   }
 
-  async create(payload: Partial<HopDong>) {
+  async create(payload: Partial<HopDong>,tenantId: string,) {
+    if (!tenantId) {
+      throw new BadRequestException(
+        'Không xác định được tenant từ tài khoản đăng nhập.',
+      );
+    }
+
+    const tenant =
+      await this.tenantRepository.findOne({
+        where: {
+          id: tenantId,
+        },
+      });
+
+    if (!tenant) {
+      throw new NotFoundException(
+        'Không tìm thấy tenant.',
+      );
+    }
+    const {
+      id: _ignoredId,
+      tenant: _ignoredTenant,
+      giuong: payloadGiuong,
+      nguoiThue: payloadNguoiThue,
+      ...data
+    } = payload as any;
+    if (!payloadGiuong?.id) {
+      throw new BadRequestException(
+        'Vui lòng chọn giường.',
+      );
+    }
+
+    const giuong =
+      await this.giuongRepository.findOne({
+        where: {
+          id: payloadGiuong.id,
+          tenant: {
+            id: tenantId,
+          },
+        },
+        relations: {
+          hopDongs: true,
+        },
+      });
+
+    if (!giuong) {
+      throw new NotFoundException(
+        'Không tìm thấy giường hoặc giường không thuộc nhà trọ của bạn.',
+      );
+    }
     const hopDong =
       this.repository.create(payload);
 
@@ -129,20 +206,26 @@ export class HopDongService {
       savedHopDong.trangThai === 'active'
     ) {
       await this.capNhatTrangThaiGiuong(
-        savedHopDong.giuong.id,
+        savedHopDong.giuong.id,tenantId
       );
     }
 
-    return this.findOne(savedHopDong.id);
+    return this.findOne(savedHopDong.id, tenantId);
   }
 
   async update(
     id: string,
     payload: Partial<HopDong>,
+    tenantId: string,
   ) {
     const hopDong =
       await this.repository.findOne({
-        where: { id },
+        where: {
+          id,
+          tenant: {
+            id: tenantId,
+          },
+        },
         relations: {
           giuong: true,
         },
@@ -175,6 +258,7 @@ export class HopDongService {
     ) {
       await this.capNhatTrangThaiGiuong(
         giuongCuId,
+        tenantId
       );
     }
 
@@ -182,18 +266,25 @@ export class HopDongService {
     if (savedHopDong.giuong?.id) {
       await this.capNhatTrangThaiGiuong(
         savedHopDong.giuong.id,
+        tenantId
       );
     }
 
     return this.findOne(
       savedHopDong.id,
+      tenantId
     );
   }
 
-async remove(id: string) {
+async remove(id: string, tenantId: string) {
   const hopDong =
     await this.repository.findOne({
-      where: { id },
+      where: {
+        id,
+        tenant: {
+          id: tenantId,
+        },
+      },
       relations: {
         giuong: true,
         hoaDons: true,
@@ -233,6 +324,7 @@ async remove(id: string) {
   if (giuongId) {
     await this.capNhatTrangThaiGiuong(
       giuongId,
+      tenantId
     );
   }
 
