@@ -30,15 +30,22 @@ private readonly tenantRepository: Repository<Tenant>,
   }
 
   async findOne(id: string, tenantId: string) {
-    return this.repository.findOne({
-      where: {
+  if (!tenantId) {
+    throw new BadRequestException('Không xác định được tenant.');
+  }
+
+  return this.repository.findOne({
+    where: {
+      id,
       tenant: {
         id: tenantId,
       },
     },
-      relations: { hopDongs: true },
-    });
-  }
+    relations: {
+      hopDongs: true,
+    },
+  });
+}
 
  async create(
   payload: Partial<NguoiThue>,

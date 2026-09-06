@@ -32,13 +32,13 @@ export class NguoiThueController {
   ) {}
 
   @Get()
-  findAll() {
-    return this.nguoiThueService.findAll();
+  findAll(@CurrentUser() user: JwtPayload,) {
+    return this.nguoiThueService.findAll(user.tenantId);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.nguoiThueService.findOne(id);
+  findOne(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
+    return this.nguoiThueService.findOne(id, user.tenantId);
   }
 
   @Post()
