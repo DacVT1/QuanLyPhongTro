@@ -5,6 +5,7 @@ import { Repository } from 'typeorm';
 import { HopDong } from '../../entities/hop-dong.entity';
 import { Giuong } from '../../entities/giuong.entity';
 import { Tenant } from 'src/entities/tenant.entity';
+import { NguoiThue } from '../../entities/nguoi-thue.entity';
 
 @Injectable()
 export class HopDongService {
@@ -14,6 +15,9 @@ export class HopDongService {
 
     @InjectRepository(Giuong)
     private readonly giuongRepository: Repository<Giuong>,
+
+    @InjectRepository(NguoiThue)
+    private readonly nguoiThueRepository: Repository<NguoiThue>,
 
     @InjectRepository(Tenant)
     private readonly tenantRepository: Repository<Tenant>,
@@ -169,11 +173,24 @@ export class HopDongService {
       nguoiThue: payloadNguoiThue,
       ...data
     } = payload as any;
+
+    /**
+     * 3. Bắt buộc phải chọn giường
+     */
     if (!payloadGiuong?.id) {
       throw new BadRequestException(
         'Vui lòng chọn giường.',
       );
     }
+/**
+     * 4. Bắt buộc phải chọn người thuê
+     */
+    if (!payloadNguoiThue?.id) {
+      throw new BadRequestException(
+        'Vui lòng chọn người thuê.',
+      );
+    }
+
 
     const giuong =
       await this.giuongRepository.findOne({
@@ -193,22 +210,76 @@ export class HopDongService {
         'Không tìm thấy giường hoặc giường không thuộc nhà trọ của bạn.',
       );
     }
+    /**
+     * 6. Tìm người thuê thuộc tenant hiện tại
+     */
+    const nguoiThue =
+      await this.nguoiThueRepository.findOne({
+        where: {
+          id: payloadNguoiThue.id,
+          tenant: {
+            id: tenantId,
+          },
+        },
+      });
+
+    if (!nguoiThue) {
+      throw new NotFoundException(
+        'Không tìm thấy người thuê hoặc người thuê không thuộc nhà trọ của bạn.',
+      );
+    }
+
+    /**
+     * 7. Không cho phép một giường
+     *    có nhiều hợp đồng active
+     */
+    const coHopDongActive =
+      (giuong.hopDongs ?? []).some(
+        (hopDong) =>
+          hopDong.trangThai === 'active',
+      );
+
+    if (coHopDongActive) {
+      throw new ConflictException(
+        'Giường này đang có hợp đồng còn hiệu lực.',
+      );
+    }
+    /**
+     * 8. Tạo hợp đồng
+     *
+     * QUAN TRỌNG:
+     * tenant, giuong, nguoiThue
+     * được gán từ backend.
+     *
+     * Không sử dụng payload trực tiếp.
+     */
     const hopDong =
-      this.repository.create(payload);
+      this.repository.create({
+        ...data,
+        tenant,
+        giuong,
+        nguoiThue,
+      });
+
+    /**
+     * 9. Lưu database
+     */
 
     const savedHopDong =
       await this.repository.save(hopDong);
-
+    /**
+     * 10. Cập nhật trạng thái giường
+     */
+    await this.capNhatTrangThaiGiuong(
+      giuong.id,
+      tenantId,
+    );
     // Khi tạo HĐ mới có hiệu lực,
     // cập nhật giường thành Đã thuê.
-    if (
-      savedHopDong.giuong?.id &&
-      savedHopDong.trangThai === 'active'
-    ) {
-      await this.capNhatTrangThaiGiuong(
-        savedHopDong.giuong.id,tenantId
-      );
-    }
+    await this.capNhatTrangThaiGiuong(
+      giuong.id,
+      tenantId,
+    );
 
     return this.findOne(savedHopDong.id, tenantId);
   }
