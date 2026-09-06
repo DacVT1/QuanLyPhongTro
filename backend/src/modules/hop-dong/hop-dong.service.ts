@@ -253,93 +253,228 @@ export class HopDongService {
      *
      * Không sử dụng payload trực tiếp.
      */
-    const hopDong: HopDong =
-      this.repository.create({
-        ...data,
-        tenant,
-        giuong,
-        nguoiThue,
-      });
+    const hopDong = new HopDong();
 
-    /**
-     * 9. Lưu database
-     */
+Object.assign(hopDong, data);
 
-    const savedHopDong: HopDong =
-      await this.repository.save(hopDong);
-    /**
-     * 10. Cập nhật trạng thái giường
-     */
-    await this.capNhatTrangThaiGiuong(
-      giuong.id,
-      tenantId,
-    );
+hopDong.tenant = tenant;
+hopDong.giuong = giuong;
+hopDong.nguoiThue = nguoiThue;
 
-    return this.findOne(savedHopDong.id, tenantId);
+const savedHopDong = await this.repository.save(hopDong);
+
+// Cập nhật trạng thái giường
+await this.capNhatTrangThaiGiuong(
+  giuong.id,
+  tenantId,
+);
+
+// Lấy lại hợp đồng cùng đầy đủ relations
+const result = await this.findOne(
+  savedHopDong.id,
+  tenantId,
+);
+
+if (!result) {
+  throw new NotFoundException(
+    'Không thể tải lại hợp đồng vừa tạo.',
+  );
+}
+
+return result;
   }
 
   async update(
-    id: string,
-    payload: Partial<HopDong>,
-    tenantId: string,
-  ) {
-    const hopDong =
-      await this.repository.findOne({
+  id: string,
+  payload: Partial<HopDong>,
+  tenantId: string,
+) {
+  if (!tenantId) {
+    throw new BadRequestException(
+      'Không xác định được tenant.',
+    );
+  }
+
+  // ==========================================
+  // 1. Tìm hợp đồng thuộc tenant hiện tại
+  // ==========================================
+  const hopDong =
+    await this.repository.findOne({
+      where: {
+        id,
+        tenant: {
+          id: tenantId,
+        },
+      },
+      relations: {
+        giuong: true,
+        nguoiThue: true,
+      },
+    });
+
+  if (!hopDong) {
+    throw new NotFoundException(
+      'Không tìm thấy hợp đồng.',
+    );
+  }
+
+  // Lưu ID giường cũ
+  const giuongCuId =
+    hopDong.giuong?.id;
+
+  // ==========================================
+  // 2. Không cho frontend thay đổi
+  //    id / tenant trực tiếp
+  // ==========================================
+  const {
+    id: _ignoredId,
+    tenant: _ignoredTenant,
+    giuong: payloadGiuong,
+    nguoiThue: payloadNguoiThue,
+    ...data
+  } = payload as any;
+
+  // ==========================================
+  // 3. Xử lý GIƯỜNG nếu frontend gửi
+  // ==========================================
+  if (payloadGiuong !== undefined) {
+    if (!payloadGiuong?.id) {
+      throw new BadRequestException(
+        'Giường không hợp lệ.',
+      );
+    }
+
+    const giuongMoi =
+      await this.giuongRepository.findOne({
         where: {
-          id,
+          id: payloadGiuong.id,
           tenant: {
             id: tenantId,
           },
         },
         relations: {
-          giuong: true,
+          hopDongs: true,
         },
       });
 
-    if (!hopDong) {
+    if (!giuongMoi) {
       throw new NotFoundException(
-        'Không tìm thấy hợp đồng.',
+        'Không tìm thấy giường hoặc giường không thuộc nhà trọ của bạn.',
       );
     }
 
-    const giuongCuId =
-      hopDong.giuong?.id;
+    // Nếu đổi sang giường khác
+    if (giuongMoi.id !== giuongCuId) {
+      const coHopDongActive =
+        (giuongMoi.hopDongs ?? []).some(
+          (item) =>
+            item.id !== id &&
+            item.trangThai === 'active',
+        );
 
-    Object.assign(
+      if (coHopDongActive) {
+        throw new ConflictException(
+          'Giường mới đang có hợp đồng còn hiệu lực.',
+        );
+      }
+    }
+
+    // Gán ENTITY Giuong thật
+    hopDong.giuong = giuongMoi;
+  }
+
+  // ==========================================
+  // 4. Xử lý NGƯỜI THUÊ nếu frontend gửi
+  // ==========================================
+  if (payloadNguoiThue !== undefined) {
+    if (!payloadNguoiThue?.id) {
+      throw new BadRequestException(
+        'Người thuê không hợp lệ.',
+      );
+    }
+
+    const nguoiThueMoi =
+      await this.nguoiThueRepository.findOne({
+        where: {
+          id: payloadNguoiThue.id,
+          tenant: {
+            id: tenantId,
+          },
+        },
+      });
+
+    if (!nguoiThueMoi) {
+      throw new NotFoundException(
+        'Không tìm thấy người thuê hoặc người thuê không thuộc nhà trọ của bạn.',
+      );
+    }
+
+    // Gán ENTITY NguoiThue thật
+    hopDong.nguoiThue =
+      nguoiThueMoi;
+  }
+
+  // ==========================================
+  // 5. Cập nhật các field thông thường
+  // ==========================================
+  Object.assign(
+    hopDong,
+    data,
+  );
+
+  // Không cho thay đổi tenant
+  // bằng dữ liệu từ frontend.
+  //
+  // hopDong.tenant hiện tại vẫn được giữ nguyên.
+
+  // ==========================================
+  // 6. Lưu database
+  // ==========================================
+  const savedHopDong =
+    await this.repository.save(
       hopDong,
-      payload,
     );
 
-    const savedHopDong =
-      await this.repository.save(
-        hopDong,
-      );
-
-    // Nếu thay đổi giường của hợp đồng,
-    // cập nhật lại giường cũ.
-    if (
-      giuongCuId &&
-      savedHopDong.giuong?.id !== giuongCuId
-    ) {
-      await this.capNhatTrangThaiGiuong(
-        giuongCuId,
-        tenantId
-      );
-    }
-
-    // Cập nhật giường mới.
-    if (savedHopDong.giuong?.id) {
-      await this.capNhatTrangThaiGiuong(
-        savedHopDong.giuong.id,
-        tenantId
-      );
-    }
-
-    return this.findOne(
-      savedHopDong.id,
-      tenantId
+  // ==========================================
+  // 7. Cập nhật trạng thái giường cũ
+  // ==========================================
+  if (
+    giuongCuId &&
+    savedHopDong.giuong?.id !== giuongCuId
+  ) {
+    await this.capNhatTrangThaiGiuong(
+      giuongCuId,
+      tenantId,
     );
   }
+
+  // ==========================================
+  // 8. Cập nhật trạng thái giường mới
+  // ==========================================
+  if (savedHopDong.giuong?.id) {
+    await this.capNhatTrangThaiGiuong(
+      savedHopDong.giuong.id,
+      tenantId,
+    );
+  }
+
+  // ==========================================
+  // 9. Đọc lại dữ liệu từ DB
+  // ==========================================
+  const result =
+    await this.findOne(
+      savedHopDong.id,
+      tenantId,
+    );
+
+  if (!result) {
+    throw new NotFoundException(
+      'Không thể tải lại hợp đồng sau khi cập nhật.',
+    );
+  }
+
+  return result;
+}
 
 async remove(id: string, tenantId: string) {
   const hopDong =
