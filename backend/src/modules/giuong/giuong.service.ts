@@ -10,17 +10,20 @@ import { Repository } from 'typeorm'
 
 import { Giuong } from '../../entities/giuong.entity'
 import { Phong } from '../../entities/phong.entity'
+import { Tenant } from '../../entities/tenant.entity';
 
 @Injectable()
 export class GiuongService {
   constructor(
-    @InjectRepository(Giuong)
-    private readonly repository: Repository<Giuong>,
+  @InjectRepository(Giuong)
+  private readonly repository: Repository<Giuong>,
 
-    @InjectRepository(Phong)
-    private readonly phongRepository: Repository<Phong>,
-    
-  ) {}
+  @InjectRepository(Phong)
+  private readonly phongRepository: Repository<Phong>,
+
+  @InjectRepository(Tenant)
+  private readonly tenantRepository: Repository<Tenant>,
+) {}
 private getTrangThaiTheoHopDong(
   hopDongs: any[] = [],
 ): 'da_thue' | 'chua_thue' {
@@ -72,8 +75,13 @@ private mapTrangThai(giuong: Giuong) {
   };
 }
 
-async findAll() {
+async findAll(tenantId: string) {
   const giuongs = await this.repository.find({
+    where: {
+      tenant: {
+        id: tenantId,
+      },
+    },
     relations: {
       phong: {
         nhaTro: true,
@@ -87,70 +95,125 @@ async findAll() {
   );
 }
 
-async findOne(id: string) {
-  const giuong = await this.repository.findOne({
-    where: { id },
-    relations: {
-      phong: {
-        nhaTro: true,
+async findOne(
+  id: string,
+  tenantId: string,
+) {
+  const giuong =
+    await this.repository.findOne({
+      where: {
+        id,
+        tenant: {
+          id: tenantId,
+        },
       },
-      hopDongs: true,
-    },
-  });
+      relations: {
+        phong: {
+          nhaTro: true,
+        },
+        hopDongs: true,
+      },
+    });
 
   return giuong
     ? this.mapTrangThai(giuong)
     : null;
 }
 
-  async create(payload: Partial<Giuong>) {
-    if (!payload.phong?.id) {
-      throw new BadRequestException('Phòng là bắt buộc.')
-    }
-
-    const phong = await this.phongRepository.findOne({
-      where: {
-        id: payload.phong.id,
-      },
-    })
-
-    if (!phong) {
-      throw new NotFoundException('Không tìm thấy phòng.')
-    }
-
-const giuongSo = Number(payload.giuongSo)
-
-if (!Number.isInteger(giuongSo) || giuongSo < 1) {
-  throw new BadRequestException(
-    'Giường số phải là số nguyên lớn hơn hoặc bằng 1.',
-  )
-}
-
-const maGiuong = `${phong.maPhong}_G${giuongSo}`
-
-const giaGiuong = Number(payload.giaGiuong ?? 0)
-
-if (!Number.isInteger(giaGiuong) || giaGiuong < 0) {
-  throw new BadRequestException(
-    'Giá giường phải là số nguyên lớn hơn hoặc bằng 0.',
-  )
-}
-
-const giuong = this.repository.create({
-  maGiuong,
-  giuongSo,
-  giaGiuong,
-  datCocSom: Boolean(payload.datCocSom),
-  trangThai: "trong",
-  phong,
-})
-
-return this.repository.save(giuong)
+  async create(
+  payload: Partial<Giuong>,
+  tenantId: string,
+) {
+  if (!tenantId) {
+    throw new BadRequestException(
+      'Không xác định được tenant từ tài khoản đăng nhập.',
+    );
   }
 
-  async update(id: string, payload: Partial<Giuong>) {
+  if (!payload.phong?.id) {
+    throw new BadRequestException(
+      'Phòng là bắt buộc.',
+    );
+  }
+
+  // Tenant lấy từ JWT, KHÔNG lấy từ frontend
+  const tenant = await this.tenantRepository.findOne({
+    where: {
+      id: tenantId,
+    },
+  });
+
+  if (!tenant) {
+    throw new NotFoundException(
+      'Không tìm thấy tenant.',
+    );
+  }
+
+  // Phòng phải thuộc tenant hiện tại
+  const phong = await this.phongRepository.findOne({
+    where: {
+      id: payload.phong.id,
+      tenant: {
+        id: tenantId,
+      },
+    },
+  });
+
+  if (!phong) {
+    throw new NotFoundException(
+      'Không tìm thấy phòng hoặc phòng không thuộc tài khoản hiện tại.',
+    );
+  }
+
+  const giuongSo = Number(payload.giuongSo);
+
+  if (
+    !Number.isInteger(giuongSo) ||
+    giuongSo < 1
+  ) {
+    throw new BadRequestException(
+      'Giường số phải là số nguyên lớn hơn hoặc bằng 1.',
+    );
+  }
+
+  const maGiuong =
+    `${phong.maPhong}_G${giuongSo}`;
+
+  const giaGiuong =
+    Number(payload.giaGiuong ?? 0);
+
+  if (
+    !Number.isInteger(giaGiuong) ||
+    giaGiuong < 0
+  ) {
+    throw new BadRequestException(
+      'Giá giường phải là số nguyên lớn hơn hoặc bằng 0.',
+    );
+  }
+
+  const giuong = this.repository.create({
+    maGiuong,
+    giuongSo,
+    giaGiuong,
+    datCocSom: Boolean(payload.datCocSom),
+    trangThai: 'trong',
+
+    phong,
+
+    // QUAN TRỌNG: GÁN TENANT
+    tenant,
+  });
+
+  return this.repository.save(giuong);
+}
+
+  async update(id: string, payload: Partial<Giuong>,
+    tenantId: string) {
     const item = await this.repository.findOne({
-      where: { id },
+      where: { id,
+    tenant: {
+      id: tenantId,
+    }, },
       relations: {
         phong: true,
       },
@@ -235,8 +298,9 @@ if (payload.datCocSom !== undefined) {
     return this.repository.save(item)
   }
 
-  async remove(id: string) {
-  const item = await this.findOne(id);
+  async remove(id: string,
+    tenantId: string) {
+  const item = await this.findOne(id,tenantId);
 
   if (!item) {
     throw new NotFoundException('Không tìm thấy giường.');
