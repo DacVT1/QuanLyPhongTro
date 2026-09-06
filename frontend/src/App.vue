@@ -74,6 +74,7 @@ const tienDichVuKhacError = ref("");
 const hoaDonThangThanhToanError = ref("");
 const showNguoiThueDetail = ref(false);
 const selectedNguoiThue = ref<any | null>(null);
+const tienPhongDisplay = ref("");
 function openNguoiThueDetail(item: any) {
   selectedNguoiThue.value = item;
   showNguoiThueDetail.value = true;
@@ -1307,6 +1308,7 @@ function resetHoaDonForm() {
     trangThai: "chua_thanh_toan",
     ghiChu: "",
     hopDongId: "",
+    
   };
   // Reset giá trị hiển thị trên form về mặc định
   tienDienDisplay.value = "0";
@@ -1317,6 +1319,7 @@ function resetHoaDonForm() {
   tienDichVuKhacError.value = "";
   hoaDonThangThanhToanError.value = "";
   editingHoaDonId.value = null;
+  tienPhongDisplay.value = "";
 }
 
 async function saveNhaTro() {
@@ -2185,6 +2188,9 @@ function editHoaDon(item: any) {
   tienDichVuKhacDisplay.value = tienDichVuKhac
     ? tienDichVuKhac.toLocaleString("en-US")
     : "0";
+  tienPhongDisplay.value = tienPhong
+  ? tienPhong.toLocaleString("en-US")
+  : "";
   showHoaDonForm.value = true;
   currentTab.value = "hoaDon";
 }
@@ -2194,13 +2200,24 @@ function updateHoaDonTienPhong() {
 
   if (!hopDongId) {
     hoaDonForm.value.tienPhong = 0;
+    tienPhongDisplay.value = "";
     calculateHoaDonTongTien();
     return;
   }
 
-  const hopDong = hopDongs.value.find((item) => item.id === hopDongId);
+  const hopDong = hopDongs.value.find(
+    (item) => item.id === hopDongId,
+  );
 
-  hoaDonForm.value.tienPhong = Number(hopDong?.tienThue ?? 0);
+  const tienPhong = Number(
+    hopDong?.tienThue ?? 0,
+  );
+
+  hoaDonForm.value.tienPhong = tienPhong;
+
+  tienPhongDisplay.value = tienPhong
+    ? tienPhong.toLocaleString("en-US")
+    : "";
 
   calculateHoaDonTongTien();
 }
@@ -3740,14 +3757,18 @@ onMounted(() => {
             </label>
 
             <label>
-              {{ requiredLabel("Tiền phòng") }}
+  {{ requiredLabel("Tiền phòng") }}
 
-              <div class="currency-input">
-                <input :value="hoaDonForm.tienPhong" type="text" readonly />
+  <div class="currency-input">
+    <input
+      :value="tienPhongDisplay"
+      type="text"
+      readonly
+    />
 
-                <span>VND</span>
-              </div>
-            </label>
+    <span>VND</span>
+  </div>
+</label>
 
             <label>
               {{ requiredLabel("Tiền điện") }}
