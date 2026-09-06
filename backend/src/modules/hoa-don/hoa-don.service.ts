@@ -544,6 +544,7 @@ private async generateMaHoaDon(
   maHopDong: string,
   monthKey: string,
   hoaDonsMoi: HoaDon[] = [],
+  tenantId: string,
 ): Promise<string> {
   const [year, month] = monthKey.split('-');
 
@@ -569,14 +570,18 @@ private async generateMaHoaDon(
 
   // Lấy các hóa đơn đã tồn tại
   const hoaDonsDaCo =
-    await this.repository.find({
-      where: {
-        hopDong: {
-          maHopDong,
-        },
+  await this.repository.find({
+    where: {
+      tenant: {
+        id: tenantId,
       },
-    });
+      hopDong: {
+        maHopDong,
+      },
+    },
+  });
 
+  
   // Lấy các hóa đơn vừa tạo trong
   // cùng request.
   const tatCaHoaDons = [

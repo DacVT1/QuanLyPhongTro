@@ -182,13 +182,21 @@ export class PhongService {
     const nhaTroId = payload.nhaTro?.id ?? payload.nhaTroId
 
     if (nhaTroId) {
-      const nhaTro = await this.nhaTroRepository.findOne({
-        where: { id: nhaTroId },
-      })
+      const nhaTro =
+  await this.nhaTroRepository.findOne({
+    where: {
+      id: nhaTroId,
+      tenant: {
+        id: tenantId,
+      },
+    },
+  });
 
-      if (!nhaTro) {
-        throw new NotFoundException('Không tìm thấy nhà trọ')
-      }
+if (!nhaTro) {
+  throw new NotFoundException(
+    'Không tìm thấy nhà trọ hoặc nhà trọ không thuộc tài khoản hiện tại',
+  );
+}
 
       phong.nhaTro = nhaTro
     }
@@ -230,7 +238,12 @@ if (
 }
 
     const duplicate = await this.repository.findOne({
-      where: { maPhong: phong.maPhong },
+      where: {
+      maPhong: phong.maPhong,
+      tenant: {
+        id: tenantId,
+      },
+    },
     })
 
     if (duplicate && duplicate.id !== id) {

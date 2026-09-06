@@ -62,9 +62,14 @@ export class NhaTroService {
       throw new ConflictException('Mã nhà trọ là bắt buộc');
     }
 
-    const existing = await this.repository.findOne({
-      where: { maNhaTro },
-    });
+   const existing = await this.repository.findOne({
+  where: {
+    maNhaTro,
+    tenant: {
+      id: tenantId,
+    },
+  },
+});
 
     if (existing) {
       throw new ConflictException(`Mã nhà trọ ${maNhaTro} đã tồn tại`);
@@ -81,10 +86,15 @@ if (!tenant) {
     'Khong tim thay tenant',
   );
 }
+const {
+  id: _ignoredId,
+  tenant: _ignoredTenant,
+  ...data
+} = payload as any;
 
 return this.repository.save(
   this.repository.create({
-    ...payload,
+    ...data,
     maNhaTro,
     tenant,
   }),
@@ -108,9 +118,15 @@ return this.repository.save(
         throw new ConflictException('Mã nhà trọ là bắt buộc');
       }
 
-      const existing = await this.repository.findOne({
-        where: { maNhaTro },
-      });
+      const existing =
+  await this.repository.findOne({
+    where: {
+      maNhaTro,
+      tenant: {
+        id: tenantId,
+      },
+    },
+  });
 
       if (existing && existing.id !== id) {
         throw new ConflictException(`Mã nhà trọ ${maNhaTro} đã tồn tại`);
@@ -119,7 +135,21 @@ return this.repository.save(
       payload.maNhaTro = maNhaTro;
     }
 
-    await this.repository.update(id, payload);
+    const {
+  id: _ignoredId,
+  tenant: _ignoredTenant,
+  ...data
+} = payload as any;
+
+    await this.repository.update(
+  {
+    id,
+    tenant: {
+      id: tenantId,
+    },
+  },
+  data,
+);
     return this.findOne(id,tenantId);
   }
 
@@ -140,6 +170,9 @@ return this.repository.save(
       .where('phong.nha_tro_id = :nhaTroId', {
         nhaTroId: id,
       })
+      .andWhere('phong.tenant_id = :tenantId', {
+  tenantId,
+})
       .getCount();
 
     if (soPhong === 0) {
@@ -158,6 +191,9 @@ return this.repository.save(
       .where('phong.nha_tro_id = :nhaTroId', {
         nhaTroId: id,
       })
+      .andWhere('phong.tenant_id = :tenantId', {
+  tenantId,
+})
       .getRawMany<{ id: string }>();
 
     const danhSachPhongId = phongIds.map((phong) => phong.id);
@@ -167,6 +203,9 @@ return this.repository.save(
       .where('giuong.phong_id IN (:...phongIds)', {
         phongIds: danhSachPhongId,
       })
+      .andWhere('phong.tenant_id = :tenantId', {
+  tenantId,
+})
       .getCount();
 
     let danhSachGiuongId: string[] = [];
@@ -178,6 +217,9 @@ return this.repository.save(
         .where('giuong.phong_id IN (:...phongIds)', {
           phongIds: danhSachPhongId,
         })
+        .andWhere('phong.tenant_id = :tenantId', {
+  tenantId,
+})
         .getRawMany<{ id: string }>();
 
       danhSachGiuongId = giuongIds.map((giuong) => giuong.id);
@@ -191,6 +233,9 @@ return this.repository.save(
         .where('hopDong.giuong_id IN (:...giuongIds)', {
           giuongIds: danhSachGiuongId,
         })
+        .andWhere('phong.tenant_id = :tenantId', {
+  tenantId,
+})
         .getCount();
     }
 
@@ -203,6 +248,9 @@ return this.repository.save(
         .where('hopDong.giuong_id IN (:...giuongIds)', {
           giuongIds: danhSachGiuongId,
         })
+        .andWhere('phong.tenant_id = :tenantId', {
+  tenantId,
+})
         .getRawMany<{ id: string }>();
 
       danhSachHopDongId = hopDongIds.map((hopDong) => hopDong.id);
@@ -216,6 +264,9 @@ return this.repository.save(
         .where('hoaDon.hop_dong_id IN (:...hopDongIds)', {
           hopDongIds: danhSachHopDongId,
         })
+        .andWhere('phong.tenant_id = :tenantId', {
+  tenantId,
+})
         .getCount();
     }
 

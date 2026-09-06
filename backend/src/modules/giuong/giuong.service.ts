@@ -267,15 +267,21 @@ if (payload.datCocSom !== undefined) {
   item.giaGiuong = giaGiuong
 }
     if (payload.phong?.id) {
-      const phong = await this.phongRepository.findOne({
-        where: {
-          id: payload.phong.id,
-        },
-      })
+      const phong =
+  await this.phongRepository.findOne({
+    where: {
+      id: payload.phong.id,
+      tenant: {
+        id: tenantId,
+      },
+    },
+  });
 
-      if (!phong) {
-        throw new NotFoundException('Không tìm thấy phòng.')
-      }
+if (!phong) {
+  throw new NotFoundException(
+    'Không tìm thấy phòng hoặc phòng không thuộc tài khoản hiện tại.',
+  );
+}
 
       if (payload.phong?.id) {
   const phong = await this.phongRepository.findOne({

@@ -11,15 +11,30 @@ export class TaiKhoanService {
     private readonly repository: Repository<TaiKhoan>,
   ) {}
 
-  async findAll() {
-    return this.repository.find({ relations: { nhaTros: true } });
+  async findAll(tenantId: string) {
+    return this.repository.find({
+      where: {
+        tenant: {
+          id: tenantId,
+        },
+      },
+      relations: { nhaTros: true },
+    });
   }
 
-  async findOne(id: string) {
-    return this.repository.findOne({ where: { id }, relations: { nhaTros: true } });
+  async findOne(id: string,tenantId: string) {
+    return this.repository.findOne({
+      where: {
+        id,
+        tenant: {
+          id: tenantId,
+        },
+      },
+      relations: { nhaTros: true },
+    });
   }
 
-  async create(payload: Partial<TaiKhoan>) {
+  async create(payload: Partial<TaiKhoan>, tenantId: string) {
   const data = { ...payload };
 
   if (data.passwordHash) {
@@ -34,13 +49,13 @@ export class TaiKhoanService {
   );
 }
 
-  async update(id: string, payload: Partial<TaiKhoan>) {
+  async update(id: string, payload: Partial<TaiKhoan>, tenantId: string) {
     await this.repository.update(id, payload);
-    return this.findOne(id);
+    return this.findOne(id,tenantId);
   }
 
-  async remove(id: string) {
-    const item = await this.findOne(id);
+  async remove(id: string, tenantId: string) {
+    const item = await this.findOne(id, tenantId);
     if (!item) return null;
     await this.repository.remove(item);
     return item;
