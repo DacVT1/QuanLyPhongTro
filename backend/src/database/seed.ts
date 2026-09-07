@@ -6,6 +6,9 @@ import { NhaTro } from '../entities/nha-tro.entity';
 import { NguoiThue } from '../entities/nguoi-thue.entity';
 import { Phong } from '../entities/phong.entity';
 import { TaiKhoan } from '../entities/tai-khoan.entity';
+import { Tenant } from '../entities/tenant.entity';
+import { GoiDichVu } from '../entities/goi-dich-vu.entity';
+import { Subscription } from '../entities/subscription.entity';
 
 export async function seedDatabase(dataSource: DataSource) {
   const taiKhoanRepository = dataSource.getRepository(TaiKhoan);
@@ -15,26 +18,82 @@ export async function seedDatabase(dataSource: DataSource) {
   const nguoiThueRepository = dataSource.getRepository(NguoiThue);
   const hopDongRepository = dataSource.getRepository(HopDong);
   const hoaDonRepository = dataSource.getRepository(HoaDon);
+  const tenantRepository = dataSource.getRepository(Tenant);
+  const goiDichVuRepository = dataSource.getRepository(GoiDichVu);
+  const subscriptionRepository = dataSource.getRepository(Subscription);
+  const plans = await goiDichVuRepository.save([
+    {
+      maGoi: 'FREE',
+      ten: 'Miễn phí',
+      gia: 0,
+      chuKy: 'MONTHLY',
+      soPhongToiDa: 5,
+      soNguoiDungToiDa: 1,
+      trangThai: 'active',
+    },
+    {
+      maGoi: 'BASIC',
+      ten: 'Cơ bản',
+      gia: 99000,
+      chuKy: 'MONTHLY',
+      soPhongToiDa: 20,
+      soNguoiDungToiDa: 3,
+      trangThai: 'active',
+    },
+    {
+      maGoi: 'PRO',
+      ten: 'Chuyên nghiệp',
+      gia: 199000,
+      chuKy: 'MONTHLY',
+      soPhongToiDa: 100,
+      soNguoiDungToiDa: 10,
+      trangThai: 'active',
+    },
+  ]);
 
+  const freePlan = plans.find((plan) => plan.maGoi === 'FREE');
+
+  if (!freePlan) {
+    throw new Error('Không tạo được gói FREE');
+  }
   const taiKhoanCount = await taiKhoanRepository.count();
   if (taiKhoanCount > 0) {
     return;
   }
-
+  const tenant = await tenantRepository.save({
+    maTenant: 'TENANT-DEMO',
+    ten: 'Nhà trọ Demo',
+    trangThai: 'active',
+  });
   const taiKhoan = await taiKhoanRepository.save({
     username: 'admin',
     passwordHash: 'hashed-password',
     tenHienThi: 'Quản trị viên',
     email: 'admin@nhatro.vn',
     role: 'admin',
+    tenant,
   });
 
+  const ngayBatDau = new Date();
+
+  const ngayKetThuc = new Date(ngayBatDau);
+  ngayKetThuc.setMonth(ngayKetThuc.getMonth() + 1);
+
+  const subscription = await subscriptionRepository.save({
+    tenant,
+    goiDichVu: freePlan,
+    ngayBatDau,
+    ngayKetThuc,
+    trangThai: 'active',
+    autoRenew: false,
+  });
   const nhaTro = await nhaTroRepository.save({
     tenNhaTro: 'Nhà trọ A',
     diaChi: '123 Đường Lê Lợi, Quận 1, TP.HCM',
     soTang: 3,
     moTa: 'Nhà trọ cho sinh viên và người lao động',
     taiKhoan,
+    tenant,
   });
 
   const phong = await phongRepository.save({

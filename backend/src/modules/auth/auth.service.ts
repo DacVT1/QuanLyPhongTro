@@ -11,7 +11,7 @@ import { Repository } from 'typeorm';
 import { TaiKhoan } from '../../entities/tai-khoan.entity';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
-import { Tenant } from 'src/entities/tenant.entity';
+import { Tenant } from '../../entities/tenant.entity';
 import { GoiDichVu } from '../../entities/goi-dich-vu.entity';
 import { Subscription } from '../../entities/subscription.entity';
 
@@ -61,6 +61,7 @@ export class AuthService {
     if (!goiFree) {
       throw new ConflictException('Chưa cấu hình gói FREE');
     }
+
     const ngayBatDau = new Date();
 
     const ngayKetThuc = new Date(ngayBatDau);

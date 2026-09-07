@@ -22,6 +22,8 @@ import { ConfigModule } from '@nestjs/config';
 import { Tenant } from './entities/tenant.entity';
 import { GoiDichVu } from './entities/goi-dich-vu.entity';
 import { Subscription } from './entities/subscription.entity';
+import { SubscriptionModule } from './modules/subscription/subscription.module';
+import { GoiDichVuModule } from './modules/goi-dich-vu/goi-dich-vu.module';
 
 @Module({
   imports: [
@@ -55,6 +57,8 @@ import { Subscription } from './entities/subscription.entity';
     HopDongModule,
     HoaDonModule,
     DashboardModule,
+    GoiDichVuModule,
+    SubscriptionModule,
   ],
   controllers: [AppController],
   providers: [AppService],
