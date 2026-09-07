@@ -1,14 +1,14 @@
 import { DataSource } from 'typeorm';
-import { Giuong } from '../entities/giuong.entity';
-import { HoaDon } from '../entities/hoa-don.entity';
-import { HopDong } from '../entities/hop-dong.entity';
-import { NhaTro } from '../entities/nha-tro.entity';
-import { NguoiThue } from '../entities/nguoi-thue.entity';
-import { Phong } from '../entities/phong.entity';
-import { TaiKhoan } from '../entities/tai-khoan.entity';
-import { Tenant } from '../entities/tenant.entity';
-import { GoiDichVu } from '../entities/goi-dich-vu.entity';
-import { Subscription } from '../entities/subscription.entity';
+import { Giuong } from './entities/giuong.entity';
+import { HoaDon } from './entities/hoa-don.entity';
+import { HopDong } from './entities/hop-dong.entity';
+import { NhaTro } from './entities/nha-tro.entity';
+import { NguoiThue } from './entities/nguoi-thue.entity';
+import { Phong } from './entities/phong.entity';
+import { TaiKhoan } from './entities/tai-khoan.entity';
+import { Tenant } from './entities/tenant.entity';
+import { GoiDichVu } from './entities/goi-dich-vu.entity';
+import { Subscription } from './entities/subscription.entity';
 
 export async function seedDatabase(dataSource: DataSource) {
   const taiKhoanRepository = dataSource.getRepository(TaiKhoan);
