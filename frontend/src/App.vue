@@ -711,7 +711,7 @@ const tangSoOptions = computed(() => {
   }
 
   const nhaTro = nhaTros.value.find(
-    (item) => item.id === phongForm.value.nhaTroId,
+    (item: any) => String(item.id) === String(phongForm.value.nhaTroId),
   );
 
   if (!nhaTro) {
@@ -724,50 +724,33 @@ const tangSoOptions = computed(() => {
     return [];
   }
 
-  // Các tầng đã được sử dụng bởi phòng khác
-  const usedFloors = phongs.value
-    .filter((item) => {
-      if (item.nhaTro?.id !== phongForm.value.nhaTroId) {
-        return false;
-      }
-
-      // Khi sửa phòng thì không loại tầng hiện tại của chính phòng đó
-      if (item.id === editingPhongId.value) {
-        return false;
-      }
-
-      return true;
-    })
-    .map((item) => {
-      // Ưu tiên tangSo nếu backend đã lưu
-      if (item.tangSo !== undefined && item.tangSo !== null) {
-        return Number(item.tangSo);
-      }
-
-      // Hỗ trợ dữ liệu cũ: lấy từ CG_T1, CG_T2...
-      const match = String(item.maPhong ?? "").match(/_T(\d+)$/);
-
-      return match ? Number(match[1]) : null;
-    })
-    .filter(
-      (floor): floor is number => floor !== null && Number.isInteger(floor),
-    );
-
-  return Array.from({ length: soTang }, (_, index) => index + 1).filter(
-    (floor) => !usedFloors.includes(floor),
-  );
+  return Array.from({ length: soTang }, (_, index) => index + 1);
 });
 
 const phongSoOptions = computed(() => {
-  if (!phongForm.value.tangSo) {
+  const tangSo = Number(phongForm.value.tangSo);
+
+  if (!tangSo) {
     return [];
   }
 
+  const phongDaTonTai = phongs.value
+    .filter(
+      (item: any) =>
+        String(item.nhaTro?.id) === String(phongForm.value.nhaTroId) &&
+        Number(item.tangSo) === tangSo,
+    )
+    .map((item: any) => {
+      const match = String(item.maPhong ?? "").match(/_T\d+(\d{2})$/);
+
+      return match ? match[1] : null;
+    })
+    .filter(Boolean);
+
   return Array.from({ length: 99 }, (_, index) =>
     String(index + 1).padStart(2, "0"),
-  );
+  ).filter((so) => !phongDaTonTai.includes(so));
 });
-
 const maPhongPreview = computed(() => {
   if (!phongForm.value.nhaTroId) {
     return "";
@@ -1392,9 +1375,10 @@ async function saveNhaTro() {
 
 async function savePhong() {
   try {
+    const tangSoPhong = `${phongForm.value.tangSo}${phongForm.value.phongSo}`;
     const payload = {
       maPhong: phongForm.value.maPhong,
-      tangSo: Number(phongForm.value.tangSo),
+      tangSo: tangSoPhong,
       soGiuongToiDa: Number(phongForm.value.soGiuongToiDa),
       loaiPhong: phongForm.value.loaiPhong,
       dienTich: Number(phongForm.value.dienTich),
