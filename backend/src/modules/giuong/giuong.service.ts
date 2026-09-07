@@ -283,22 +283,6 @@ if (!phong) {
   );
 }
 
-      if (payload.phong?.id) {
-  const phong = await this.phongRepository.findOne({
-    where: {
-      id: payload.phong.id,
-    },
-  })
-
-  if (!phong) {
-    throw new NotFoundException('Không tìm thấy phòng.')
-  }
-
-  item.phong = phong
-
-  item.maGiuong =
-    `${phong.maPhong}_G${item.giuongSo}`
-}
     }
 
     return this.repository.save(item)

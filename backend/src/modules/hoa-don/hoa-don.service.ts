@@ -248,11 +248,25 @@ export class HoaDonService {
       payload.ngayNop = null;
     }
 
-    await this.repository.update(
-      id,
-      payload,
-    );
+    Object.assign(hoaDon, {
+  tienPhong,
+  tienDien,
+  tienNuoc,
+  tienDichVuKhac,
+  tongTien:
+    tienPhong +
+    tienDien +
+    tienNuoc +
+    tienDichVuKhac,
+});
+if (payload.trangThai !== undefined) {
+  hoaDon.trangThai = payload.trangThai;
+}
 
+if (payload.ghiChu !== undefined) {
+  hoaDon.ghiChu = payload.ghiChu;
+}
+await this.repository.save(hoaDon);
     return this.findOne(id, tenantId);
   }
 

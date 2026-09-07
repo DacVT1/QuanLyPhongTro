@@ -141,10 +141,21 @@ private readonly tenantRepository: Repository<Tenant>,
     return null;
   }
 
-  const hopDongCount = await this.hopDongRepository
+  const hopDongCount =
+  await this.hopDongRepository
     .createQueryBuilder('hopDong')
-    .innerJoin('hopDong.nguoiThue', 'nguoiThue')
-    .where('nguoiThue.id = :id', { id })
+    .innerJoin(
+      'hopDong.nguoiThue',
+      'nguoiThue',
+    )
+    .where(
+      'nguoiThue.id = :id',
+      { id },
+    )
+    .andWhere(
+      'hopDong.tenant_id = :tenantId',
+      { tenantId },
+    )
     .getCount();
 
   if (hopDongCount > 0) {

@@ -21,91 +21,74 @@ export class NhaTroService {
   ) {}
 
   async findAll(tenantId: string) {
-  return this.repository.find({
-    where: {
-      tenant: {
-        id: tenantId,
+    return this.repository.find({
+      where: {
+        tenant: {
+          id: tenantId,
+        },
       },
-    },
-    relations: {
-      taiKhoan: true,
-      phongs: true,
-    },
-  });
-}
-
- async findOne(
-  id: string,
-  tenantId: string,
-) {
-  return this.repository.findOne({
-    where: {
-      id,
-      tenant: {
-        id: tenantId,
+      relations: {
+        taiKhoan: true,
+        phongs: true,
       },
-    },
-    relations: {
-      taiKhoan: true,
-      phongs: true,
-    },
-  });
-}
+    });
+  }
 
-  async create(
-  payload: Partial<NhaTro>,
-  tenantId: string,
-) {
+  async findOne(id: string, tenantId: string) {
+    return this.repository.findOne({
+      where: {
+        id,
+        tenant: {
+          id: tenantId,
+        },
+      },
+      relations: {
+        taiKhoan: true,
+        phongs: true,
+      },
+    });
+  }
+
+  async create(payload: Partial<NhaTro>, tenantId: string) {
     const maNhaTro = String(payload.maNhaTro ?? '').trim();
 
     if (!maNhaTro) {
       throw new ConflictException('Mã nhà trọ là bắt buộc');
     }
 
-   const existing = await this.repository.findOne({
-  where: {
-    maNhaTro,
-    tenant: {
-      id: tenantId,
-    },
-  },
-});
+    const existing = await this.repository.findOne({
+      where: {
+        maNhaTro,
+        tenant: {
+          id: tenantId,
+        },
+      },
+    });
 
     if (existing) {
       throw new ConflictException(`Mã nhà trọ ${maNhaTro} đã tồn tại`);
     }
 
-    const tenant = await this.repository.manager
-  .getRepository(Tenant)
-  .findOne({
-    where: { id: tenantId },
-  });
+    const tenant = await this.repository.manager.getRepository(Tenant).findOne({
+      where: { id: tenantId },
+    });
 
-if (!tenant) {
-  throw new NotFoundException(
-    'Khong tim thay tenant',
-  );
-}
-const {
-  id: _ignoredId,
-  tenant: _ignoredTenant,
-  ...data
-} = payload as any;
+    if (!tenant) {
+      throw new NotFoundException('Khong tim thay tenant');
+    }
+    const { id: _ignoredId, tenant: _ignoredTenant, ...data } = payload as any;
 
-return this.repository.save(
-  this.repository.create({
-    ...data,
-    maNhaTro,
-    tenant,
-  }),
-);
+    return this.repository.save(
+      this.repository.create({
+        ...data,
+        maNhaTro,
+        tenant,
+      }),
+    );
   }
 
   async update(id: string, payload: Partial<NhaTro>, tenantId: string) {
-    const item = await this.findOne(
-  id,
-  tenantId,
-);
+    const item = await this.findOne(id, tenantId);
 
     if (!item) {
       throw new NotFoundException('Khong tim thay nha tro');
@@ -118,15 +101,14 @@ return this.repository.save(
         throw new ConflictException('Mã nhà trọ là bắt buộc');
       }
 
-      const existing =
-  await this.repository.findOne({
-    where: {
-      maNhaTro,
-      tenant: {
-        id: tenantId,
-      },
-    },
-  });
+      const existing = await this.repository.findOne({
+        where: {
+          maNhaTro,
+          tenant: {
+            id: tenantId,
+          },
+        },
+      });
 
       if (existing && existing.id !== id) {
         throw new ConflictException(`Mã nhà trọ ${maNhaTro} đã tồn tại`);
@@ -135,22 +117,18 @@ return this.repository.save(
       payload.maNhaTro = maNhaTro;
     }
 
-    const {
-  id: _ignoredId,
-  tenant: _ignoredTenant,
-  ...data
-} = payload as any;
+    const { id: _ignoredId, tenant: _ignoredTenant, ...data } = payload as any;
 
     await this.repository.update(
-  {
-    id,
-    tenant: {
-      id: tenantId,
-    },
-  },
-  data,
-);
-    return this.findOne(id,tenantId);
+      {
+        id,
+        tenant: {
+          id: tenantId,
+        },
+      },
+      data,
+    );
+    return this.findOne(id, tenantId);
   }
 
   async remove(id: string, tenantId: string) {
@@ -171,8 +149,8 @@ return this.repository.save(
         nhaTroId: id,
       })
       .andWhere('phong.tenant_id = :tenantId', {
-  tenantId,
-})
+        tenantId,
+      })
       .getCount();
 
     if (soPhong === 0) {
@@ -192,20 +170,16 @@ return this.repository.save(
         nhaTroId: id,
       })
       .andWhere('phong.tenant_id = :tenantId', {
-  tenantId,
-})
+        tenantId,
+      })
       .getRawMany<{ id: string }>();
 
     const danhSachPhongId = phongIds.map((phong) => phong.id);
 
     const soGiuong = await giuongRepository
       .createQueryBuilder('giuong')
-      .where('giuong.phong_id IN (:...phongIds)', {
-        phongIds: danhSachPhongId,
-      })
-      .andWhere('phong.tenant_id = :tenantId', {
-  tenantId,
-})
+      .where('giuong.phong_id IN (:...phongIds)', { phongIds: danhSachPhongId })
+      .andWhere('phong.tenant_id = :tenantId', { tenantId })
       .getCount();
 
     let danhSachGiuongId: string[] = [];
@@ -218,8 +192,8 @@ return this.repository.save(
           phongIds: danhSachPhongId,
         })
         .andWhere('phong.tenant_id = :tenantId', {
-  tenantId,
-})
+          tenantId,
+        })
         .getRawMany<{ id: string }>();
 
       danhSachGiuongId = giuongIds.map((giuong) => giuong.id);
@@ -234,8 +208,8 @@ return this.repository.save(
           giuongIds: danhSachGiuongId,
         })
         .andWhere('phong.tenant_id = :tenantId', {
-  tenantId,
-})
+          tenantId,
+        })
         .getCount();
     }
 
@@ -249,8 +223,8 @@ return this.repository.save(
           giuongIds: danhSachGiuongId,
         })
         .andWhere('phong.tenant_id = :tenantId', {
-  tenantId,
-})
+          tenantId,
+        })
         .getRawMany<{ id: string }>();
 
       danhSachHopDongId = hopDongIds.map((hopDong) => hopDong.id);
@@ -265,8 +239,8 @@ return this.repository.save(
           hopDongIds: danhSachHopDongId,
         })
         .andWhere('phong.tenant_id = :tenantId', {
-  tenantId,
-})
+          tenantId,
+        })
         .getCount();
     }
 
