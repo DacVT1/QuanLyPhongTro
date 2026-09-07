@@ -1375,10 +1375,10 @@ async function saveNhaTro() {
 
 async function savePhong() {
   try {
-    const tangSoPhong = `${phongForm.value.tangSo}${phongForm.value.phongSo}`;
     const payload = {
       maPhong: phongForm.value.maPhong,
-      tangSo: tangSoPhong,
+      tangSo: Number(phongForm.value.tangSo),
+      phongSo: phongForm.value.phongSo,
       soGiuongToiDa: Number(phongForm.value.soGiuongToiDa),
       loaiPhong: phongForm.value.loaiPhong,
       dienTich: Number(phongForm.value.dienTich),
