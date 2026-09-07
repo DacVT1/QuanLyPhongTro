@@ -47,11 +47,32 @@ function handleLogin(data: any) {
 }
 
 function logout() {
+  // Xóa thông tin xác thực
   localStorage.removeItem("accessToken");
   localStorage.removeItem("currentUser");
 
+  // Xóa thông tin tài khoản hiện tại
   accessToken.value = null;
   currentUser.value = null;
+
+  // Xóa toàn bộ dữ liệu của Tenant hiện tại khỏi bộ nhớ Vue
+  nhaTros.value = [];
+  phongs.value = [];
+  giuongs.value = [];
+  nguoiThues.value = [];
+  hopDongs.value = [];
+  hoaDons.value = [];
+
+  summary.value = {
+    totalNhaTro: 0,
+    totalPhong: 0,
+    totalGiuong: 0,
+    totalHopDong: 0,
+    totalHoaDon: 0,
+  };
+
+  // Reset giao diện
+  currentTab.value = "dashboard";
   authMode.value = "login";
 }
 
