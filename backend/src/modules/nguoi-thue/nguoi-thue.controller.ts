@@ -8,6 +8,7 @@ import {
   Post,
   UploadedFiles,
   UseInterceptors,
+  UseGuards,
 } from '@nestjs/common';
 
 import {
@@ -19,21 +20,25 @@ import { extname, join } from 'path';
 import { randomUUID } from 'crypto';
 
 import { NguoiThueService } from './nguoi-thue.service';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import type { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
 @Controller('nguoi-thue')
+@UseGuards(JwtAuthGuard)
 export class NguoiThueController {
   constructor(
     private readonly nguoiThueService: NguoiThueService,
   ) {}
 
   @Get()
-  findAll() {
-    return this.nguoiThueService.findAll();
+  findAll(@CurrentUser() user: JwtPayload,) {
+    return this.nguoiThueService.findAll(user.tenantId);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.nguoiThueService.findOne(id);
+  findOne(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
+    return this.nguoiThueService.findOne(id, user.tenantId);
   }
 
   @Post()
@@ -97,6 +102,7 @@ export class NguoiThueController {
       cccdMatTruoc?: Express.Multer.File[];
       cccdMatSau?: Express.Multer.File[];
     },
+    @CurrentUser() user: JwtPayload,
   ) {
     if (files?.cccdMatTruoc?.[0]) {
       payload.cccdMatTruoc =
@@ -108,7 +114,8 @@ export class NguoiThueController {
         `/uploads/nguoi-thue/${files.cccdMatSau[0].filename}`;
     }
 
-    return this.nguoiThueService.create(payload);
+    return this.nguoiThueService.create(payload,
+    user.tenantId);
   }
 
   @Patch(':id')
@@ -173,6 +180,7 @@ export class NguoiThueController {
       cccdMatTruoc?: Express.Multer.File[];
       cccdMatSau?: Express.Multer.File[];
     },
+    @CurrentUser() user: JwtPayload,
   ) {
     if (files?.cccdMatTruoc?.[0]) {
       payload.cccdMatTruoc =
@@ -187,11 +195,12 @@ export class NguoiThueController {
     return this.nguoiThueService.update(
       id,
       payload,
+      user.tenantId,
     );
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.nguoiThueService.remove(id);
+  remove(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
+    return this.nguoiThueService.remove(id, user.tenantId);
   }
 }

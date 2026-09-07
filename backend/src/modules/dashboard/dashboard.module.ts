@@ -7,9 +7,19 @@ import { NhaTro } from '../../entities/nha-tro.entity';
 import { Phong } from '../../entities/phong.entity';
 import { DashboardController } from './dashboard.controller';
 import { DashboardService } from './dashboard.service';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([NhaTro, Phong, Giuong, HopDong, HoaDon])],
+  imports: [
+    AuthModule,
+    TypeOrmModule.forFeature([
+      NhaTro,
+      Phong,
+      Giuong,
+      HopDong,
+      HoaDon,
+    ]),
+  ],
   controllers: [DashboardController],
   providers: [DashboardService],
 })
