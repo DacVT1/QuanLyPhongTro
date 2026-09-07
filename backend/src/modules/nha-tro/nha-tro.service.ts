@@ -179,7 +179,7 @@ export class NhaTroService {
     const soGiuong = await giuongRepository
       .createQueryBuilder('giuong')
       .where('giuong.phong_id IN (:...phongIds)', { phongIds: danhSachPhongId })
-      .andWhere('phong.tenant_id = :tenantId', { tenantId })
+      .andWhere('giuong.tenant_id = :tenantId', { tenantId })
       .getCount();
 
     let danhSachGiuongId: string[] = [];
@@ -207,7 +207,7 @@ export class NhaTroService {
         .where('hopDong.giuong_id IN (:...giuongIds)', {
           giuongIds: danhSachGiuongId,
         })
-        .andWhere('phong.tenant_id = :tenantId', {
+        .andWhere('hopDong.tenant_id = :tenantId', {
           tenantId,
         })
         .getCount();
@@ -222,7 +222,7 @@ export class NhaTroService {
         .where('hopDong.giuong_id IN (:...giuongIds)', {
           giuongIds: danhSachGiuongId,
         })
-        .andWhere('phong.tenant_id = :tenantId', {
+        .andWhere('hopDong.tenant_id = :tenantId', {
           tenantId,
         })
         .getRawMany<{ id: string }>();
@@ -238,7 +238,7 @@ export class NhaTroService {
         .where('hoaDon.hop_dong_id IN (:...hopDongIds)', {
           hopDongIds: danhSachHopDongId,
         })
-        .andWhere('phong.tenant_id = :tenantId', {
+        .andWhere('hoaDon.tenant_id = :tenantId', {
           tenantId,
         })
         .getCount();
