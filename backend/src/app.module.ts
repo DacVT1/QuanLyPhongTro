@@ -25,23 +25,23 @@ import { Tenant } from './entities/tenant.entity';
   imports: [
     ConfigModule.forRoot(),
     TypeOrmModule.forRoot({
-  type: 'postgres',
-  url: process.env.DATABASE_URL,
+      type: 'postgres',
+      url: process.env.DATABASE_URL,
 
-  entities: [
-    TaiKhoan,
-    NhaTro,
-    Phong,
-    Giuong,
-    NguoiThue,
-    HopDong,
-    HoaDon,
-    Tenant,
-  ],
+      entities: [
+        TaiKhoan,
+        NhaTro,
+        Phong,
+        Giuong,
+        NguoiThue,
+        HopDong,
+        HoaDon,
+        Tenant,
+      ],
 
-  synchronize: true,
-  logging: false,
-}),
+      synchronize: true,
+      logging: false,
+    }),
     AuthModule,
     TaiKhoanModule,
     NhaTroModule,
