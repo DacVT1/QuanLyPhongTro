@@ -2,7 +2,7 @@
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
 
 import { Doughnut } from "vue-chartjs";
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import api from "./services/api";
 import { getImageUrl } from "./utils/image";
 import NguoiThueDetail from "./components/nguoi-thue/NguoiThueDetail.vue";
@@ -690,11 +690,20 @@ const nhaTroForm = ref({
 const phongForm = ref({
   maPhong: "",
   tangSo: "",
-  soGiuongToiDa: 8,
+  phongSo: "",
+  soGiuongToiDa: 25,
   loaiPhong: "phong_tieu_chuan",
   dienTich: 25,
   nhaTroId: "",
 });
+
+watch(
+  () => phongForm.value.tangSo,
+  () => {
+    phongForm.value.phongSo = "";
+    phongForm.value.maPhong = "";
+  },
+);
 
 const tangSoOptions = computed(() => {
   if (!phongForm.value.nhaTroId) {
@@ -747,6 +756,40 @@ const tangSoOptions = computed(() => {
   return Array.from({ length: soTang }, (_, index) => index + 1).filter(
     (floor) => !usedFloors.includes(floor),
   );
+});
+
+const phongSoOptions = computed(() => {
+  if (!phongForm.value.tangSo) {
+    return [];
+  }
+
+  return Array.from({ length: 99 }, (_, index) =>
+    String(index + 1).padStart(2, "0"),
+  );
+});
+
+const maPhongPreview = computed(() => {
+  if (!phongForm.value.nhaTroId) {
+    return "";
+  }
+
+  if (!phongForm.value.tangSo) {
+    return "";
+  }
+
+  if (!phongForm.value.phongSo) {
+    return "";
+  }
+
+  const nhaTro = nhaTros.value.find(
+    (item) => String(item.id) === String(phongForm.value.nhaTroId),
+  );
+
+  if (!nhaTro?.maNhaTro) {
+    return "";
+  }
+
+  return `${nhaTro.maNhaTro}_T${phongForm.value.tangSo}${phongForm.value.phongSo}`;
 });
 
 const giuongSoOptions = computed(() => {
@@ -2823,13 +2866,28 @@ onMounted(() => {
               </label>
 
               <label>
+                <span>Phòng số</span>
+
+                <select
+                  v-model="phongForm.phongSo"
+                  :disabled="!phongForm.tangSo"
+                >
+                  <option value="">Chọn phòng số</option>
+
+                  <option v-for="so in phongSoOptions" :key="so" :value="so">
+                    {{ so }}
+                  </option>
+                </select>
+              </label>
+
+              <label>
                 {{ requiredLabel("Số giường tối đa") }}
 
                 <input
                   v-model.number="phongForm.soGiuongToiDa"
                   type="number"
                   min="1"
-                  max="8"
+                  max="25"
                   placeholder="Số giường tối đa"
                   required
                 />
