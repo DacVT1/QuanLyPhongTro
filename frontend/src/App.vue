@@ -36,14 +36,18 @@ const currentUser = ref<any | null>(
   JSON.parse(localStorage.getItem("currentUser") || "null"),
 );
 
-function handleLogin(data: any) {
+async function handleLogin(data: any) {
   accessToken.value = data.accessToken;
-
   currentUser.value = data.user;
 
   localStorage.setItem("accessToken", data.accessToken);
-
   localStorage.setItem("currentUser", JSON.stringify(data.user));
+
+  // Sau khi đăng nhập lại, phải tải lại dữ liệu của tenant hiện tại
+  await loadData();
+
+  // Đảm bảo giao diện bắt đầu từ Dashboard
+  currentTab.value = "dashboard";
 }
 
 function logout() {
