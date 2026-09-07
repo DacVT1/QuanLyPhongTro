@@ -9,6 +9,7 @@ import NguoiThueDetail from "./components/nguoi-thue/NguoiThueDetail.vue";
 import Login from "@/components/auth/Login.vue";
 import Register from "./components/auth/Register.vue";
 import Footer from "./components/Footer.vue";
+import RegisterVerification from "./components/auth/RegisterVerification.vue";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 const cccdMatTruocPreviewUrl = ref("");
@@ -28,7 +29,9 @@ const currentTab = ref("dashboard");
 const isMenuOpen = ref(false);
 const soDienThoaiError = ref("");
 
-const authMode = ref<"login" | "register">("login");
+const authMode = ref<"login" | "register" | "registerVerification">("login");
+
+const registerIdentifier = ref("");
 
 const accessToken = ref(localStorage.getItem("accessToken"));
 
@@ -79,7 +82,19 @@ function logout() {
   currentTab.value = "dashboard";
   authMode.value = "login";
 }
+function handleOtpRequired(identifier: string) {
+  registerIdentifier.value = identifier;
+  authMode.value = "registerVerification";
+}
 
+function handleRegisterVerified() {
+  registerIdentifier.value = "";
+  authMode.value = "login";
+}
+
+function handleBackToRegister() {
+  authMode.value = "register";
+}
 const tienDienDisplay = ref("0");
 const tienNuocDisplay = ref("0");
 const tienDichVuKhacDisplay = ref("0");
@@ -2389,14 +2404,22 @@ onMounted(() => {
 
 <template>
   <Login
-    v-if="!accessToken && authMode === 'login'"
+    v-if="authMode === 'login'"
     @login-success="handleLogin"
     @register="authMode = 'register'"
   />
 
   <Register
-    v-else-if="!accessToken && authMode === 'register'"
+    v-else-if="authMode === 'register'"
     @login="authMode = 'login'"
+    @otp-required="handleOtpRequired"
+  />
+
+  <RegisterVerification
+    v-else-if="authMode === 'registerVerification'"
+    :identifier="registerIdentifier"
+    @verified="handleRegisterVerified"
+    @back="handleBackToRegister"
   />
 
   <div v-else class="app-shell" :class="{ 'menu-open': isMenuOpen }">

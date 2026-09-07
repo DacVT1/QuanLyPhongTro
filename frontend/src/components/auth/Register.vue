@@ -1,67 +1,70 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import api from '../../services/api'
+import { ref } from "vue";
+import api from "../../services/api";
 
-const username = ref('')
-const password = ref('')
-const confirmPassword = ref('')
-const tenHienThi = ref('')
-const email = ref('')
+const username = ref("");
+const password = ref("");
+const confirmPassword = ref("");
+const tenHienThi = ref("");
 
-const errorMessage = ref('')
-const successMessage = ref('')
-const loading = ref(false)
+const errorMessage = ref("");
+const successMessage = ref("");
+const loading = ref(false);
 
 const emit = defineEmits<{
-  login: []
-}>()
+  login: [];
+}>();
 
 async function register() {
-  errorMessage.value = ''
-  successMessage.value = ''
+  errorMessage.value = "";
+  successMessage.value = "";
+
+  const identifier = username.value.trim();
 
   if (
-    !username.value ||
+    !identifier ||
     !password.value ||
-    !tenHienThi.value
+    !confirmPassword.value ||
+    !tenHienThi.value.trim()
   ) {
-    errorMessage.value =
-      'Vui lòng nhập đầy đủ thông tin bắt buộc'
-    return
+    errorMessage.value = "Vui lòng nhập đầy đủ thông tin bắt buộc";
+    return;
+  }
+
+  if (!isPhoneOrEmail(identifier)) {
+    errorMessage.value = "Vui lòng nhập số điện thoại hoặc email hợp lệ";
+    return;
   }
 
   if (password.value !== confirmPassword.value) {
-    errorMessage.value =
-      'Mật khẩu nhập lại không khớp'
-    return
+    errorMessage.value = "Mật khẩu nhập lại không khớp";
+    return;
   }
 
   try {
-    loading.value = true
+    loading.value = true;
 
-    await api.post(
-      '/auth/register',
-      {
-        username: username.value,
-        password: password.value,
-        tenHienThi: tenHienThi.value,
-        email: email.value || undefined,
-      },
-    )
+    await api.post("/auth/register", {
+      username: identifier,
+      password: password.value,
+      tenHienThi: tenHienThi.value.trim(),
+    });
 
-    successMessage.value =
-      'Đăng ký thành công. Vui lòng đăng nhập.'
-
-    setTimeout(() => {
-      emit('login')
-    }, 1000)
+    emit("otpRequired", identifier);
   } catch (error: any) {
-    errorMessage.value =
-      error.response?.data?.message ||
-      'Đăng ký thất bại'
+    errorMessage.value = error.response?.data?.message || "Đăng ký thất bại";
   } finally {
-    loading.value = false
+    loading.value = false;
   }
+}
+function isPhoneOrEmail(value: string) {
+  const input = value.trim();
+
+  const phoneRegex = /^(0|\+84)[0-9]{9,10}$/;
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  return phoneRegex.test(input) || emailRegex.test(input);
 }
 </script>
 
@@ -70,17 +73,11 @@ async function register() {
     <div class="auth-card">
       <h2>Đăng ký tài khoản</h2>
 
-      <div
-        v-if="errorMessage"
-        class="auth-error"
-      >
+      <div v-if="errorMessage" class="auth-error">
         {{ errorMessage }}
       </div>
 
-      <div
-        v-if="successMessage"
-        class="auth-success"
-      >
+      <div v-if="successMessage" class="auth-success">
         {{ successMessage }}
       </div>
 
@@ -95,23 +92,13 @@ async function register() {
       </div>
 
       <div class="form-group">
-        <label>Tên đăng nhập *</label>
+        <label>Số điện thoại hoặc email *</label>
 
         <input
           v-model="username"
           type="text"
           autocomplete="username"
-          placeholder="Nhập tên đăng nhập"
-        />
-      </div>
-
-      <div class="form-group">
-        <label>Email</label>
-
-        <input
-          v-model="email"
-          type="email"
-          placeholder="Nhập email"
+          placeholder="Nhập số điện thoại hoặc email"
         />
       </div>
 
@@ -137,23 +124,14 @@ async function register() {
         />
       </div>
 
-      <button
-        class="auth-button"
-        :disabled="loading"
-        @click="register"
-      >
-        {{ loading ? 'Đang đăng ký...' : 'Đăng ký' }}
+      <button class="auth-button" :disabled="loading" @click="register">
+        {{ loading ? "Đang đăng ký..." : "Đăng ký" }}
       </button>
 
       <div class="auth-register">
         Đã có tài khoản?
 
-        <button
-          type="button"
-          @click="emit('login')"
-        >
-          Đăng nhập
-        </button>
+        <button type="button" @click="emit('login')">Đăng nhập</button>
       </div>
     </div>
   </div>
@@ -179,8 +157,7 @@ async function register() {
   background: white;
   border-radius: 14px;
 
-  box-shadow:
-    0 10px 30px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
 
   box-sizing: border-box;
 }
