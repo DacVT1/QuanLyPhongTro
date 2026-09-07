@@ -12,6 +12,7 @@ const successMessage = ref("");
 const loading = ref(false);
 
 const emit = defineEmits<{
+  otpRequired: [identifier: string];
   login: [];
 }>();
 

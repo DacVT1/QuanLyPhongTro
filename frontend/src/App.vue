@@ -1239,6 +1239,7 @@ function resetPhongForm() {
   phongForm.value = {
     maPhong: "",
     tangSo: "",
+    phongSo: "",
     soGiuongToiDa: 8,
     loaiPhong: "phong_tieu_chuan",
     dienTich: 25,
@@ -2101,6 +2102,7 @@ function editPhong(item: any) {
   phongForm.value = {
     maPhong: item.maPhong ?? "",
     tangSo: item.tangSo ?? "",
+    phongSo: item.phongSo ?? "",
     soGiuongToiDa: item.soGiuongToiDa ?? 8,
     loaiPhong: item.loaiPhong ?? "phong_tieu_chuan",
     dienTich: item.dienTich ?? 25,
