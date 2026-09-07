@@ -50,7 +50,6 @@ export class AuthService {
       trangThai: 'active',
     });
 
-    const savedTenant = await this.tenantRepository.save(tenant);
     const goiFree = await this.goiDichVuRepository.findOne({
       where: {
         maGoi: 'FREE',
@@ -61,6 +60,7 @@ export class AuthService {
     if (!goiFree) {
       throw new ConflictException('Chưa cấu hình gói FREE');
     }
+    const savedTenant = await this.tenantRepository.save(tenant);
 
     const ngayBatDau = new Date();
 

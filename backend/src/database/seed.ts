@@ -21,37 +21,47 @@ export async function seedDatabase(dataSource: DataSource) {
   const tenantRepository = dataSource.getRepository(Tenant);
   const goiDichVuRepository = dataSource.getRepository(GoiDichVu);
   const subscriptionRepository = dataSource.getRepository(Subscription);
-  const plans = await goiDichVuRepository.save([
-    {
-      maGoi: 'FREE',
-      ten: 'Miễn phí',
-      gia: 0,
-      chuKy: 'MONTHLY',
-      soPhongToiDa: 5,
-      soNguoiDungToiDa: 1,
-      trangThai: 'active',
-    },
-    {
-      maGoi: 'BASIC',
-      ten: 'Cơ bản',
-      gia: 99000,
-      chuKy: 'MONTHLY',
-      soPhongToiDa: 20,
-      soNguoiDungToiDa: 3,
-      trangThai: 'active',
-    },
-    {
-      maGoi: 'PRO',
-      ten: 'Chuyên nghiệp',
-      gia: 199000,
-      chuKy: 'MONTHLY',
-      soPhongToiDa: 100,
-      soNguoiDungToiDa: 10,
-      trangThai: 'active',
-    },
-  ]);
+  const getOrCreatePlan = async (maGoi: string, data: Partial<GoiDichVu>) => {
+    let plan = await goiDichVuRepository.findOne({
+      where: { maGoi },
+    });
 
-  const freePlan = plans.find((plan) => plan.maGoi === 'FREE');
+    if (!plan) {
+      plan = await goiDichVuRepository.save({
+        maGoi,
+        ...data,
+      });
+    }
+
+    return plan;
+  };
+
+  const freePlan = await getOrCreatePlan('FREE', {
+    ten: 'Miễn phí',
+    gia: 0,
+    chuKy: 'MONTHLY',
+    soPhongToiDa: 5,
+    soNguoiDungToiDa: 1,
+    trangThai: 'active',
+  });
+
+  await getOrCreatePlan('BASIC', {
+    ten: 'Cơ bản',
+    gia: 99000,
+    chuKy: 'MONTHLY',
+    soPhongToiDa: 20,
+    soNguoiDungToiDa: 3,
+    trangThai: 'active',
+  });
+
+  await getOrCreatePlan('PRO', {
+    ten: 'Chuyên nghiệp',
+    gia: 199000,
+    chuKy: 'MONTHLY',
+    soPhongToiDa: 100,
+    soNguoiDungToiDa: 10,
+    trangThai: 'active',
+  });
 
   if (!freePlan) {
     throw new Error('Không tạo được gói FREE');
@@ -79,14 +89,30 @@ export async function seedDatabase(dataSource: DataSource) {
   const ngayKetThuc = new Date(ngayBatDau);
   ngayKetThuc.setMonth(ngayKetThuc.getMonth() + 1);
 
-  const subscription = await subscriptionRepository.save({
-    tenant,
-    goiDichVu: freePlan,
-    ngayBatDau,
-    ngayKetThuc,
-    trangThai: 'active',
-    autoRenew: false,
+  let subscription = await subscriptionRepository.findOne({
+    where: {
+      tenant: {
+        id: tenant.id,
+      },
+      trangThai: 'active',
+    },
   });
+
+  if (!subscription) {
+    const ngayBatDau = new Date();
+    const ngayKetThuc = new Date(ngayBatDau);
+
+    ngayKetThuc.setMonth(ngayKetThuc.getMonth() + 1);
+
+    subscription = await subscriptionRepository.save({
+      tenant,
+      goiDichVu: freePlan,
+      ngayBatDau,
+      ngayKetThuc,
+      trangThai: 'active',
+      autoRenew: false,
+    });
+  }
   const nhaTro = await nhaTroRepository.save({
     tenNhaTro: 'Nhà trọ A',
     diaChi: '123 Đường Lê Lợi, Quận 1, TP.HCM',
