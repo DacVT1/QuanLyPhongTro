@@ -7,6 +7,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { TaiKhoan } from './tai-khoan.entity';
+import { Subscription } from './subscription.entity';
 
 @Entity({ name: 'tenant' })
 export class Tenant {
@@ -28,9 +29,12 @@ export class Tenant {
   @UpdateDateColumn()
   updatedAt: Date;
 
+  @OneToMany(() => TaiKhoan, (taiKhoan: TaiKhoan) => taiKhoan.tenant)
+  taiKhoans: TaiKhoan[];
+
   @OneToMany(
-  () => TaiKhoan,
-  (taiKhoan: TaiKhoan) => taiKhoan.tenant,
-)
-taiKhoans: TaiKhoan[];
+    () => Subscription,
+    (subscription: Subscription) => subscription.tenant,
+  )
+  subscriptions: Subscription[];
 }

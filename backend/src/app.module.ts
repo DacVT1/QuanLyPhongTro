@@ -20,6 +20,8 @@ import { TaiKhoanModule } from './modules/tai-khoan/tai-khoan.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
 import { Tenant } from './entities/tenant.entity';
+import { GoiDichVu } from './entities/goi-dich-vu.entity';
+import { Subscription } from './entities/subscription.entity';
 
 @Module({
   imports: [
@@ -37,6 +39,8 @@ import { Tenant } from './entities/tenant.entity';
         HopDong,
         HoaDon,
         Tenant,
+        GoiDichVu,
+        Subscription,
       ],
 
       synchronize: true,
