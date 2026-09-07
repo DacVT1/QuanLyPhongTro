@@ -3,104 +3,96 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
-} from '@nestjs/common'
+} from '@nestjs/common';
 
-import { InjectRepository } from '@nestjs/typeorm'
-import { Repository } from 'typeorm'
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 
-import { Giuong } from '../../entities/giuong.entity'
-import { Phong } from '../../entities/phong.entity'
+import { Giuong } from '../../entities/giuong.entity';
+import { Phong } from '../../entities/phong.entity';
 import { Tenant } from '../../entities/tenant.entity';
 
 @Injectable()
 export class GiuongService {
   constructor(
-  @InjectRepository(Giuong)
-  private readonly repository: Repository<Giuong>,
+    @InjectRepository(Giuong)
+    private readonly repository: Repository<Giuong>,
 
-  @InjectRepository(Phong)
-  private readonly phongRepository: Repository<Phong>,
+    @InjectRepository(Phong)
+    private readonly phongRepository: Repository<Phong>,
 
-  @InjectRepository(Tenant)
-  private readonly tenantRepository: Repository<Tenant>,
-) {}
-private getTrangThaiTheoHopDong(
-  hopDongs: any[] = [],
-): 'da_thue' | 'chua_thue' {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+    @InjectRepository(Tenant)
+    private readonly tenantRepository: Repository<Tenant>,
+  ) {}
+  private getTrangThaiTheoHopDong(
+    hopDongs: any[] = [],
+  ): 'da_thue' | 'chua_thue' {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-  const coHopDongHieuLuc = hopDongs.some((hopDong) => {
-    // Hợp đồng phải đang active
-    if (hopDong.trangThai !== 'active') {
-      return false;
-    }
+    const coHopDongHieuLuc = hopDongs.some((hopDong) => {
+      // Hợp đồng phải đang active
+      if (hopDong.trangThai !== 'active') {
+        return false;
+      }
 
-    if (!hopDong.ngayBatDau) {
-      return false;
-    }
+      if (!hopDong.ngayBatDau) {
+        return false;
+      }
 
-    const ngayBatDau = new Date(hopDong.ngayBatDau);
-    ngayBatDau.setHours(0, 0, 0, 0);
+      const ngayBatDau = new Date(hopDong.ngayBatDau);
+      ngayBatDau.setHours(0, 0, 0, 0);
 
-    // Chưa đến ngày bắt đầu
-    if (ngayBatDau > today) {
-      return false;
-    }
+      // Chưa đến ngày bắt đầu
+      if (ngayBatDau > today) {
+        return false;
+      }
 
-    // Không có ngày kết thúc => vẫn đang thuê
-    if (!hopDong.ngayKetThuc) {
-      return true;
-    }
+      // Không có ngày kết thúc => vẫn đang thuê
+      if (!hopDong.ngayKetThuc) {
+        return true;
+      }
 
-    const ngayKetThuc = new Date(hopDong.ngayKetThuc);
-    ngayKetThuc.setHours(0, 0, 0, 0);
+      const ngayKetThuc = new Date(hopDong.ngayKetThuc);
+      ngayKetThuc.setHours(0, 0, 0, 0);
 
-    // Ngày hiện tại phải nhỏ hơn ngày kết thúc
-    return today < ngayKetThuc;
-  });
+      // Ngày hiện tại phải nhỏ hơn ngày kết thúc
+      return today < ngayKetThuc;
+    });
 
-  return coHopDongHieuLuc ? 'da_thue' : 'chua_thue';
-}
+    return coHopDongHieuLuc ? 'da_thue' : 'chua_thue';
+  }
 
-private mapTrangThai(giuong: Giuong) {
-  const status = this.getTrangThaiTheoHopDong(
-    giuong.hopDongs ?? [],
-  );
+  private mapTrangThai(giuong: Giuong) {
+    const status = this.getTrangThaiTheoHopDong(giuong.hopDongs ?? []);
 
-  return {
-    ...giuong,
-    trangThai: status,
-    status,
-  };
-}
+    return {
+      ...giuong,
+      trangThai: status,
+      status,
+    };
+  }
 
-async findAll(tenantId: string) {
-  const giuongs = await this.repository.find({
-    where: {
-      tenant: {
-        id: tenantId,
+  async findAll(tenantId: string) {
+    const giuongs = await this.repository.find({
+      where: {
+        tenant: {
+          id: tenantId,
+        },
       },
-    },
-    relations: {
-      phong: {
-        nhaTro: true,
+      relations: {
+        phong: {
+          nhaTro: true,
+        },
+        hopDongs: true,
       },
-      hopDongs: true,
-    },
-  });
+    });
 
-  return giuongs.map((giuong) =>
-    this.mapTrangThai(giuong),
-  );
-}
+    return giuongs.map((giuong) => this.mapTrangThai(giuong));
+  }
 
-async findOne(
-  id: string,
-  tenantId: string,
-) {
-  const giuong =
-    await this.repository.findOne({
+  async findOne(id: string, tenantId: string) {
+    const giuong = await this.repository.findOne({
       where: {
         id,
         tenant: {
@@ -115,200 +107,191 @@ async findOne(
       },
     });
 
-  return giuong
-    ? this.mapTrangThai(giuong)
-    : null;
-}
-
-  async create(
-  payload: Partial<Giuong>,
-  tenantId: string,
-) {
-  if (!tenantId) {
-    throw new BadRequestException(
-      'Không xác định được tenant từ tài khoản đăng nhập.',
-    );
+    return giuong ? this.mapTrangThai(giuong) : null;
   }
 
-  if (!payload.phong?.id) {
-    throw new BadRequestException(
-      'Phòng là bắt buộc.',
-    );
-  }
+  async create(payload: Partial<Giuong>, tenantId: string) {
+    if (!tenantId) {
+      throw new BadRequestException(
+        'Không xác định được tenant từ tài khoản đăng nhập.',
+      );
+    }
 
-  // Tenant lấy từ JWT, KHÔNG lấy từ frontend
-  const tenant = await this.tenantRepository.findOne({
-    where: {
-      id: tenantId,
-    },
-  });
+    if (!payload.phong?.id) {
+      throw new BadRequestException('Phòng là bắt buộc.');
+    }
 
-  if (!tenant) {
-    throw new NotFoundException(
-      'Không tìm thấy tenant.',
-    );
-  }
-
-  // Phòng phải thuộc tenant hiện tại
-  const phong = await this.phongRepository.findOne({
-    where: {
-      id: payload.phong.id,
-      tenant: {
+    // Tenant lấy từ JWT, KHÔNG lấy từ frontend
+    const tenant = await this.tenantRepository.findOne({
+      where: {
         id: tenantId,
       },
-    },
-  });
+    });
 
-  if (!phong) {
-    throw new NotFoundException(
-      'Không tìm thấy phòng hoặc phòng không thuộc tài khoản hiện tại.',
-    );
+    if (!tenant) {
+      throw new NotFoundException('Không tìm thấy tenant.');
+    }
+
+    // Phòng phải thuộc tenant hiện tại
+    const phong = await this.phongRepository.findOne({
+      where: {
+        id: payload.phong.id,
+        tenant: {
+          id: tenantId,
+        },
+      },
+    });
+
+    if (!phong) {
+      throw new NotFoundException(
+        'Không tìm thấy phòng hoặc phòng không thuộc tài khoản hiện tại.',
+      );
+    }
+    const giuongSo = Number(payload.giuongSo);
+    const giuongTonTai = await this.repository.findOne({
+      where: {
+        phong: {
+          id: phong.id,
+        },
+        giuongSo,
+        tenant: {
+          id: tenantId,
+        },
+      },
+    });
+
+    if (giuongTonTai) {
+      throw new ConflictException(
+        `Giường số ${giuongSo} của phòng ${phong.maPhong} đã được thêm.`,
+      );
+    }
+
+    if (!Number.isInteger(giuongSo) || giuongSo < 1) {
+      throw new BadRequestException(
+        'Giường số phải là số nguyên lớn hơn hoặc bằng 1.',
+      );
+    }
+
+    const maGiuong = `${phong.maPhong}_G${giuongSo}`;
+
+    const giaGiuong = Number(payload.giaGiuong ?? 0);
+
+    if (!Number.isInteger(giaGiuong) || giaGiuong < 0) {
+      throw new BadRequestException(
+        'Giá giường phải là số nguyên lớn hơn hoặc bằng 0.',
+      );
+    }
+
+    const giuong = this.repository.create({
+      maGiuong,
+      giuongSo,
+      giaGiuong,
+      datCocSom: Boolean(payload.datCocSom),
+      trangThai: 'trong',
+
+      phong,
+
+      // QUAN TRỌNG: GÁN TENANT
+      tenant,
+    });
+
+    return this.repository.save(giuong);
   }
 
-  const giuongSo = Number(payload.giuongSo);
-
-  if (
-    !Number.isInteger(giuongSo) ||
-    giuongSo < 1
-  ) {
-    throw new BadRequestException(
-      'Giường số phải là số nguyên lớn hơn hoặc bằng 1.',
-    );
-  }
-
-  const maGiuong =
-    `${phong.maPhong}_G${giuongSo}`;
-
-  const giaGiuong =
-    Number(payload.giaGiuong ?? 0);
-
-  if (
-    !Number.isInteger(giaGiuong) ||
-    giaGiuong < 0
-  ) {
-    throw new BadRequestException(
-      'Giá giường phải là số nguyên lớn hơn hoặc bằng 0.',
-    );
-  }
-
-  const giuong = this.repository.create({
-    maGiuong,
-    giuongSo,
-    giaGiuong,
-    datCocSom: Boolean(payload.datCocSom),
-    trangThai: 'trong',
-
-    phong,
-
-    // QUAN TRỌNG: GÁN TENANT
-    tenant,
-  });
-
-  return this.repository.save(giuong);
-}
-
-  async update(id: string, payload: Partial<Giuong>,
-    tenantId: string) {
+  async update(id: string, payload: Partial<Giuong>, tenantId: string) {
     const item = await this.repository.findOne({
-      where: { id,
-    tenant: {
-      id: tenantId,
-    }, },
+      where: {
+        id,
+        tenant: {
+          id: tenantId,
+        },
+      },
       relations: {
         phong: true,
       },
-    })
+    });
 
     if (!item) {
-      throw new NotFoundException('Không tìm thấy giường.')
+      throw new NotFoundException('Không tìm thấy giường.');
     }
 
-if (payload.giuongSo !== undefined) {
-  const giuongSo = Number(payload.giuongSo)
+    if (payload.giuongSo !== undefined) {
+      const giuongSo = Number(payload.giuongSo);
 
-  if (!Number.isInteger(giuongSo) || giuongSo < 1) {
-    throw new BadRequestException(
-      'Giường số phải là số nguyên lớn hơn hoặc bằng 1.',
-    )
-  }
+      if (!Number.isInteger(giuongSo) || giuongSo < 1) {
+        throw new BadRequestException(
+          'Giường số phải là số nguyên lớn hơn hoặc bằng 1.',
+        );
+      }
 
-  item.giuongSo = giuongSo
+      item.giuongSo = giuongSo;
 
-  if (item.phong) {
-    item.maGiuong = `${item.phong.maPhong}_G${giuongSo}`
-  }
-}
+      if (item.phong) {
+        item.maGiuong = `${item.phong.maPhong}_G${giuongSo}`;
+      }
+    }
 
     if (payload.trangThai !== undefined) {
-  if (
-    !["trong", "da_thue", "sap_tra_tro"].includes(
-      payload.trangThai,
-    )
-  ) {
-    throw new BadRequestException(
-      "Trạng thái giường không hợp lệ.",
-    );
-  }
+      if (!['trong', 'da_thue', 'sap_tra_tro'].includes(payload.trangThai)) {
+        throw new BadRequestException('Trạng thái giường không hợp lệ.');
+      }
 
-  item.trangThai = payload.trangThai;
-}
-if (payload.datCocSom !== undefined) {
-  item.datCocSom = Boolean(payload.datCocSom);
-}
+      item.trangThai = payload.trangThai;
+    }
+    if (payload.datCocSom !== undefined) {
+      item.datCocSom = Boolean(payload.datCocSom);
+    }
     if (payload.giaGiuong !== undefined) {
-  const giaGiuong = Number(payload.giaGiuong)
+      const giaGiuong = Number(payload.giaGiuong);
 
-  if (!Number.isInteger(giaGiuong) || giaGiuong < 0) {
-    throw new BadRequestException(
-      'Giá giường phải là số nguyên lớn hơn hoặc bằng 0.',
-    )
-  }
+      if (!Number.isInteger(giaGiuong) || giaGiuong < 0) {
+        throw new BadRequestException(
+          'Giá giường phải là số nguyên lớn hơn hoặc bằng 0.',
+        );
+      }
 
-  item.giaGiuong = giaGiuong
-}
+      item.giaGiuong = giaGiuong;
+    }
     if (payload.phong?.id) {
-      const phong =
-  await this.phongRepository.findOne({
-    where: {
-      id: payload.phong.id,
-      tenant: {
-        id: tenantId,
-      },
-    },
-  });
+      const phong = await this.phongRepository.findOne({
+        where: {
+          id: payload.phong.id,
+          tenant: {
+            id: tenantId,
+          },
+        },
+      });
 
-if (!phong) {
-  throw new NotFoundException(
-    'Không tìm thấy phòng hoặc phòng không thuộc tài khoản hiện tại.',
-  );
-}
-
+      if (!phong) {
+        throw new NotFoundException(
+          'Không tìm thấy phòng hoặc phòng không thuộc tài khoản hiện tại.',
+        );
+      }
     }
 
-    return this.repository.save(item)
+    return this.repository.save(item);
   }
 
-  async remove(id: string,
-    tenantId: string) {
-  const item = await this.findOne(id,tenantId);
+  async remove(id: string, tenantId: string) {
+    const item = await this.findOne(id, tenantId);
 
-  if (!item) {
-    throw new NotFoundException('Không tìm thấy giường.');
+    if (!item) {
+      throw new NotFoundException('Không tìm thấy giường.');
+    }
+
+    const soHopDong = item.hopDongs?.length ?? 0;
+
+    if (soHopDong > 0) {
+      throw new ConflictException({
+        message: `Không thể xóa giường này! Giường đang được sử dụng trong ${soHopDong} hợp đồng. Vui lòng xóa hoặc xử lý hợp đồng liên quan trước khi xóa giường.`,
+        soHopDong,
+        maGiuong: item.maGiuong,
+        maPhong: item.phong?.maPhong ?? '',
+      });
+    }
+
+    await this.repository.remove(item);
+
+    return item;
   }
-
-  const soHopDong = item.hopDongs?.length ?? 0;
-
-  if (soHopDong > 0) {
-    throw new ConflictException({
-      message: `Không thể xóa giường này! Giường đang được sử dụng trong ${soHopDong} hợp đồng. Vui lòng xóa hoặc xử lý hợp đồng liên quan trước khi xóa giường.`,
-      soHopDong,
-      maGiuong: item.maGiuong,
-      maPhong: item.phong?.maPhong ?? "",
-    });
-  }
-
-  await this.repository.remove(item);
-
-  return item;
-}
 }
