@@ -38,19 +38,34 @@ const accessToken = ref(localStorage.getItem("accessToken"));
 const currentUser = ref<any | null>(
   JSON.parse(localStorage.getItem("currentUser") || "null"),
 );
+const isAuthenticated = computed(() => {
+  return !!accessToken.value && !!currentUser.value;
+});
 
 async function handleLogin(data: any) {
+  console.log("===== HANDLE LOGIN =====");
+
   accessToken.value = data.accessToken;
   currentUser.value = data.user;
 
   localStorage.setItem("accessToken", data.accessToken);
+
   localStorage.setItem("currentUser", JSON.stringify(data.user));
 
-  // Sau khi đăng nhập lại, phải tải lại dữ liệu của tenant hiện tại
-  await loadData();
-
-  // Đảm bảo giao diện bắt đầu từ Dashboard
+  // Chuyển giao diện ngay sau khi xác thực thành công
   currentTab.value = "dashboard";
+  authMode.value = "login";
+
+  console.log("Login state updated");
+  console.log("accessToken:", !!accessToken.value);
+  console.log("currentUser:", currentUser.value);
+
+  // Tải dữ liệu sau, không được chặn việc chuyển giao diện
+  try {
+    await loadData();
+  } catch (error) {
+    console.error("Đăng nhập thành công nhưng không thể tải dữ liệu:", error);
+  }
 }
 
 function logout() {
@@ -2406,7 +2421,7 @@ onMounted(() => {
 
 <template>
   <Login
-    v-if="authMode === 'login'"
+    v-if="!isAuthenticated"
     @login-success="handleLogin"
     @register="authMode = 'register'"
   />

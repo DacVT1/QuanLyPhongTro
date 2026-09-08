@@ -418,44 +418,67 @@ export class AuthService {
   async login(dto: LoginDto) {
     const username = dto.username.trim().toLowerCase();
 
+    console.log('========== LOGIN ==========');
+    console.log('username:', username);
+    console.log('password length:', dto.password?.length);
+
     const taiKhoan = await this.taiKhoanRepository.findOne({
       where: {
         username,
       },
-
       relations: {
         tenant: true,
       },
     });
 
+    console.log('account found:', !!taiKhoan);
+
     if (!taiKhoan) {
+      console.log('ACCOUNT NOT FOUND');
+
       throw new UnauthorizedException('Email hoặc mật khẩu không đúng');
     }
+
+    console.log('account id:', taiKhoan.id);
+
+    console.log('tenant id:', taiKhoan.tenant?.id);
+
+    console.log('password hash exists:', !!taiKhoan.passwordHash);
+
+    console.log('password hash length:', taiKhoan.passwordHash?.length);
 
     const passwordValid = await bcrypt.compare(
       dto.password,
       taiKhoan.passwordHash,
     );
 
+    console.log('password valid:', passwordValid);
+
+    console.log('============================');
+
     if (!passwordValid) {
       throw new UnauthorizedException('Email hoặc mật khẩu không đúng');
     }
+    console.log('===== JWT DEBUG =====');
 
-    // JWT payload.
+    console.log('user id:', taiKhoan.id);
+    console.log('username:', taiKhoan.username);
+    console.log('role:', taiKhoan.role);
+    console.log('tenant id:', taiKhoan.tenant?.id);
+
     const payload = {
       sub: taiKhoan.id,
       username: taiKhoan.username,
       role: taiKhoan.role,
       tenantId: taiKhoan.tenant.id,
     };
+    console.log('JWT payload:', payload);
 
     const accessToken = await this.jwtService.signAsync(payload);
-
+    console.log('JWT created:', !!accessToken);
     return {
       message: 'Đăng nhập thành công',
-
       accessToken,
-
       user: {
         id: taiKhoan.id,
         username: taiKhoan.username,
