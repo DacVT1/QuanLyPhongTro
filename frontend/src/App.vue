@@ -2421,25 +2421,29 @@ onMounted(() => {
 
 <template>
   <Login
-    v-if="!isAuthenticated"
+    v-if="!isAuthenticated && authMode === 'login'"
     @login-success="handleLogin"
     @register="authMode = 'register'"
   />
 
   <Register
-    v-else-if="authMode === 'register'"
+    v-else-if="!isAuthenticated && authMode === 'register'"
     @login="authMode = 'login'"
     @otp-required="handleOtpRequired"
   />
 
   <RegisterVerification
-    v-else-if="authMode === 'registerVerification'"
+    v-else-if="!isAuthenticated && authMode === 'registerVerification'"
     :identifier="registerIdentifier"
     @verified="handleRegisterVerified"
     @back="handleBackToRegister"
   />
 
-  <div v-else class="app-shell" :class="{ 'menu-open': isMenuOpen }">
+  <div
+    v-else-if="isAuthenticated"
+    class="app-shell"
+    :class="{ 'menu-open': isMenuOpen }"
+  >
     <!-- =====================================================
          NÚT MỞ MENU
          ===================================================== -->
