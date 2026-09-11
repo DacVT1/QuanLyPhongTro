@@ -44,15 +44,21 @@ api.interceptors.response.use(
     if (status === 401 && !isHandlingUnauthorized) {
       isHandlingUnauthorized = true;
 
-      console.warn("Phiên đăng nhập không còn hợp lệ. Đang đăng xuất...");
+      console.warn(
+        "Phiên đăng nhập không còn hợp lệ. Đang chuyển về màn hình đăng nhập...",
+      );
 
       // Xóa phiên đăng nhập cũ
       localStorage.removeItem("accessToken");
       localStorage.removeItem("currentUser");
 
-      // Reload để App.vue khởi tạo lại trạng thái
-      // và hiển thị màn hình đăng nhập.
-      window.location.reload();
+      // Thông báo cho App.vue cập nhật trạng thái Vue
+      window.dispatchEvent(new Event("auth:unauthorized"));
+
+      // Cho phép xử lý 401 tiếp theo sau khi App.vue đã cập nhật
+      setTimeout(() => {
+        isHandlingUnauthorized = false;
+      }, 100);
     }
 
     return Promise.reject(error);

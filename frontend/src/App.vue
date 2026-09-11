@@ -2,7 +2,7 @@
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
 
 import { Doughnut } from "vue-chartjs";
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, onMounted, ref, watch, onUnmounted } from "vue";
 import api from "./services/api";
 import { getImageUrl } from "./utils/image";
 import NguoiThueDetail from "./components/nguoi-thue/NguoiThueDetail.vue";
@@ -40,6 +40,43 @@ const currentUser = ref<any | null>(
 );
 const isAuthenticated = computed(() => {
   return !!accessToken.value && !!currentUser.value;
+});
+function handleUnauthorized() {
+  console.warn("Phiên đăng nhập không còn hợp lệ.");
+
+  // Xóa trạng thái đăng nhập trong Vue
+  accessToken.value = null;
+  currentUser.value = null;
+
+  // Xóa dữ liệu đang hiển thị
+  nhaTros.value = [];
+  phongs.value = [];
+  giuongs.value = [];
+  nguoiThues.value = [];
+  hopDongs.value = [];
+  hoaDons.value = [];
+
+  summary.value = {
+    totalNhaTro: 0,
+    totalPhong: 0,
+    totalGiuong: 0,
+    totalHopDong: 0,
+    totalHoaDon: 0,
+  };
+
+  // Đưa giao diện về Login
+  currentTab.value = "dashboard";
+  authMode.value = "login";
+}
+onMounted(() => {
+  window.addEventListener("auth:unauthorized", handleUnauthorized);
+});
+onMounted(() => {
+  window.addEventListener("auth:unauthorized", handleUnauthorized);
+});
+
+onUnmounted(() => {
+  window.removeEventListener("auth:unauthorized", handleUnauthorized);
 });
 
 async function handleLogin(data: any) {
@@ -2415,7 +2452,13 @@ function syncHoaDonCode() {
 }
 
 onMounted(() => {
-  loadData();
+  // Lắng nghe sự kiện phiên đăng nhập không còn hợp lệ
+  window.addEventListener("auth:unauthorized", handleUnauthorized);
+
+  // Chỉ tải dữ liệu khi người dùng đang đăng nhập
+  if (isAuthenticated.value) {
+    loadData();
+  }
 });
 </script>
 
