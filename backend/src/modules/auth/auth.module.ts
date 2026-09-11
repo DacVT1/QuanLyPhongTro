@@ -26,6 +26,6 @@ import { Subscription } from 'src/entities/subscription.entity';
 
   providers: [JwtAuthGuard, AuthService],
 
-  exports: [AuthService, JwtModule, JwtAuthGuard],
+  exports: [AuthService, JwtModule, JwtAuthGuard, TypeOrmModule],
 })
 export class AuthModule {}
