@@ -773,6 +773,22 @@ const nhaTroForm = ref({
   moTa: "",
 });
 
+const maNhaTroError = ref("");
+
+function handleMaNhaTroInput(event: Event) {
+  const input = event.target as HTMLInputElement;
+  const value = input.value;
+
+  // Chỉ cho phép chữ cái và số
+  if (!/^[a-zA-Z0-9]*$/.test(value)) {
+    maNhaTroError.value = "Mã nhà trọ chỉ được nhập chữ và số.";
+    return;
+  }
+
+  maNhaTroError.value = "";
+  nhaTroForm.value.maNhaTro = value;
+}
+
 const phongForm = ref({
   maPhong: "",
   tangSo: "",
@@ -1437,8 +1453,20 @@ function resetHoaDonForm() {
 }
 
 async function saveNhaTro() {
+  maNhaTroError.value = "";
+
+  const maNhaTro = nhaTroForm.value.maNhaTro.trim();
+
+  if (maNhaTro && !/^[a-zA-Z0-9]+$/.test(maNhaTro)) {
+    maNhaTroError.value = "Mã nhà trọ chỉ được nhập chữ và số.";
+    return;
+  }
+
   try {
-    const payload = { ...nhaTroForm.value };
+    const payload = {
+      ...nhaTroForm.value,
+      maNhaTro,
+    };
 
     if (editingNhaTroId.value) {
       await api.patch(`/nha-tro/${editingNhaTroId.value}`, payload);
@@ -2794,6 +2822,9 @@ onMounted(() => {
                   placeholder="Ví dụ: CG"
                   required
                 />
+                <div v-if="maNhaTroError" class="text-red-500 text-sm mt-1">
+                  {{ maNhaTroError }}
+                </div>
               </label>
 
               <label>
