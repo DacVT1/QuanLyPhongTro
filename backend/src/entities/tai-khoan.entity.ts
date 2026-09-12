@@ -2,11 +2,15 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  JoinColumn,
+  ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { NhaTro } from './nha-tro.entity';
+import { Tenant } from './tenant.entity';
+
 
 @Entity({ name: 'tai_khoan' })
 export class TaiKhoan {
@@ -36,4 +40,10 @@ export class TaiKhoan {
 
   @OneToMany(() => NhaTro, (nhaTro) => nhaTro.taiKhoan)
   nhaTros: NhaTro[];
+
+  @ManyToOne(() => Tenant, (tenant: Tenant) => tenant.taiKhoans, {
+  nullable: false,
+})
+@JoinColumn({ name: 'tenant_id' })
+tenant: Tenant;
 }

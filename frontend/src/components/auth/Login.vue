@@ -1,58 +1,43 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import api from '../../services/api'
+import { ref } from "vue";
+import api from "../../services/api";
 
-const username = ref('')
-const password = ref('')
+const username = ref("");
+const password = ref("");
 
-const errorMessage = ref('')
-const loading = ref(false)
+const errorMessage = ref("");
+const loading = ref(false);
 
 const emit = defineEmits<{
-  loginSuccess: [data: any]
-  register: []
-}>()
+  loginSuccess: [data: any];
+  register: [];
+}>();
 
 async function login() {
-  errorMessage.value = ''
+  errorMessage.value = "";
 
   if (!username.value || !password.value) {
-    errorMessage.value =
-      'Vui lòng nhập đầy đủ thông tin'
-    return
+    errorMessage.value = "Vui lòng nhập đầy đủ thông tin";
+    return;
   }
 
   try {
-    loading.value = true
+    loading.value = true;
 
-    const response = await api.post(
-      '/auth/login',
-      {
-        username: username.value,
-        password: password.value,
-      },
-    )
+    const response = await api.post("/auth/login", {
+      username: username.value,
+      password: password.value,
+    });
 
-    localStorage.setItem(
-      'accessToken',
-      response.data.accessToken,
-    )
+    localStorage.setItem("accessToken", response.data.accessToken);
 
-    localStorage.setItem(
-      'currentUser',
-      JSON.stringify(response.data.user),
-    )
+    localStorage.setItem("currentUser", JSON.stringify(response.data.user));
 
-    emit(
-      'loginSuccess',
-      response.data,
-    )
+    emit("loginSuccess", response.data);
   } catch (error: any) {
-    errorMessage.value =
-      error.response?.data?.message ||
-      'Đăng nhập thất bại'
+    errorMessage.value = error.response?.data?.message || "Đăng nhập thất bại";
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 </script>
@@ -62,21 +47,18 @@ async function login() {
     <div class="auth-card">
       <h2>Đăng nhập</h2>
 
-      <div
-        v-if="errorMessage"
-        class="auth-error"
-      >
+      <div v-if="errorMessage" class="auth-error">
         {{ errorMessage }}
       </div>
 
       <div class="form-group">
-        <label>Tên đăng nhập</label>
+        <label>Số điện thoại hoặc email</label>
 
         <input
           v-model="username"
           type="text"
           autocomplete="username"
-          placeholder="Nhập tên đăng nhập"
+          placeholder="Nhập số điện thoại hoặc email"
         />
       </div>
 
@@ -92,23 +74,14 @@ async function login() {
         />
       </div>
 
-      <button
-        class="auth-button"
-        :disabled="loading"
-        @click="login"
-      >
-        {{ loading ? 'Đang đăng nhập...' : 'Đăng nhập' }}
+      <button class="auth-button" :disabled="loading" @click="login">
+        {{ loading ? "Đang đăng nhập..." : "Đăng nhập" }}
       </button>
 
       <div class="auth-register">
         Chưa có tài khoản?
 
-        <button
-          type="button"
-          @click="emit('register')"
-        >
-          Đăng ký
-        </button>
+        <button type="button" @click="emit('register')">Đăng ký</button>
       </div>
     </div>
   </div>
@@ -139,8 +112,7 @@ async function login() {
   background: white;
   border-radius: 14px;
 
-  box-shadow:
-    0 10px 30px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
 
   box-sizing: border-box;
 }

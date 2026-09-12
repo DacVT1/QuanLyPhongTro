@@ -11,6 +11,7 @@ import {
 import { Giuong } from './giuong.entity';
 import { HoaDon } from './hoa-don.entity';
 import { NguoiThue } from './nguoi-thue.entity';
+import { Tenant } from './tenant.entity';
 
 @Entity({ name: 'hop_dong' })
 export class HopDong {
@@ -90,4 +91,8 @@ tienDichVu: number;
 
   @OneToMany(() => HoaDon, (hoaDon) => hoaDon.hopDong)
   hoaDons: HoaDon[];
+
+  @ManyToOne(() => Tenant, { nullable: false })
+@JoinColumn({ name: 'tenant_id' })
+tenant: Tenant;
 }

@@ -5,8 +5,11 @@ import {
   OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
+  JoinColumn,
+  ManyToOne,
 } from 'typeorm';
 import { HopDong } from './hop-dong.entity';
+import { Tenant } from './tenant.entity';
 
 @Entity({ name: 'nguoi_thue' })
 export class NguoiThue {
@@ -48,4 +51,8 @@ cccdMatSau?: string;
 
   @OneToMany(() => HopDong, (hopDong) => hopDong.nguoiThue)
   hopDongs: HopDong[];
+
+  @ManyToOne(() => Tenant, { nullable: false })
+@JoinColumn({ name: 'tenant_id' })
+tenant: Tenant;
 }

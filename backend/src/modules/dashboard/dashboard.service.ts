@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Giuong } from '../../entities/giuong.entity';
@@ -22,21 +22,56 @@ export class DashboardService {
     private readonly hoaDonRepository: Repository<HoaDon>,
   ) {}
 
-  async getSummary() {
-    const totalNhaTro = await this.nhaTroRepository.count();
-    const totalPhong = await this.phongRepository.count();
-    const totalGiuong = await this.giuongRepository.count();
-    const totalHopDong = await this.hopDongRepository.count();
-    const totalHoaDon = await this.hoaDonRepository.count();
-
-    return {
-      totalNhaTro,
-      totalPhong,
-      totalGiuong,
-      totalHopDong,
-      totalHoaDon,
-      tongSoPhong: totalPhong,
-      tongSoGiuong: totalGiuong,
-    };
+  async getSummary(tenantId: string) {
+  if (!tenantId) {
+    throw new BadRequestException(
+      'Không xác định được tenant.',
+    );
   }
+
+  const totalNhaTro =
+    await this.nhaTroRepository.count({
+      where: {
+        tenant: { id: tenantId },
+      },
+    });
+
+  const totalPhong =
+    await this.phongRepository.count({
+      where: {
+        tenant: { id: tenantId },
+      },
+    });
+
+  const totalGiuong =
+    await this.giuongRepository.count({
+      where: {
+        tenant: { id: tenantId },
+      },
+    });
+
+  const totalHopDong =
+    await this.hopDongRepository.count({
+      where: {
+        tenant: { id: tenantId },
+      },
+    });
+
+  const totalHoaDon =
+    await this.hoaDonRepository.count({
+      where: {
+        tenant: { id: tenantId },
+      },
+    });
+
+  return {
+    totalNhaTro,
+    totalPhong,
+    totalGiuong,
+    totalHopDong,
+    totalHoaDon,
+    tongSoPhong: totalPhong,
+    tongSoGiuong: totalGiuong,
+  };
+}
 }

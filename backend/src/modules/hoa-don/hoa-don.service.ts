@@ -8,6 +8,7 @@ import { Repository } from 'typeorm';
 
 import { HoaDon } from '../../entities/hoa-don.entity';
 import { HopDong } from '../../entities/hop-dong.entity';
+import { Tenant } from '../../entities/tenant.entity';
 
 @Injectable()
 export class HoaDonService {
@@ -17,10 +18,18 @@ export class HoaDonService {
 
     @InjectRepository(HopDong)
     private readonly hopDongRepository: Repository<HopDong>,
+
+    @InjectRepository(Tenant)
+  private readonly tenantRepository: Repository<Tenant>,
   ) {}
 
-  async findAll() {
+  async findAll(tenantId: string) {
     return this.repository.find({
+      where: {
+        tenant: {
+          id: tenantId,
+        },
+      },
       relations: {
         hopDong: {
           nguoiThue: true,
@@ -34,9 +43,9 @@ export class HoaDonService {
     });
   }
 
-  async findOne(id: string) {
+  async findOne(id: string, tenantId: string) {
     return this.repository.findOne({
-      where: { id },
+      where: { id, tenant: { id: tenantId } },
       relations: {
         hopDong: {
           nguoiThue: true,
@@ -50,40 +59,135 @@ export class HoaDonService {
     });
   }
 
-  async create(payload: Partial<HoaDon>) {
-    const tienPhong = Number(payload.tienPhong ?? 0);
-    const tienDien = Number(payload.tienDien ?? 0);
-    const tienNuoc = Number(payload.tienNuoc ?? 0);
-    const tienDichVuKhac = Number(payload.tienDichVuKhac ?? 0);
-
-    payload.tienPhong = tienPhong;
-    payload.tienDien = tienDien;
-    payload.tienNuoc = tienNuoc;
-    payload.tienDichVuKhac = tienDichVuKhac;
-
-    payload.tongTien =
-      tienPhong +
-      tienDien +
-      tienNuoc +
-      tienDichVuKhac;
-
-    if (payload.trangThai === 'da_thanh_toan') {
-      payload.ngayNop = new Date();
-    } else {
-      payload.ngayNop = null;
-    }
-
-    return this.repository.save(
-      this.repository.create(payload),
+  async create(
+  payload: Partial<HoaDon>,
+  tenantId: string,
+) {
+  if (!tenantId) {
+    throw new BadRequestException(
+      'Không xác định được tenant của tài khoản.',
     );
   }
+
+  const tenant =
+    await this.tenantRepository.findOne({
+      where: {
+        id: tenantId,
+      },
+    });
+
+  if (!tenant) {
+    throw new NotFoundException(
+      'Không tìm thấy tenant.',
+    );
+  }
+
+  const hopDongId =
+    payload.hopDong?.id ??
+    (payload as Partial<HoaDon> & {
+      hopDongId?: string;
+    }).hopDongId;
+
+  if (!hopDongId) {
+    throw new BadRequestException(
+      'Vui lòng chọn hợp đồng cho hóa đơn.',
+    );
+  }
+
+  const hopDong =
+    await this.hopDongRepository.findOne({
+      where: {
+        id: hopDongId,
+        tenant: {
+          id: tenantId,
+        },
+      },
+    });
+
+  if (!hopDong) {
+    throw new NotFoundException(
+      'Không tìm thấy hợp đồng thuộc tenant hiện tại.',
+    );
+  }
+
+  const tienPhong =
+    Number(payload.tienPhong ?? 0);
+
+  const tienDien =
+    Number(payload.tienDien ?? 0);
+
+  const tienNuoc =
+    Number(payload.tienNuoc ?? 0);
+
+  const tienDichVuKhac =
+    Number(payload.tienDichVuKhac ?? 0);
+
+  const tongTien =
+    tienPhong +
+    tienDien +
+    tienNuoc +
+    tienDichVuKhac;
+
+  const hoaDon = new HoaDon();
+
+  Object.assign(hoaDon, payload);
+
+  // Quan trọng:
+  // tenant lấy từ JWT, không lấy từ frontend
+  hoaDon.tenant = tenant;
+
+  // Hợp đồng cũng phải thuộc tenant hiện tại
+  hoaDon.hopDong = hopDong;
+
+  hoaDon.tienPhong = tienPhong;
+  hoaDon.tienDien = tienDien;
+  hoaDon.tienNuoc = tienNuoc;
+  hoaDon.tienDichVuKhac =
+    tienDichVuKhac;
+
+  hoaDon.tongTien = tongTien;
+
+  if (
+    hoaDon.trangThai ===
+    'da_thanh_toan'
+  ) {
+    hoaDon.ngayNop = new Date();
+  } else {
+    hoaDon.ngayNop = null;
+  }
+
+  const savedHoaDon =
+    await this.repository.save(
+      hoaDon,
+    );
+
+  const result =
+    await this.findOne(
+      savedHoaDon.id,
+      tenantId,
+    );
+
+  if (!result) {
+    throw new NotFoundException(
+      'Không thể tải lại hóa đơn vừa tạo.',
+    );
+  }
+
+  return result;
+}
 
   async update(
     id: string,
     payload: Partial<HoaDon>,
+    tenantId: string,
   ) {
     const hoaDon = await this.repository.findOne({
-      where: { id },
+      where: {
+      id,
+      tenant: {
+        id: tenantId,
+      },
+    },
     });
 
     if (!hoaDon) {
@@ -144,12 +248,26 @@ export class HoaDonService {
       payload.ngayNop = null;
     }
 
-    await this.repository.update(
-      id,
-      payload,
-    );
+    Object.assign(hoaDon, {
+  tienPhong,
+  tienDien,
+  tienNuoc,
+  tienDichVuKhac,
+  tongTien:
+    tienPhong +
+    tienDien +
+    tienNuoc +
+    tienDichVuKhac,
+});
+if (payload.trangThai !== undefined) {
+  hoaDon.trangThai = payload.trangThai;
+}
 
-    return this.findOne(id);
+if (payload.ghiChu !== undefined) {
+  hoaDon.ghiChu = payload.ghiChu;
+}
+await this.repository.save(hoaDon);
+    return this.findOne(id, tenantId);
   }
 
   /**
@@ -158,207 +276,230 @@ export class HoaDonService {
    * trong tháng được chọn.
    */
   async createForAllBeds(
-    thangThanhToan: string,
+  thangThanhToan: string,
+  tenantId: string,
+) {
+  if (!tenantId) {
+    throw new BadRequestException(
+      'Không xác định được tenant của tài khoản.',
+    );
+  }
+
+  if (!thangThanhToan) {
+    throw new BadRequestException(
+      'Vui lòng chọn tháng thanh toán',
+    );
+  }
+
+  const tenant =
+    await this.tenantRepository.findOne({
+      where: {
+        id: tenantId,
+      },
+    });
+
+  if (!tenant) {
+    throw new NotFoundException(
+      'Không tìm thấy tenant.',
+    );
+  }
+
+  const monthKey =
+    this.normalizeMonth(thangThanhToan);
+
+  if (!monthKey) {
+    throw new BadRequestException(
+      'Tháng thanh toán không hợp lệ',
+    );
+  }
+
+  const hopDongs =
+    await this.hopDongRepository.find({
+      where: {
+        trangThai: 'active',
+        tenant: {
+          id: tenantId,
+        },
+      },
+      relations: {
+        giuong: {
+          phong: {
+            nhaTro: true,
+          },
+        },
+        nguoiThue: true,
+        hoaDons: true,
+      },
+    });
+
+  const hopDongCoNguoiThue =
+    hopDongs.filter(
+      (hopDong) =>
+        !!hopDong.giuong &&
+        !!hopDong.nguoiThue,
+    );
+
+  const hoaDonsMoi: HoaDon[] = [];
+
+  let daBoQua = 0;
+
+  for (
+    const hopDong of hopDongCoNguoiThue
   ) {
-    if (!thangThanhToan) {
-      throw new BadRequestException(
-        'Vui lòng chọn tháng thanh toán',
+    const daCoHoaDon =
+      (hopDong.hoaDons ?? []).some(
+        (hoaDon) => {
+          if (!hoaDon.thangThanhToan) {
+            return false;
+          }
+
+          return (
+            this.normalizeMonth(
+              hoaDon.thangThanhToan,
+            ) === monthKey
+          );
+        },
       );
+
+    if (daCoHoaDon) {
+      daBoQua++;
+      continue;
     }
 
-    /*
-     * Chuẩn hóa tháng.
-     *
-     * Frontend gửi:
-     * 2026-08-01
-     *
-     * Chỉ sử dụng YYYY-MM để kiểm tra.
-     */
-    const monthKey =
-      this.normalizeMonth(thangThanhToan);
-
-    if (!monthKey) {
-      throw new BadRequestException(
-        'Tháng thanh toán không hợp lệ',
-      );
-    }
-
-    /*
-     * Lấy các hợp đồng đang active.
-     *
-     * Quan hệ:
-     *
-     * HopDong
-     *   ├── giuong
-     *   │    └── phong
-     *   │         └── nhaTro
-     *   │
-     *   ├── nguoiThue
-     *   │
-     *   └── hoaDons
-     */
-    const hopDongs =
-      await this.hopDongRepository.find({
-        where: {
-          trangThai: 'active',
-        },
-        relations: {
-          giuong: {
-            phong: {
-              nhaTro: true,
-            },
-          },
-          nguoiThue: true,
-          hoaDons: true,
-        },
-      });
-
-    /*
-     * Chỉ những hợp đồng:
-     *
-     * - active
-     * - có giường
-     * - có người thuê
-     *
-     * mới được tạo hóa đơn.
-     */
-    const hopDongCoNguoiThue =
-      hopDongs.filter(
-        (hopDong) =>
-          !!hopDong.giuong &&
-          !!hopDong.nguoiThue,
+    const maHoaDon =
+      await this.generateMaHoaDon(
+        hopDong.maHopDong,
+        monthKey,
+        hoaDonsMoi,
+        tenantId,
       );
 
-    const hoaDonsMoi: HoaDon[] = [];
-
-    let daBoQua = 0;
-
-    for (const hopDong of hopDongCoNguoiThue) {
-      /*
-       * Kiểm tra hóa đơn tháng hiện tại.
-       */
-      const daCoHoaDon =
-        (hopDong.hoaDons ?? []).some(
-          (hoaDon) => {
-            if (!hoaDon.thangThanhToan) {
-              return false;
-            }
-
-            return (
-              this.normalizeMonth(
-                hoaDon.thangThanhToan,
-              ) === monthKey
-            );
-          },
-        );
-
-      if (daCoHoaDon) {
-        daBoQua++;
-        continue;
-      }
-
-      /*
-       * Mã hóa đơn.
-       *
-       * Dạng:
-       * HD-202608-<8 ký tự>
-       */
-      const maHoaDon =
-  await this.generateMaHoaDon(
-    hopDong.maHopDong,
-    monthKey,
-    hoaDonsMoi,
-  );
-
-      /*
-       * Lấy tiền phòng từ giường.
-       *
-       * Nếu giường không có giá thì lấy
-       * tiền thuê trong hợp đồng.
-       */
-      const tienPhong = Number(
+    const tienPhong =
+      Number(
         hopDong.giuong.giaGiuong ??
           hopDong.tienThue ??
           0,
       );
 
-      const tienDien = Number(
+    const tienDien =
+      Number(
         hopDong.tienDien ?? 0,
       );
 
-      const tienNuoc = Number(
+    const tienNuoc =
+      Number(
         hopDong.tienNuoc ?? 0,
       );
 
-      const tienDichVuKhac = Number(
+    const tienDichVuKhac =
+      Number(
         hopDong.tienDichVu ?? 0,
       );
 
-      const tongTien =
-        tienPhong +
-        tienDien +
-        tienNuoc +
-        tienDichVuKhac;
+    const tongTien =
+      tienPhong +
+      tienDien +
+      tienNuoc +
+      tienDichVuKhac;
 
-      const hoaDon =
-        this.repository.create({
-          maHoaDon,
-          thangThanhToan:
-            this.toDate(monthKey),
-          tienPhong,
-          tienDien,
-          tienNuoc,
-          tienDichVuKhac,
-          tongTien,
-          trangThai:
-            'chua_thanh_toan',
-          ngayNop: null,
-          hopDong,
-        });
+    const hoaDon = new HoaDon();
 
-      hoaDonsMoi.push(hoaDon);
-    }
+    hoaDon.maHoaDon =
+      maHoaDon;
 
-    if (hoaDonsMoi.length > 0) {
-      await this.repository.save(
-        hoaDonsMoi,
-      );
-    }
+    hoaDon.thangThanhToan =
+      this.toDate(monthKey);
 
-    return {
-      message:
-        hoaDonsMoi.length > 0
-          ? 'Tạo hóa đơn thành công'
-          : 'Không có giường nào cần tạo hóa đơn',
-      thangThanhToan:
-        `${monthKey}-01`,
-      daTao: hoaDonsMoi.length,
-      daBoQua,
-      tongSoHopDong:
-        hopDongCoNguoiThue.length,
-      hoaDons: hoaDonsMoi.map(
+    hoaDon.tienPhong =
+      tienPhong;
+
+    hoaDon.tienDien =
+      tienDien;
+
+    hoaDon.tienNuoc =
+      tienNuoc;
+
+    hoaDon.tienDichVuKhac =
+      tienDichVuKhac;
+
+    hoaDon.tongTien =
+      tongTien;
+
+    hoaDon.trangThai =
+      'chua_thanh_toan';
+
+    hoaDon.ngayNop =
+      null;
+
+    hoaDon.hopDong =
+      hopDong;
+
+    // QUAN TRỌNG
+    hoaDon.tenant =
+      tenant;
+
+    hoaDonsMoi.push(
+      hoaDon,
+    );
+  }
+
+  if (
+    hoaDonsMoi.length > 0
+  ) {
+    await this.repository.save(
+      hoaDonsMoi,
+    );
+  }
+
+  return {
+    message:
+      hoaDonsMoi.length > 0
+        ? 'Tạo hóa đơn thành công'
+        : 'Không có giường nào cần tạo hóa đơn',
+
+    thangThanhToan:
+      `${monthKey}-01`,
+
+    daTao:
+      hoaDonsMoi.length,
+
+    daBoQua,
+
+    tongSoHopDong:
+      hopDongCoNguoiThue.length,
+
+    hoaDons:
+      hoaDonsMoi.map(
         (hoaDon) => ({
-          id: hoaDon.id,
+          id:
+            hoaDon.id,
+
           maHoaDon:
             hoaDon.maHoaDon,
+
           thangThanhToan:
             hoaDon.thangThanhToan,
+
           tongTien:
             hoaDon.tongTien,
+
           hopDongId:
             hoaDon.hopDong?.id,
+
           giuongId:
             hoaDon.hopDong?.giuong?.id,
+
           maGiuong:
             hoaDon.hopDong?.giuong
               ?.maGiuong,
+
           nguoiThue:
             hoaDon.hopDong?.nguoiThue
               ?.hoTen,
         }),
       ),
-    };
-  }
+  };
+}
 
   /**
    * YYYY-MM hoặc Date -> YYYY-MM
@@ -417,6 +558,7 @@ private async generateMaHoaDon(
   maHopDong: string,
   monthKey: string,
   hoaDonsMoi: HoaDon[] = [],
+  tenantId: string,
 ): Promise<string> {
   const [year, month] = monthKey.split('-');
 
@@ -442,14 +584,18 @@ private async generateMaHoaDon(
 
   // Lấy các hóa đơn đã tồn tại
   const hoaDonsDaCo =
-    await this.repository.find({
-      where: {
-        hopDong: {
-          maHopDong,
-        },
+  await this.repository.find({
+    where: {
+      tenant: {
+        id: tenantId,
       },
-    });
+      hopDong: {
+        maHopDong,
+      },
+    },
+  });
 
+  
   // Lấy các hóa đơn vừa tạo trong
   // cùng request.
   const tatCaHoaDons = [
@@ -509,20 +655,34 @@ private async generateMaHoaDon(
   }
 }
 
-  async remove(id: string) {
-    const result =
-      await this.repository.delete(id);
+  async remove(
+  id: string,
+  tenantId: string,
+) {
+  const hoaDon =
+    await this.repository.findOne({
+      where: {
+        id,
+        tenant: {
+          id: tenantId,
+        },
+      },
+    });
 
-    if (!result.affected) {
-      throw new NotFoundException(
-        'Không tìm thấy hóa đơn để xóa',
-      );
-    }
-
-    return {
-      message:
-        'Xóa hóa đơn thành công',
-      id,
-    };
+  if (!hoaDon) {
+    throw new NotFoundException(
+      'Không tìm thấy hóa đơn để xóa',
+    );
   }
+
+  await this.repository.remove(
+    hoaDon,
+  );
+
+  return {
+    message:
+      'Xóa hóa đơn thành công',
+    id,
+  };
+}
 }

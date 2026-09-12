@@ -10,6 +10,7 @@ import {
 } from 'typeorm';
 import { TaiKhoan } from './tai-khoan.entity';
 import { Phong } from './phong.entity';
+import { Tenant } from './tenant.entity';
 
 @Entity({ name: 'nha_tro' })
 export class NhaTro {
@@ -43,4 +44,8 @@ export class NhaTro {
 
   @OneToMany(() => Phong, (phong) => phong.nhaTro)
   phongs: Phong[];
+
+  @ManyToOne(() => Tenant, { nullable: false })
+@JoinColumn({ name: 'tenant_id' })
+tenant: Tenant;
 }

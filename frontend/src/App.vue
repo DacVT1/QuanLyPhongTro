@@ -2,13 +2,14 @@
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
 
 import { Doughnut } from "vue-chartjs";
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, ref, watch, onUnmounted } from "vue";
 import api from "./services/api";
 import { getImageUrl } from "./utils/image";
 import NguoiThueDetail from "./components/nguoi-thue/NguoiThueDetail.vue";
-import Login from '@/components/auth/Login.vue'
-import Register from './components/auth/Register.vue'
+import Login from "@/components/auth/Login.vue";
+import Register from "./components/auth/Register.vue";
 import Footer from "./components/Footer.vue";
+import RegisterVerification from "./components/auth/RegisterVerification.vue";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 const cccdMatTruocPreviewUrl = ref("");
@@ -28,43 +29,118 @@ const currentTab = ref("dashboard");
 const isMenuOpen = ref(false);
 const soDienThoaiError = ref("");
 
-const authMode = ref<'login' | 'register'>('login')
+const authMode = ref<"login" | "register" | "registerVerification">("login");
 
-const accessToken = ref(
-  localStorage.getItem('accessToken'),
-)
+const registerIdentifier = ref("");
+
+const accessToken = ref(localStorage.getItem("accessToken"));
 
 const currentUser = ref<any | null>(
-  JSON.parse(
-    localStorage.getItem('currentUser') || 'null',
-  ),
-)
+  JSON.parse(localStorage.getItem("currentUser") || "null"),
+);
+const isAuthenticated = computed(() => {
+  return !!accessToken.value && !!currentUser.value;
+});
+function handleUnauthorized() {
+  console.warn("Phiên đăng nhập không còn hợp lệ.");
 
-function handleLogin(data: any) {
-  accessToken.value = data.accessToken
+  // Xóa trạng thái đăng nhập trong Vue
+  accessToken.value = null;
+  currentUser.value = null;
 
-  currentUser.value = data.user
+  // Xóa dữ liệu đang hiển thị
+  nhaTros.value = [];
+  phongs.value = [];
+  giuongs.value = [];
+  nguoiThues.value = [];
+  hopDongs.value = [];
+  hoaDons.value = [];
 
-  localStorage.setItem(
-    'accessToken',
-    data.accessToken,
-  )
+  summary.value = {
+    totalNhaTro: 0,
+    totalPhong: 0,
+    totalGiuong: 0,
+    totalHopDong: 0,
+    totalHoaDon: 0,
+  };
 
-  localStorage.setItem(
-    'currentUser',
-    JSON.stringify(data.user),
-  )
+  // Đưa giao diện về Login
+  currentTab.value = "dashboard";
+  authMode.value = "login";
+}
+onMounted(() => {
+  window.addEventListener("auth:unauthorized", handleUnauthorized);
+});
+onMounted(() => {
+  window.addEventListener("auth:unauthorized", handleUnauthorized);
+});
+
+onUnmounted(() => {
+  window.removeEventListener("auth:unauthorized", handleUnauthorized);
+});
+
+async function handleLogin(data: any) {
+  accessToken.value = data.accessToken;
+  currentUser.value = data.user;
+
+  localStorage.setItem("accessToken", data.accessToken);
+
+  localStorage.setItem("currentUser", JSON.stringify(data.user));
+
+  // Chuyển giao diện ngay sau khi xác thực thành công
+  currentTab.value = "dashboard";
+  authMode.value = "login";
+
+  // Tải dữ liệu sau, không được chặn việc chuyển giao diện
+  try {
+    await loadData();
+  } catch (error) {
+    console.error("Đăng nhập thành công nhưng không thể tải dữ liệu:", error);
+  }
 }
 
 function logout() {
-  localStorage.removeItem('accessToken')
-  localStorage.removeItem('currentUser')
+  // Xóa thông tin xác thực
+  localStorage.removeItem("accessToken");
+  localStorage.removeItem("currentUser");
 
-  accessToken.value = null
-  currentUser.value = null
-  authMode.value = 'login'
+  // Xóa thông tin tài khoản hiện tại
+  accessToken.value = null;
+  currentUser.value = null;
+
+  // Xóa toàn bộ dữ liệu của Tenant hiện tại khỏi bộ nhớ Vue
+  nhaTros.value = [];
+  phongs.value = [];
+  giuongs.value = [];
+  nguoiThues.value = [];
+  hopDongs.value = [];
+  hoaDons.value = [];
+
+  summary.value = {
+    totalNhaTro: 0,
+    totalPhong: 0,
+    totalGiuong: 0,
+    totalHopDong: 0,
+    totalHoaDon: 0,
+  };
+
+  // Reset giao diện
+  currentTab.value = "dashboard";
+  authMode.value = "login";
+}
+function handleOtpRequired(identifier: string) {
+  registerIdentifier.value = identifier;
+  authMode.value = "registerVerification";
 }
 
+function handleRegisterVerified() {
+  registerIdentifier.value = "";
+  authMode.value = "login";
+}
+
+function handleBackToRegister() {
+  authMode.value = "register";
+}
 const tienDienDisplay = ref("0");
 const tienNuocDisplay = ref("0");
 const tienDichVuKhacDisplay = ref("0");
@@ -74,6 +150,8 @@ const tienDichVuKhacError = ref("");
 const hoaDonThangThanhToanError = ref("");
 const showNguoiThueDetail = ref(false);
 const selectedNguoiThue = ref<any | null>(null);
+const tienPhongDisplay = ref("");
+const tongTienDisplay = ref("");
 function openNguoiThueDetail(item: any) {
   selectedNguoiThue.value = item;
   showNguoiThueDetail.value = true;
@@ -332,13 +410,16 @@ async function handleThemHoaDonChoCacGiuong() {
      */
     await loadData();
 
-    /*
-     * Nếu source của bạn có hàm
-     * loadDashboard() thì gọi lại.
-     */
-    if (typeof loadData === "function") {
-      await loadData();
-    }
+    // Chuyển sang module Hóa đơn
+    currentTab.value = "hoaDon";
+
+    // Quan trọng: đóng form Thêm hóa đơn
+    // để hiển thị Danh sách hóa đơn
+    resetHoaDonForm();
+    showHoaDonForm.value = false;
+
+    // Chuyển sang tab Danh sách hóa đơn
+    currentTab.value = "hoaDon";
 
     const daTao = Number(result?.daTao ?? 0);
 
@@ -692,14 +773,39 @@ const nhaTroForm = ref({
   moTa: "",
 });
 
+const maNhaTroError = ref("");
+
+function handleMaNhaTroInput(event: Event) {
+  const input = event.target as HTMLInputElement;
+  const value = input.value;
+
+  // Chỉ cho phép chữ cái và số
+  if (!/^[a-zA-Z0-9]*$/.test(value)) {
+    maNhaTroError.value = "Mã nhà trọ chỉ được nhập chữ và số.";
+    return;
+  }
+
+  maNhaTroError.value = "";
+  nhaTroForm.value.maNhaTro = value;
+}
+
 const phongForm = ref({
   maPhong: "",
   tangSo: "",
-  soGiuongToiDa: 8,
+  phongSo: "",
+  soGiuongToiDa: 25,
   loaiPhong: "phong_tieu_chuan",
   dienTich: 25,
   nhaTroId: "",
 });
+
+watch(
+  () => phongForm.value.tangSo,
+  () => {
+    phongForm.value.phongSo = "";
+    phongForm.value.maPhong = "";
+  },
+);
 
 const tangSoOptions = computed(() => {
   if (!phongForm.value.nhaTroId) {
@@ -707,7 +813,7 @@ const tangSoOptions = computed(() => {
   }
 
   const nhaTro = nhaTros.value.find(
-    (item) => item.id === phongForm.value.nhaTroId,
+    (item: any) => String(item.id) === String(phongForm.value.nhaTroId),
   );
 
   if (!nhaTro) {
@@ -720,38 +826,55 @@ const tangSoOptions = computed(() => {
     return [];
   }
 
-  // Các tầng đã được sử dụng bởi phòng khác
-  const usedFloors = phongs.value
-    .filter((item) => {
-      if (item.nhaTro?.id !== phongForm.value.nhaTroId) {
-        return false;
-      }
+  return Array.from({ length: soTang }, (_, index) => index + 1);
+});
 
-      // Khi sửa phòng thì không loại tầng hiện tại của chính phòng đó
-      if (item.id === editingPhongId.value) {
-        return false;
-      }
+const phongSoOptions = computed(() => {
+  const tangSo = Number(phongForm.value.tangSo);
 
-      return true;
-    })
-    .map((item) => {
-      // Ưu tiên tangSo nếu backend đã lưu
-      if (item.tangSo !== undefined && item.tangSo !== null) {
-        return Number(item.tangSo);
-      }
+  if (!tangSo) {
+    return [];
+  }
 
-      // Hỗ trợ dữ liệu cũ: lấy từ CG_T1, CG_T2...
-      const match = String(item.maPhong ?? "").match(/_T(\d+)$/);
-
-      return match ? Number(match[1]) : null;
-    })
+  const phongDaTonTai = phongs.value
     .filter(
-      (floor): floor is number => floor !== null && Number.isInteger(floor),
-    );
+      (item: any) =>
+        String(item.nhaTro?.id) === String(phongForm.value.nhaTroId) &&
+        Number(item.tangSo) === tangSo,
+    )
+    .map((item: any) => {
+      const match = String(item.maPhong ?? "").match(/_T\d+(\d{2})$/);
 
-  return Array.from({ length: soTang }, (_, index) => index + 1).filter(
-    (floor) => !usedFloors.includes(floor),
+      return match ? match[1] : null;
+    })
+    .filter(Boolean);
+
+  return Array.from({ length: 99 }, (_, index) =>
+    String(index + 1).padStart(2, "0"),
+  ).filter((so) => !phongDaTonTai.includes(so));
+});
+const maPhongPreview = computed(() => {
+  if (!phongForm.value.nhaTroId) {
+    return "";
+  }
+
+  if (!phongForm.value.tangSo) {
+    return "";
+  }
+
+  if (!phongForm.value.phongSo) {
+    return "";
+  }
+
+  const nhaTro = nhaTros.value.find(
+    (item) => String(item.id) === String(phongForm.value.nhaTroId),
   );
+
+  if (!nhaTro?.maNhaTro) {
+    return "";
+  }
+
+  return `${nhaTro.maNhaTro}_T${phongForm.value.tangSo}${phongForm.value.phongSo}`;
 });
 
 const giuongSoOptions = computed(() => {
@@ -761,7 +884,18 @@ const giuongSoOptions = computed(() => {
 
   const soGiuongToiDa = Number(phong?.soGiuongToiDa ?? 8);
 
-  return Array.from({ length: soGiuongToiDa }, (_, index) => index + 1);
+  // Các giường đã được thêm của phòng đang chọn
+  const giuongDaThem = giuongs.value
+    .filter(
+      (item: any) =>
+        String(item.phong?.id) === String(giuongForm.value.phongId),
+    )
+    .map((item: any) => Number(item.giuongSo));
+
+  // Chỉ trả về các số giường chưa được thêm
+  return Array.from({ length: soGiuongToiDa }, (_, index) => index + 1).filter(
+    (soGiuong) => !giuongDaThem.includes(soGiuong),
+  );
 });
 
 const giuongForm = ref({
@@ -1167,6 +1301,7 @@ function resetPhongForm() {
   phongForm.value = {
     maPhong: "",
     tangSo: "",
+    phongSo: "",
     soGiuongToiDa: 8,
     loaiPhong: "phong_tieu_chuan",
     dienTich: 25,
@@ -1314,11 +1449,24 @@ function resetHoaDonForm() {
   tienDichVuKhacError.value = "";
   hoaDonThangThanhToanError.value = "";
   editingHoaDonId.value = null;
+  tienPhongDisplay.value = "";
 }
 
 async function saveNhaTro() {
+  maNhaTroError.value = "";
+
+  const maNhaTro = nhaTroForm.value.maNhaTro.trim();
+
+  if (maNhaTro && !/^[a-zA-Z0-9]+$/.test(maNhaTro)) {
+    maNhaTroError.value = "Mã nhà trọ chỉ được nhập chữ và số.";
+    return;
+  }
+
   try {
-    const payload = { ...nhaTroForm.value };
+    const payload = {
+      ...nhaTroForm.value,
+      maNhaTro,
+    };
 
     if (editingNhaTroId.value) {
       await api.patch(`/nha-tro/${editingNhaTroId.value}`, payload);
@@ -1345,6 +1493,7 @@ async function savePhong() {
     const payload = {
       maPhong: phongForm.value.maPhong,
       tangSo: Number(phongForm.value.tangSo),
+      phongSo: phongForm.value.phongSo,
       soGiuongToiDa: Number(phongForm.value.soGiuongToiDa),
       loaiPhong: phongForm.value.loaiPhong,
       dienTich: Number(phongForm.value.dienTich),
@@ -2027,6 +2176,7 @@ function editPhong(item: any) {
   phongForm.value = {
     maPhong: item.maPhong ?? "",
     tangSo: item.tangSo ?? "",
+    phongSo: item.phongSo ?? "",
     soGiuongToiDa: item.soGiuongToiDa ?? 8,
     loaiPhong: item.loaiPhong ?? "phong_tieu_chuan",
     dienTich: item.dienTich ?? 25,
@@ -2160,6 +2310,7 @@ function editHoaDon(item: any) {
   const tienDien = Number(item.tienDien ?? 0);
   const tienNuoc = Number(item.tienNuoc ?? 0);
   const tienDichVuKhac = Number(item.tienDichVuKhac ?? 0);
+  const tongTien = Number(item.tongTien ?? 0);
   hoaDonForm.value = {
     maHoaDon: item.maHoaDon ?? "",
     thangThanhToan: item.thangThanhToan
@@ -2182,6 +2333,8 @@ function editHoaDon(item: any) {
   tienDichVuKhacDisplay.value = tienDichVuKhac
     ? tienDichVuKhac.toLocaleString("en-US")
     : "0";
+  tienPhongDisplay.value = tienPhong ? tienPhong.toLocaleString("en-US") : "";
+  tongTienDisplay.value = tongTien ? tongTien.toLocaleString("en-US") : "";
   showHoaDonForm.value = true;
   currentTab.value = "hoaDon";
 }
@@ -2191,27 +2344,32 @@ function updateHoaDonTienPhong() {
 
   if (!hopDongId) {
     hoaDonForm.value.tienPhong = 0;
+    tienPhongDisplay.value = "";
     calculateHoaDonTongTien();
     return;
   }
 
   const hopDong = hopDongs.value.find((item) => item.id === hopDongId);
 
-  hoaDonForm.value.tienPhong = Number(hopDong?.tienThue ?? 0);
+  const tienPhong = Number(hopDong?.tienThue ?? 0);
+
+  hoaDonForm.value.tienPhong = tienPhong;
+
+  tienPhongDisplay.value = tienPhong ? tienPhong.toLocaleString("en-US") : "";
 
   calculateHoaDonTongTien();
 }
 
 function calculateHoaDonTongTien() {
-  const tienPhong = Number(hoaDonForm.value.tienPhong || 0);
+  const tongTien =
+    Number(hoaDonForm.value.tienPhong ?? 0) +
+    Number(hoaDonForm.value.tienDien ?? 0) +
+    Number(hoaDonForm.value.tienNuoc ?? 0) +
+    Number(hoaDonForm.value.tienDichVuKhac ?? 0);
 
-  const tienDien = Number(hoaDonForm.value.tienDien || 0);
+  hoaDonForm.value.tongTien = tongTien;
 
-  const tienNuoc = Number(hoaDonForm.value.tienNuoc || 0);
-
-  const tienDichVuKhac = Number(hoaDonForm.value.tienDichVuKhac || 0);
-
-  hoaDonForm.value.tongTien = tienPhong + tienDien + tienNuoc + tienDichVuKhac;
+  tongTienDisplay.value = tongTien ? tongTien.toLocaleString("en-US") : "";
 }
 
 function formatCurrency(value: number | string | undefined) {
@@ -2221,40 +2379,6 @@ function formatCurrency(value: number | string | undefined) {
     currency: "VND",
     maximumFractionDigits: 0,
   }).format(numberValue);
-}
-
-const filteredPhongsByNhaTro = computed(() => {
-  if (!giuongForm.value.nhaTroId) return [];
-  return phongs.value.filter(
-    (item) => item.nhaTro?.id === giuongForm.value.nhaTroId,
-  );
-});
-
-function handleNhaTroChangeForGiuong() {
-  giuongForm.value.phongId = "";
-  giuongForm.value.giuongSo = "";
-}
-
-function handleHoaDonHopDongChange() {
-  const hopDongId = hoaDonForm.value.hopDongId;
-
-  if (!hopDongId) {
-    hoaDonForm.value.tienPhong = 0;
-    calculateHoaDonTongTien();
-    return;
-  }
-
-  const hopDong = hopDongs.value.find((item: any) => item.id === hopDongId);
-
-  if (!hopDong) {
-    hoaDonForm.value.tienPhong = 0;
-    calculateHoaDonTongTien();
-    return;
-  }
-
-  hoaDonForm.value.tienPhong = Number(hopDong.tienThue ?? 0);
-
-  calculateHoaDonTongTien();
 }
 
 function generateHopDongCode(giuongId: string) {
@@ -2350,23 +2474,41 @@ function syncHoaDonCode() {
 }
 
 onMounted(() => {
-  loadData();
+  // Lắng nghe sự kiện phiên đăng nhập không còn hợp lệ
+  window.addEventListener("auth:unauthorized", handleUnauthorized);
+
+  // Chỉ tải dữ liệu khi người dùng đang đăng nhập
+  if (isAuthenticated.value) {
+    loadData();
+  }
 });
 </script>
 
 <template>
   <Login
-    v-if="!accessToken && authMode === 'login'"
+    v-if="!isAuthenticated && authMode === 'login'"
     @login-success="handleLogin"
     @register="authMode = 'register'"
   />
 
   <Register
-    v-else-if="!accessToken && authMode === 'register'"
+    v-else-if="!isAuthenticated && authMode === 'register'"
     @login="authMode = 'login'"
+    @otp-required="handleOtpRequired"
   />
 
-  <div v-else class="app-shell" :class="{ 'menu-open': isMenuOpen }">
+  <RegisterVerification
+    v-else-if="!isAuthenticated && authMode === 'registerVerification'"
+    :identifier="registerIdentifier"
+    @verified="handleRegisterVerified"
+    @back="handleBackToRegister"
+  />
+
+  <div
+    v-else-if="isAuthenticated"
+    class="app-shell"
+    :class="{ 'menu-open': isMenuOpen }"
+  >
     <!-- =====================================================
          NÚT MỞ MENU
          ===================================================== -->
@@ -2388,10 +2530,12 @@ onMounted(() => {
       <div class="sidebar-header">
         <div class="brand">
           <div class="brand-mark">
-  <img src="/images/nhatroicon.jpg" alt="Nhà trọ" />
-</div>
+            <img src="/images/nhatroicon.jpg" alt="Nhà trọ" />
+          </div>
           <div>
-            <h1>Nhà Trọ {{ currentUser.tenHienThi || currentUser.username }}</h1>
+            <h1>
+              Nhà Trọ {{ currentUser.tenHienThi || currentUser.username }}
+            </h1>
             <small>Hệ thống quản lý</small>
           </div>
         </div>
@@ -2466,601 +2610,636 @@ onMounted(() => {
          NỘI DUNG CHÍNH
          ===================================================== -->
     <div class="content-column">
-    <main class="content">
-      <header class="topbar">
-        <div>
-          <p class="eyebrow">Hệ thống</p>
-          <h2>Quản lý nhà trọ {{ currentUser.tenHienThi || currentUser.username }}</h2>
-        </div>
-        <div class="header-actions">
+      <main class="content">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Hệ thống</p>
+            <h2>
+              Quản lý nhà trọ
+              {{ currentUser.tenHienThi || currentUser.username }}
+            </h2>
+          </div>
+          <div class="header-actions"></div>
+          <button type="button" class="logout-button" @click="logout">
+            Đăng xuất
+          </button>
+        </header>
 
-    
-  </div>
-        <button
-      type="button"
-      class="logout-button"
-      @click="logout"
-    >
-      Đăng xuất
-    </button>
-      </header>
-
-      <!-- ===================================================
+        <!-- ===================================================
            DASHBOARD
            =================================================== -->
-      <section v-if="currentTab === 'dashboard'" class="panel-grid">
-        <div class="metric-card metric-nhatro highlight">
-          <div class="metric-decor" aria-hidden="true"></div>
+        <section v-if="currentTab === 'dashboard'" class="panel-grid">
+          <div class="metric-card metric-nhatro highlight">
+            <div class="metric-decor" aria-hidden="true"></div>
 
-          <div class="metric-body">
-            <span>Nhà trọ</span>
-            <strong>{{ summary.totalNhaTro }}</strong>
+            <div class="metric-body">
+              <span>Nhà trọ</span>
+              <strong>{{ summary.totalNhaTro }}</strong>
+            </div>
           </div>
-        </div>
 
-        <div class="metric-card metric-phong">
-          <div class="metric-decor" aria-hidden="true"></div>
+          <div class="metric-card metric-phong">
+            <div class="metric-decor" aria-hidden="true"></div>
 
-          <div class="metric-body">
-            <span>Phòng</span>
-            <strong>{{ summary.totalPhong }}</strong>
+            <div class="metric-body">
+              <span>Phòng</span>
+              <strong>{{ summary.totalPhong }}</strong>
+            </div>
           </div>
-        </div>
 
-        <div class="metric-card metric-giuong">
-          <div class="metric-decor" aria-hidden="true"></div>
+          <div class="metric-card metric-giuong">
+            <div class="metric-decor" aria-hidden="true"></div>
 
-          <div class="metric-body">
-            <span>Giường</span>
-            <strong>{{ summary.totalGiuong }}</strong>
+            <div class="metric-body">
+              <span>Giường</span>
+              <strong>{{ summary.totalGiuong }}</strong>
+            </div>
           </div>
-        </div>
 
-        <div class="metric-card metric-hopdong">
-          <div class="metric-decor" aria-hidden="true"></div>
+          <div class="metric-card metric-hopdong">
+            <div class="metric-decor" aria-hidden="true"></div>
 
-          <div class="metric-body">
-            <span>Hợp đồng</span>
-            <strong>{{ summary.totalHopDong }}</strong>
+            <div class="metric-body">
+              <span>Hợp đồng</span>
+              <strong>{{ summary.totalHopDong }}</strong>
+            </div>
           </div>
-        </div>
 
-        <div class="metric-card metric-hoadon">
-          <div class="metric-decor" aria-hidden="true"></div>
+          <div class="metric-card metric-hoadon">
+            <div class="metric-decor" aria-hidden="true"></div>
 
-          <div class="metric-body">
-            <span>Hóa đơn</span>
-            <strong>{{ summary.totalHoaDon }}</strong>
+            <div class="metric-body">
+              <span>Hóa đơn</span>
+              <strong>{{ summary.totalHoaDon }}</strong>
+            </div>
           </div>
-        </div>
-        <div
-          v-for="house in nhaTroDashboard"
-          :key="house.id"
-          class="dashboard-house-card"
-        >
-          <!-- =====================================================
+          <div
+            v-for="house in nhaTroDashboard"
+            :key="house.id"
+            class="dashboard-house-card"
+          >
+            <!-- =====================================================
        THÔNG TIN NHÀ TRỌ
        ===================================================== -->
 
-          <div class="dashboard-house-header">
-            <div>
-              <h3>
-                {{ house.tenNhaTro }}
+            <div class="dashboard-house-header">
+              <div>
+                <h3>
+                  {{ house.tenNhaTro }}
 
-                <span v-if="house.maNhaTro"> ({{ house.maNhaTro }}) </span>
-              </h3>
+                  <span v-if="house.maNhaTro"> ({{ house.maNhaTro }}) </span>
+                </h3>
 
-              <p>Tổng số tầng: {{ house.soTang }} tầng</p>
+                <p>Tổng số tầng: {{ house.soTang }} tầng</p>
+              </div>
             </div>
-          </div>
 
-          <!-- =====================================================
+            <!-- =====================================================
        3 BIỂU ĐỒ
        ===================================================== -->
 
-          <div class="dashboard-chart-grid">
-            <!-- =================================================
+            <div class="dashboard-chart-grid">
+              <!-- =================================================
          BIỂU ĐỒ 1
          ================================================= -->
 
-            <div class="dashboard-chart-card">
-              <h4>Tỷ lệ phòng có người ở</h4>
+              <div class="dashboard-chart-card">
+                <h4>Tỷ lệ phòng có người ở</h4>
 
-              <div class="chart-container">
-                <Doughnut
-                  :data="getPhongChartData(house)"
-                  :options="doughnutOptions"
-                  :plugins="[doughnutCenterTextPlugin]"
-                />
+                <div class="chart-container">
+                  <Doughnut
+                    :data="getPhongChartData(house)"
+                    :options="doughnutOptions"
+                    :plugins="[doughnutCenterTextPlugin]"
+                  />
+                </div>
+
+                <div class="chart-value">
+                  <strong>
+                    {{ house.totalPhongCoNguoi }}/{{ house.totalPhong }}
+                  </strong>
+
+                  <span> phòng </span>
+                </div>
+
+                <div class="chart-description">
+                  <div class="description-icon">👥</div>
+
+                  <p>
+                    Tỷ lệ phòng đang có người ở so với tổng số phòng của nhà
+                    trọ.
+                  </p>
+                </div>
               </div>
 
-              <div class="chart-value">
-                <strong>
-                  {{ house.totalPhongCoNguoi }}/{{ house.totalPhong }}
-                </strong>
-
-                <span> phòng </span>
-              </div>
-
-              <div class="chart-description">
-                <div class="description-icon">👥</div>
-
-                <p>
-                  Tỷ lệ phòng đang có người ở so với tổng số phòng của nhà trọ.
-                </p>
-              </div>
-            </div>
-
-            <!-- =================================================
+              <!-- =================================================
          BIỂU ĐỒ 2
          ================================================= -->
 
-            <div class="dashboard-chart-card">
-              <h4>Tỷ lệ số giường có người ở</h4>
+              <div class="dashboard-chart-card">
+                <h4>Tỷ lệ số giường có người ở</h4>
 
-              <div class="chart-container">
-                <Doughnut
-                  :data="getGiuongChartData(house)"
-                  :options="doughnutOptions"
-                  :plugins="[doughnutCenterTextPlugin]"
-                />
+                <div class="chart-container">
+                  <Doughnut
+                    :data="getGiuongChartData(house)"
+                    :options="doughnutOptions"
+                    :plugins="[doughnutCenterTextPlugin]"
+                  />
+                </div>
+
+                <div class="chart-value">
+                  <strong>
+                    {{ house.totalGiuongCoNguoi }}/{{ house.totalGiuong }}
+                  </strong>
+
+                  <span> giường </span>
+                </div>
+
+                <div class="chart-description">
+                  <div class="description-icon">🛏️</div>
+
+                  <p>
+                    Tỷ lệ số giường đang có người ở so với tổng số giường của
+                    nhà trọ.
+                  </p>
+                </div>
               </div>
 
-              <div class="chart-value">
-                <strong>
-                  {{ house.totalGiuongCoNguoi }}/{{ house.totalGiuong }}
-                </strong>
-
-                <span> giường </span>
-              </div>
-
-              <div class="chart-description">
-                <div class="description-icon">🛏️</div>
-
-                <p>
-                  Tỷ lệ số giường đang có người ở so với tổng số giường của nhà
-                  trọ.
-                </p>
-              </div>
-            </div>
-
-            <!-- =================================================
+              <!-- =================================================
          BIỂU ĐỒ 3
          ================================================= -->
 
-            <div class="dashboard-chart-card">
-              <h4>Tỷ lệ giường đã thanh toán hóa đơn</h4>
+              <div class="dashboard-chart-card">
+                <h4>Tỷ lệ giường đã thanh toán hóa đơn</h4>
 
-              <div class="chart-container">
-                <Doughnut
-                  :data="getThanhToanChartData(house)"
-                  :options="doughnutOptions"
-                  :plugins="[doughnutCenterTextPlugin]"
-                />
-              </div>
+                <div class="chart-container">
+                  <Doughnut
+                    :data="getThanhToanChartData(house)"
+                    :options="doughnutOptions"
+                    :plugins="[doughnutCenterTextPlugin]"
+                  />
+                </div>
 
-              <div class="chart-value">
-                <strong>
-                  {{ house.totalGiuongDaThanhToan }}/{{
-                    house.totalGiuongCoHoaDonThangHienTai
-                  }}
-                </strong>
+                <div class="chart-value">
+                  <strong>
+                    {{ house.totalGiuongDaThanhToan }}/{{
+                      house.totalGiuongCoHoaDonThangHienTai
+                    }}
+                  </strong>
 
-                <span> hóa đơn </span>
-              </div>
+                  <span> hóa đơn </span>
+                </div>
 
-              <div class="chart-description">
-                <div class="description-icon">🧾</div>
+                <div class="chart-description">
+                  <div class="description-icon">🧾</div>
 
-                <p>
-                  Tỷ lệ giường đã thanh toán hóa đơn so với tổng số giường có
-                  hóa đơn trong tháng hiện tại.
-                </p>
+                  <p>
+                    Tỷ lệ giường đã thanh toán hóa đơn so với tổng số giường có
+                    hóa đơn trong tháng hiện tại.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      <!-- ===================================================
+        <!-- ===================================================
            NHÀ TRỌ
            =================================================== -->
-      <section v-else-if="currentTab === 'nhaTro'" class="panel-grid">
-        <!-- FORM THÊM / SỬA NHÀ TRỌ -->
-        <div v-if="showNhaTroForm" class="panel">
-          <h3>
-            {{ editingNhaTroId ? "Sửa nhà trọ" : "Thêm nhà trọ" }}
-          </h3>
+        <section v-else-if="currentTab === 'nhaTro'" class="panel-grid">
+          <!-- FORM THÊM / SỬA NHÀ TRỌ -->
+          <div v-if="showNhaTroForm" class="panel">
+            <h3>
+              {{ editingNhaTroId ? "Sửa nhà trọ" : "Thêm nhà trọ" }}
+            </h3>
 
-          <form @submit.prevent="saveNhaTro" class="form-grid">
-            <label>
-              {{ requiredLabel("Mã nhà trọ") }}
+            <form @submit.prevent="saveNhaTro" class="form-grid">
+              <label>
+                {{ requiredLabel("Mã nhà trọ") }}
 
-              <input
-                v-model="nhaTroForm.maNhaTro"
-                placeholder="Ví dụ: CG"
-                required
-              />
-            </label>
+                <input
+                  v-model="nhaTroForm.maNhaTro"
+                  placeholder="Ví dụ: CG"
+                  required
+                />
+                <div v-if="maNhaTroError" class="text-red-500 text-sm mt-1">
+                  {{ maNhaTroError }}
+                </div>
+              </label>
 
-            <label>
-              {{ requiredLabel("Tên nhà trọ") }}
+              <label>
+                {{ requiredLabel("Tên nhà trọ") }}
 
-              <input
-                v-model="nhaTroForm.tenNhaTro"
-                placeholder="Tên nhà trọ"
-                required
-              />
-            </label>
+                <input
+                  v-model="nhaTroForm.tenNhaTro"
+                  placeholder="Tên nhà trọ"
+                  required
+                />
+              </label>
 
-            <label>
-              {{ requiredLabel("Địa chỉ") }}
+              <label>
+                {{ requiredLabel("Địa chỉ") }}
 
-              <input
-                v-model="nhaTroForm.diaChi"
-                placeholder="Địa chỉ"
-                required
-              />
-            </label>
+                <input
+                  v-model="nhaTroForm.diaChi"
+                  placeholder="Địa chỉ"
+                  required
+                />
+              </label>
 
-            <label>
-              {{ requiredLabel("Số tầng") }}
+              <label>
+                {{ requiredLabel("Số tầng") }}
 
-              <input
-                v-model.number="nhaTroForm.soTang"
-                type="number"
-                min="1"
-                placeholder="Số tầng"
-                required
-              />
-            </label>
+                <input
+                  v-model.number="nhaTroForm.soTang"
+                  type="number"
+                  min="1"
+                  placeholder="Số tầng"
+                  required
+                />
+              </label>
 
-            <label>
-              {{ requiredLabel("Mô tả") }}
+              <label>
+                {{ requiredLabel("Mô tả") }}
 
-              <textarea
-                v-model="nhaTroForm.moTa"
-                placeholder="Mô tả"
-                rows="3"
-              ></textarea>
-            </label>
+                <textarea
+                  v-model="nhaTroForm.moTa"
+                  placeholder="Mô tả"
+                  rows="3"
+                ></textarea>
+              </label>
 
-            <div class="actions">
-              <button class="primary" type="submit">
-                {{ editingNhaTroId ? "Cập nhật" : "Lưu" }}
-              </button>
+              <div class="actions">
+                <button class="primary" type="submit">
+                  {{ editingNhaTroId ? "Cập nhật" : "Lưu" }}
+                </button>
 
-              <button class="secondary" type="button" @click="closeNhaTroForm">
-                Hủy
-              </button>
-            </div>
-          </form>
-        </div>
-
-        <!-- DANH SÁCH NHÀ TRỌ -->
-        <div v-else class="panel">
-          <div class="panel-header">
-            <h3>Danh sách nhà trọ</h3>
-
-            <button type="button" class="primary" @click="openAddNhaTroForm">
-              Thêm nhà trọ
-            </button>
+                <button
+                  class="secondary"
+                  type="button"
+                  @click="closeNhaTroForm"
+                >
+                  Hủy
+                </button>
+              </div>
+            </form>
           </div>
 
-          <table>
-            <thead>
-              <tr>
-                <th>Mã</th>
-                <th>Tên</th>
-                <th>Địa chỉ</th>
-                <th>Số tầng</th>
-                <th>Hành động</th>
-              </tr>
-            </thead>
+          <!-- DANH SÁCH NHÀ TRỌ -->
+          <div v-else class="panel">
+            <div class="panel-header">
+              <h3>Danh sách nhà trọ</h3>
 
-            <tbody>
-              <tr v-for="item in nhaTros" :key="item.id">
-                <td>{{ item.maNhaTro }}</td>
+              <button type="button" class="primary" @click="openAddNhaTroForm">
+                Thêm nhà trọ
+              </button>
+            </div>
 
-                <td>{{ item.tenNhaTro }}</td>
+            <table>
+              <thead>
+                <tr>
+                  <th>Mã</th>
+                  <th>Tên</th>
+                  <th>Địa chỉ</th>
+                  <th>Số tầng</th>
+                  <th>Hành động</th>
+                </tr>
+              </thead>
 
-                <td>{{ item.diaChi }}</td>
+              <tbody>
+                <tr v-for="item in nhaTros" :key="item.id">
+                  <td>{{ item.maNhaTro }}</td>
 
-                <td>{{ item.soTang }}</td>
+                  <td>{{ item.tenNhaTro }}</td>
 
-                <td class="row-actions">
-                  <button class="table-btn edit" @click="editNhaTro(item)">
-                    Sửa
-                  </button>
+                  <td>{{ item.diaChi }}</td>
 
-                  <button
-                    class="table-btn delete"
-                    @click="requestDeleteNhaTro(item)"
-                  >
-                    Xóa
-                  </button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
+                  <td>{{ item.soTang }}</td>
 
-      <!-- ===================================================
+                  <td class="row-actions">
+                    <button class="table-btn edit" @click="editNhaTro(item)">
+                      Sửa
+                    </button>
+
+                    <button
+                      class="table-btn delete"
+                      @click="requestDeleteNhaTro(item)"
+                    >
+                      Xóa
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- ===================================================
            PHÒNG
            =================================================== -->
-      <section v-else-if="currentTab === 'phong'" class="panel-grid">
-        <!-- FORM THÊM / SỬA PHÒNG -->
-        <div v-if="showPhongForm" class="panel">
-          <h3>
-            {{ editingPhongId ? "Sửa phòng" : "Thêm phòng" }}
-          </h3>
+        <section v-else-if="currentTab === 'phong'" class="panel-grid">
+          <!-- FORM THÊM / SỬA PHÒNG -->
+          <div v-if="showPhongForm" class="panel">
+            <h3>
+              {{ editingPhongId ? "Sửa phòng" : "Thêm phòng" }}
+            </h3>
 
-          <form @submit.prevent="savePhong" class="form-grid">
-            <label>
-              {{ requiredLabel("Nhà trọ") }}
+            <form @submit.prevent="savePhong" class="form-grid">
+              <label>
+                {{ requiredLabel("Nhà trọ") }}
 
-              <select
-                v-model="phongForm.nhaTroId"
-                @change="handleNhaTroChange"
-                required
-              >
-                <option value="">Chọn nhà trọ</option>
-
-                <option v-for="item in nhaTros" :key="item.id" :value="item.id">
-                  {{ item.tenNhaTro }}
-                </option>
-              </select>
-            </label>
-
-            <label>
-              {{ requiredLabel("Tầng số") }}
-
-              <select
-                v-model="phongForm.tangSo"
-                @change="updateMaPhongByTang"
-                required
-                :disabled="!phongForm.nhaTroId"
-              >
-                <option value="" disabled>-- Chọn tầng --</option>
-
-                <option
-                  v-for="floor in tangSoOptions"
-                  :key="floor"
-                  :value="floor"
+                <select
+                  v-model="phongForm.nhaTroId"
+                  @change="handleNhaTroChange"
+                  required
                 >
-                  Tầng {{ floor }}
-                </option>
-              </select>
-            </label>
+                  <option value="">Chọn nhà trọ</option>
 
-            <label>
-              {{ requiredLabel("Số giường tối đa") }}
+                  <option
+                    v-for="item in nhaTros"
+                    :key="item.id"
+                    :value="item.id"
+                  >
+                    {{ item.tenNhaTro }}
+                  </option>
+                </select>
+              </label>
 
-              <input
-                v-model.number="phongForm.soGiuongToiDa"
-                type="number"
-                min="1"
-                max="8"
-                placeholder="Số giường tối đa"
-                required
-              />
-            </label>
+              <label>
+                {{ requiredLabel("Tầng số") }}
 
-            <label>
-              {{ requiredLabel("Loại phòng") }}
+                <select
+                  v-model="phongForm.tangSo"
+                  @change="updateMaPhongByTang"
+                  required
+                  :disabled="!phongForm.nhaTroId"
+                >
+                  <option value="" disabled>-- Chọn tầng --</option>
 
-              <input
-                v-model="phongForm.loaiPhong"
-                placeholder="Loại phòng"
-                required
-              />
-            </label>
+                  <option
+                    v-for="floor in tangSoOptions"
+                    :key="floor"
+                    :value="floor"
+                  >
+                    Tầng {{ floor }}
+                  </option>
+                </select>
+              </label>
 
-            <label>
-              {{ requiredLabel("Diện tích") }}
+              <label>
+                <span>Phòng số</span>
 
-              <input
-                v-model.number="phongForm.dienTich"
-                type="number"
-                min="1"
-                placeholder="Diện tích"
-                required
-              />
-            </label>
+                <select
+                  v-model="phongForm.phongSo"
+                  :disabled="!phongForm.tangSo"
+                >
+                  <option value="">Chọn phòng số</option>
 
-            <div class="actions">
-              <button class="primary" type="submit">
-                {{ editingPhongId ? "Cập nhật" : "Lưu" }}
-              </button>
+                  <option v-for="so in phongSoOptions" :key="so" :value="so">
+                    {{ so }}
+                  </option>
+                </select>
+              </label>
 
-              <button class="secondary" type="button" @click="closePhongForm">
-                Hủy
-              </button>
-            </div>
-          </form>
-        </div>
+              <label>
+                {{ requiredLabel("Số giường tối đa") }}
 
-        <!-- DANH SÁCH PHÒNG -->
-        <div v-else class="panel">
-          <div class="panel-header">
-            <h3>Danh sách phòng</h3>
+                <input
+                  v-model.number="phongForm.soGiuongToiDa"
+                  type="number"
+                  min="1"
+                  max="25"
+                  placeholder="Số giường tối đa"
+                  required
+                />
+              </label>
 
-            <button type="button" class="primary" @click="openAddPhongForm">
-              Thêm phòng
-            </button>
+              <label>
+                {{ requiredLabel("Loại phòng") }}
+
+                <input
+                  v-model="phongForm.loaiPhong"
+                  placeholder="Loại phòng"
+                  required
+                />
+              </label>
+
+              <label>
+                {{ requiredLabel("Diện tích") }}
+
+                <input
+                  v-model.number="phongForm.dienTich"
+                  type="number"
+                  min="1"
+                  placeholder="Diện tích"
+                  required
+                />
+              </label>
+
+              <div class="actions">
+                <button class="primary" type="submit">
+                  {{ editingPhongId ? "Cập nhật" : "Lưu" }}
+                </button>
+
+                <button class="secondary" type="button" @click="closePhongForm">
+                  Hủy
+                </button>
+              </div>
+            </form>
           </div>
 
-          <table>
-            <thead>
-              <tr>
-                <th>Mã phòng</th>
-                <th>Nhà trọ</th>
-                <th>Tầng số</th>
-                <th>Loại</th>
-                <th>Số giường</th>
-                <th>Hành động</th>
-              </tr>
-            </thead>
+          <!-- DANH SÁCH PHÒNG -->
+          <div v-else class="panel">
+            <div class="panel-header">
+              <h3>Danh sách phòng</h3>
 
-            <tbody>
-              <tr v-for="item in phongs" :key="item.id">
-                <td>
-                  {{ item.maPhong }}
-                </td>
+              <button type="button" class="primary" @click="openAddPhongForm">
+                Thêm phòng
+              </button>
+            </div>
 
-                <td>
-                  {{ item.nhaTro?.tenNhaTro || item.nhaTro?.maNhaTro }}
-                </td>
+            <table>
+              <thead>
+                <tr>
+                  <th>Mã phòng</th>
+                  <th>Nhà trọ</th>
+                  <th>Tầng số</th>
+                  <th>Loại</th>
+                  <th>Số giường</th>
+                  <th>Hành động</th>
+                </tr>
+              </thead>
 
-                <td>
-                  {{ item.tangSo }}
-                </td>
+              <tbody>
+                <tr v-for="item in phongs" :key="item.id">
+                  <td>
+                    {{ item.maPhong }}
+                  </td>
 
-                <td>
-                  {{ item.loaiPhong }}
-                </td>
+                  <td>
+                    {{ item.nhaTro?.tenNhaTro || item.nhaTro?.maNhaTro }}
+                  </td>
 
-                <td>
-                  {{ item.soGiuongToiDa }}
-                </td>
+                  <td>
+                    {{ item.tangSo }}
+                  </td>
 
-                <td class="row-actions">
-                  <button class="table-btn edit" @click="editPhong(item)">
-                    Sửa
-                  </button>
+                  <td>
+                    {{ item.loaiPhong }}
+                  </td>
 
-                  <button
-                    type="button"
-                    class="table-btn delete"
-                    @click.stop="requestDeletePhong(item)"
-                  >
-                    Xóa
-                  </button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
+                  <td>
+                    {{ item.soGiuongToiDa }}
+                  </td>
 
-      <!-- ===================================================
+                  <td class="row-actions">
+                    <button class="table-btn edit" @click="editPhong(item)">
+                      Sửa
+                    </button>
+
+                    <button
+                      type="button"
+                      class="table-btn delete"
+                      @click.stop="requestDeletePhong(item)"
+                    >
+                      Xóa
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- ===================================================
            GIƯỜNG
            =================================================== -->
-      <section v-else-if="currentTab === 'giuong'" class="panel-grid">
-        <!-- FORM THÊM / SỬA GIƯỜNG -->
-        <div v-if="showGiuongForm" class="panel">
-          <h3>
-            {{ editingGiuongId ? "Sửa giường" : "Thêm giường" }}
-          </h3>
+        <section v-else-if="currentTab === 'giuong'" class="panel-grid">
+          <!-- FORM THÊM / SỬA GIƯỜNG -->
+          <div v-if="showGiuongForm" class="panel">
+            <h3>
+              {{ editingGiuongId ? "Sửa giường" : "Thêm giường" }}
+            </h3>
 
-          <form @submit.prevent="saveGiuong" class="form-grid">
-            <!-- Giữ nguyên các trường nhập Giường hiện tại -->
+            <form @submit.prevent="saveGiuong" class="form-grid">
+              <!-- Giữ nguyên các trường nhập Giường hiện tại -->
 
-            <label>
-              {{ requiredLabel("Nhà trọ") }}
+              <label>
+                {{ requiredLabel("Nhà trọ") }}
 
-              <select v-model="giuongForm.nhaTroId" required>
-                <option value="">Chọn nhà trọ</option>
+                <select v-model="giuongForm.nhaTroId" required>
+                  <option value="">Chọn nhà trọ</option>
 
-                <option v-for="item in nhaTros" :key="item.id" :value="item.id">
-                  {{ item.maNhaTro }} -
-                  {{ item.tenNhaTro }}
-                </option>
-              </select>
-            </label>
-
-            <label>
-              {{ requiredLabel("Phòng") }}
-
-              <select
-                v-model="giuongForm.phongId"
-                required
-                :disabled="!giuongForm.nhaTroId"
-              >
-                <option value="">Chọn phòng</option>
-
-                <option v-for="item in phongs" :key="item.id" :value="item.id">
-                  {{ item.maPhong }}
-                </option>
-              </select>
-            </label>
-
-            <label>
-              {{ requiredLabel("Giường số") }}
-
-              <select
-                v-model="giuongForm.giuongSo"
-                required
-                :disabled="!giuongForm.phongId"
-              >
-                <option value="">Chọn giường</option>
-
-                <option v-for="so in giuongSoOptions" :key="so" :value="so">
-                  Giường {{ so }}
-                </option>
-              </select>
-            </label>
-
-            <div class="form-group">
-              <label class="checkbox-label">
-                <input v-model="giuongForm.datCocSom" type="checkbox" />
-                Đặt cọc sớm
+                  <option
+                    v-for="item in nhaTros"
+                    :key="item.id"
+                    :value="item.id"
+                  >
+                    {{ item.maNhaTro }} -
+                    {{ item.tenNhaTro }}
+                  </option>
+                </select>
               </label>
-            </div>
 
-            <label>
-              {{ requiredLabel("Giá giường") }}
+              <label>
+                {{ requiredLabel("Phòng") }}
 
-              <input
-                :value="giaGiuongDisplay"
-                @input="handleGiaGiuongInput"
-                inputmode="numeric"
-                required
-              />
-            </label>
+                <select
+                  v-model="giuongForm.phongId"
+                  required
+                  :disabled="!giuongForm.nhaTroId"
+                >
+                  <option value="">Chọn phòng</option>
 
-            <div class="actions">
-              <button type="submit" class="primary">
-                {{ editingGiuongId ? "Cập nhật" : "Lưu" }}
-              </button>
+                  <option
+                    v-for="item in phongs"
+                    :key="item.id"
+                    :value="item.id"
+                  >
+                    {{ item.maPhong }}
+                  </option>
+                </select>
+              </label>
 
-              <button type="button" class="secondary" @click="closeGiuongForm">
-                Hủy
-              </button>
-            </div>
-          </form>
-        </div>
+              <label>
+                {{ requiredLabel("Giường số") }}
 
-        <!-- DANH SÁCH GIƯỜNG -->
-        <div v-else class="panel">
-          <div class="panel-header">
-            <h3>Danh sách giường</h3>
+                <select
+                  v-model="giuongForm.giuongSo"
+                  required
+                  :disabled="!giuongForm.phongId"
+                >
+                  <option value="">Chọn giường</option>
 
-            <button type="button" class="primary" @click="openAddGiuongForm">
-              Thêm giường
-            </button>
+                  <option v-for="so in giuongSoOptions" :key="so" :value="so">
+                    Giường {{ so }}
+                  </option>
+                </select>
+              </label>
+
+              <div class="form-group">
+                <label class="checkbox-label">
+                  <input v-model="giuongForm.datCocSom" type="checkbox" />
+                  Đặt cọc sớm
+                </label>
+              </div>
+
+              <label>
+                {{ requiredLabel("Giá giường") }}
+
+                <input
+                  :value="giaGiuongDisplay"
+                  @input="handleGiaGiuongInput"
+                  inputmode="numeric"
+                  required
+                />
+              </label>
+
+              <div class="actions">
+                <button type="submit" class="primary">
+                  {{ editingGiuongId ? "Cập nhật" : "Lưu" }}
+                </button>
+
+                <button
+                  type="button"
+                  class="secondary"
+                  @click="closeGiuongForm"
+                >
+                  Hủy
+                </button>
+              </div>
+            </form>
           </div>
 
-          <table>
-            <thead>
-              <tr>
-                <th>Mã giường</th>
-                <!-- <th>Nhà trọ</th>
+          <!-- DANH SÁCH GIƯỜNG -->
+          <div v-else class="panel">
+            <div class="panel-header">
+              <h3>Danh sách giường</h3>
+
+              <button type="button" class="primary" @click="openAddGiuongForm">
+                Thêm giường
+              </button>
+            </div>
+
+            <table>
+              <thead>
+                <tr>
+                  <th>Mã giường</th>
+                  <!-- <th>Nhà trọ</th>
           <th>Phòng</th>
           <th>Giường số</th> -->
-                <th class="dat-coc-header">Cọc sớm</th>
-                <th>Giá giường</th>
-                <th>Trạng thái</th>
-                <th>Hành động</th>
-              </tr>
-            </thead>
+                  <th class="dat-coc-header">Cọc sớm</th>
+                  <th>Giá giường</th>
+                  <th>Trạng thái</th>
+                  <th>Hành động</th>
+                </tr>
+              </thead>
 
-            <tbody>
-              <tr v-for="item in giuongs" :key="item.id">
-                <td>{{ item.maGiuong }}</td>
+              <tbody>
+                <tr v-for="item in giuongs" :key="item.id">
+                  <td>{{ item.maGiuong }}</td>
 
-                <!-- <td>
+                  <!-- <td>
             {{ item.phong?.nhaTro?.maNhaTro }}
             -
             {{ item.phong?.nhaTro?.tenNhaTro }}
@@ -3073,1380 +3252,1401 @@ onMounted(() => {
           <td>
             {{ item.giuongSo }}
           </td> -->
-                <td class="dat-coc-cell">
-                  <input
-                    type="checkbox"
-                    :checked="Boolean(item.datCocSom)"
-                    tabindex="-1"
-                    aria-readonly="true"
-                    :class="{
-                      'dat-coc-checked': Boolean(item.datCocSom),
-                      'dat-coc-unchecked': !Boolean(item.datCocSom),
-                    }"
-                  />
-                </td>
-                <td>
-                  {{ Number(item.giaGiuong ?? 0).toLocaleString("vi-VN") }}
-                </td>
-                <td class="status-cell">
-                  <span
-                    :class="[
-                      'status-badge',
-                      item.trangThai === 'da_thue'
-                        ? 'status-active'
-                        : 'status-empty',
-                    ]"
-                  >
-                    {{ item.trangThai === "da_thue" ? "Đã thuê" : "Chưa thuê" }}
-                  </span>
-                </td>
-                <td class="row-actions">
-                  <button
-                    type="button"
-                    class="table-btn edit"
-                    @click="editGiuong(item)"
-                  >
-                    Sửa
-                  </button>
+                  <td class="dat-coc-cell">
+                    <input
+                      type="checkbox"
+                      :checked="Boolean(item.datCocSom)"
+                      tabindex="-1"
+                      aria-readonly="true"
+                      :class="{
+                        'dat-coc-checked': Boolean(item.datCocSom),
+                        'dat-coc-unchecked': !Boolean(item.datCocSom),
+                      }"
+                    />
+                  </td>
+                  <td>
+                    {{ Number(item.giaGiuong ?? 0).toLocaleString("vi-VN") }}
+                  </td>
+                  <td class="status-cell">
+                    <span
+                      :class="[
+                        'status-badge',
+                        item.trangThai === 'da_thue'
+                          ? 'status-active'
+                          : 'status-empty',
+                      ]"
+                    >
+                      {{
+                        item.trangThai === "da_thue" ? "Đã thuê" : "Chưa thuê"
+                      }}
+                    </span>
+                  </td>
+                  <td class="row-actions">
+                    <button
+                      type="button"
+                      class="table-btn edit"
+                      @click="editGiuong(item)"
+                    >
+                      Sửa
+                    </button>
 
-                  <button
-                    type="button"
-                    class="table-btn delete"
-                    @click="requestDeleteGiuong(item)"
-                  >
-                    Xóa
-                  </button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
+                    <button
+                      type="button"
+                      class="table-btn delete"
+                      @click="requestDeleteGiuong(item)"
+                    >
+                      Xóa
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
 
-      <!-- ===================================================
+        <!-- ===================================================
            NGƯỜI THUÊ
            =================================================== -->
-      <section v-else-if="currentTab === 'nguoiThue'" class="panel-grid">
-        <!-- CHI TIẾT -->
-        <NguoiThueDetail
-          v-if="showNguoiThueDetail && selectedNguoiThue"
-          :nguoi-thue="selectedNguoiThue"
-          @close="closeNguoiThueDetail"
-        />
-
-        <!-- FORM THÊM / SỬA -->
-        <!-- FORM THÊM / SỬA NGƯỜI THUÊ -->
-        <div v-else-if="showNguoiThueForm" class="panel">
-          <div class="panel-header">
-            <h3>
-              {{ editingNguoiThueId ? "Sửa người thuê" : "Thêm người thuê" }}
-            </h3>
-
-            <button
-              type="button"
-              class="secondary"
-              @click="showNguoiThueForm = false"
-            >
-              Quay lại
-            </button>
-          </div>
-
-          <form class="form-grid" @submit.prevent="saveNguoiThue">
-            <label>
-              {{ requiredLabel("Họ tên") }}
-
-              <input v-model="nguoiThueForm.hoTen" type="text" required />
-            </label>
-
-            <label>
-              {{ requiredLabel("CCCD") }}
-
-              <input v-model="nguoiThueForm.cccd" type="text" required />
-            </label>
-
-            <label>
-              {{ requiredLabel("Số điện thoại") }}
-
-              <input
-                v-model="nguoiThueForm.sdt"
-                type="text"
-                @input="handleSoDienThoaiInput"
-                required
-              />
-
-              <small v-if="soDienThoaiError" class="error-text">
-                {{ soDienThoaiError }}
-              </small>
-            </label>
-
-            <label>
-              Email
-
-              <input v-model="nguoiThueForm.email" type="email" />
-            </label>
-
-            <label>
-              Địa chỉ
-
-              <input v-model="nguoiThueForm.diaChi" type="text" />
-            </label>
-
-            <label>
-              Ngày sinh
-
-              <input v-model="nguoiThueForm.ngaySinh" type="date" />
-            </label>
-
-            <label>
-              Biển số xe
-
-              <input v-model="nguoiThueForm.bienSoXe" type="text" />
-            </label>
-
-            <div class="cccd-edit-section">
-              <!-- CCCD MẶT TRƯỚC -->
-              <div class="cccd-edit-card">
-                <label>
-                  CCCD mặt trước
-
-                  <input
-                    ref="cccdMatTruocInput"
-                    type="file"
-                    accept="image/*"
-                    @change="handleCccdMatTruocChange"
-                  />
-                </label>
-
-                <div
-                  v-if="cccdMatTruocPreviewUrl"
-                  class="cccd-edit-image-wrapper"
-                >
-                  <img
-                    :src="cccdMatTruocPreviewUrl"
-                    alt="CCCD mặt trước"
-                    class="cccd-edit-image"
-                  />
-                </div>
-
-                <div v-else class="cccd-edit-empty">
-                  Chưa có ảnh CCCD mặt trước
-                </div>
-              </div>
-
-              <!-- CCCD MẶT SAU -->
-              <div class="cccd-edit-card">
-                <label>
-                  CCCD mặt sau
-
-                  <input
-                    ref="cccdMatSauInput"
-                    type="file"
-                    accept="image/*"
-                    @change="handleCccdMatSauChange"
-                  />
-                </label>
-
-                <div
-                  v-if="cccdMatSauPreviewUrl"
-                  class="cccd-edit-image-wrapper"
-                >
-                  <img
-                    :src="cccdMatSauPreviewUrl"
-                    alt="CCCD mặt sau"
-                    class="cccd-edit-image"
-                  />
-                </div>
-
-                <div v-else class="cccd-edit-empty">
-                  Chưa có ảnh CCCD mặt sau
-                </div>
-              </div>
-            </div>
-
-            <div class="form-actions">
-              <div class="form-actions-right">
-                <button
-                  type="button"
-                  class="secondary"
-                  @click="showNguoiThueForm = false"
-                >
-                  Hủy
-                </button>
-
-                <button type="submit" class="primary">
-                  {{ editingNguoiThueId ? "Cập nhật" : "Thêm" }}
-                </button>
-              </div>
-            </div>
-          </form>
-        </div>
-
-        <!-- DANH SÁCH -->
-        <div v-else class="panel">
-          <div class="panel-header">
-  <h3>Danh sách người thuê</h3>
-
-  <div class="nguoi-thue-header-actions">
-    <div class="nguoi-thue-search">
-      <input
-        v-model="nguoiThueSearch"
-        type="text"
-        placeholder="Tìm Họ tên hoặc CCCD..."
-        autocomplete="off"
-      />
-
-      <button
-        v-if="nguoiThueSearch"
-        type="button"
-        class="nguoi-thue-search-clear"
-        @click="nguoiThueSearch = ''"
-      >
-        ×
-      </button>
-    </div>
-
-    <button
-      type="button"
-      class="primary"
-      @click="openAddNguoiThueForm"
-    >
-      Thêm người thuê
-    </button>
-  </div>
-</div>
-
-          <table>
-            <thead>
-              <tr>
-                <th>Họ tên</th>
-                <th>CCCD</th>
-                <th>Số điện thoại</th>
-                <th>Email</th>
-                <th>Biển số xe</th>
-                <th>Hành động</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              <tr v-for="item in filteredNguoiThues" :key="item.id">
-                <td>
-                  <button
-                    type="button"
-                    class="nguoi-thue-name-link"
-                    @click="openNguoiThueDetail(item)"
-                  >
-                    {{ item.hoTen }}
-                  </button>
-                </td>
-
-                <td>{{ item.cccd }}</td>
-
-                <td>{{ item.sdt }}</td>
-
-                <td>{{ item.email }}</td>
-
-                <td>{{ item.bienSoXe }}</td>
-
-                <td class="row-actions">
-                  <button
-                    type="button"
-                    class="table-btn edit"
-                    @click="editNguoiThue(item)"
-                  >
-                    Sửa
-                  </button>
-
-                  <button
-                    type="button"
-                    class="table-btn delete"
-                    @click="requestDeleteNguoiThue(item)"
-                  >
-                    Xóa
-                  </button>
-                </td>
-              </tr>
-              <tr v-if="filteredNguoiThues.length === 0">
-                <td colspan="6" class="nguoi-thue-empty">
-                  Không tìm thấy người thuê phù hợp.
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <!-- ===================================================
-           HỢP ĐỒNG
-           =================================================== -->
-      <section v-else-if="currentTab === 'hopDong'" class="panel-grid">
-        <!-- Chi tiết người thuê -->
-        <NguoiThueDetail
-          v-if="showNguoiThueDetail && selectedNguoiThue"
-          :nguoi-thue="selectedNguoiThue"
-          @close="closeNguoiThueDetail"
-        />
-        <!-- ===================================================
-       FORM THÊM / SỬA HỢP ĐỒNG
-       =================================================== -->
-        <div v-else-if="showHopDongForm" class="panel">
-          <h3>
-            {{ editingHopDongId ? "Sửa hợp đồng" : "Thêm hợp đồng" }}
-          </h3>
-
-          <form @submit.prevent="saveHopDong" class="form-grid">
-            <label>
-              {{ requiredLabel("Nhà trọ") }}
-
-              <select
-                v-model="hopDongForm.nhaTroId"
-                @change="handleNhaTroChangeForHopDong"
-                required
-              >
-                <option value="">Chọn nhà trọ</option>
-
-                <option v-for="item in nhaTros" :key="item.id" :value="item.id">
-                  {{ item.maNhaTro }} - {{ item.tenNhaTro }}
-                </option>
-              </select>
-            </label>
-
-            <label v-if="hopDongForm.nhaTroId">
-              {{ requiredLabel("Phòng") }}
-
-              <select
-                v-model="hopDongForm.phongId"
-                @change="handlePhongChangeForHopDong"
-                required
-              >
-                <option value="">Chọn phòng</option>
-
-                <option
-                  v-for="item in hopDongPhongOptions"
-                  :key="item.id"
-                  :value="item.id"
-                >
-                  {{ item.maPhong }} - Tầng {{ item.tangSo }}
-                </option>
-              </select>
-
-              <small v-if="hopDongPhongOptions.length === 0" class="form-hint">
-                Nhà trọ này chưa có phòng.
-              </small>
-            </label>
-
-            <label v-if="hopDongForm.phongId">
-              {{ requiredLabel("Giường") }}
-
-              <select
-                v-model="hopDongForm.giuongId"
-                @change="handleGiuongChangeForHopDong"
-                required
-              >
-                <option value="">Chọn giường</option>
-
-                <option
-                  v-for="item in hopDongGiuongOptions"
-                  :key="item.id"
-                  :value="item.id"
-                >
-                  {{ item.maGiuong }} - Giường {{ item.giuongSo }}
-                </option>
-              </select>
-
-              <small v-if="hopDongGiuongOptions.length === 0" class="form-hint">
-                Nhà trọ này không còn giường trống để lập hợp đồng.
-              </small>
-            </label>
-
-            <label>
-              {{ requiredLabel("Người thuê") }}
-
-              <select v-model="hopDongForm.nguoiThueId" required>
-                <option value="">Chọn người thuê</option>
-
-                <option
-                  v-for="item in filteredNguoiThues"
-                  :key="item.id"
-                  :value="item.id"
-                >
-                  {{ item.hoTen }}
-                </option>
-              </select>
-            </label>
-
-            <label>
-              {{ requiredLabel("Ngày bắt đầu") }}
-
-              <input
-                v-model="hopDongForm.ngayBatDau"
-                type="date"
-                @change="syncHopDongCode"
-                required
-              />
-            </label>
-
-            <label>
-              Ngày kết thúc
-
-              <input
-                v-model="hopDongForm.ngayKetThuc"
-                type="date"
-                :min="hopDongForm.ngayBatDau || undefined"
-                @change="validateNgayHopDong"
-              />
-            </label>
-
-            <label>
-              {{ requiredLabel("Giá thuê") }}
-
-              <div class="currency-input">
-                <input
-                  :value="tienThueDisplay"
-                  type="text"
-                  placeholder="Giá thuê"
-                  @input="handleTienThueInput"
-                  required
-                />
-
-                <span>VND</span>
-              </div>
-            </label>
-
-            <label>
-              {{ requiredLabel("Chu kỳ thanh toán") }}
-
-              <select v-model.number="hopDongForm.chuKyThanhToan" required>
-                <option :value="1">Hàng tháng</option>
-
-                <option :value="3">3 tháng</option>
-
-                <option :value="6">6 tháng</option>
-
-                <option :value="12">12 tháng</option>
-              </select>
-            </label>
-
-            <label>
-              Đặt cọc
-
-              <div class="currency-input">
-                <input
-                  :value="tienDatCocDisplay"
-                  type="text"
-                  placeholder="Số tiền đặt cọc"
-                />
-
-                <span>VND</span>
-              </div>
-            </label>
-
-            <label>
-              {{ requiredLabel("Trạng thái") }}
-
-              <select v-model="hopDongForm.trangThai">
-                <option value="active">Có hiệu lực</option>
-
-                <option value="sap_het_han">Sắp hết hiệu lực</option>
-
-                <option value="expired">Hết hiệu lực</option>
-              </select>
-            </label>
-
-            <label class="full-width">
-              Ghi chú
-
-              <textarea
-                v-model="hopDongForm.ghiChu"
-                rows="3"
-                placeholder="Nhập ghi chú cho hợp đồng..."
-              ></textarea>
-            </label>
-
-            <div class="actions">
-              <button class="primary" type="submit">
-                {{ editingHopDongId ? "Cập nhật" : "Lưu" }}
-              </button>
-
-              <button class="secondary" type="button" @click="closeHopDongForm">
-                Hủy
-              </button>
-            </div>
-          </form>
-        </div>
-
-        <!-- ===================================================
-       DANH SÁCH HỢP ĐỒNG
-       =================================================== -->
-        <div v-else class="panel">
-          <div class="panel-header">
-            <h3>Danh sách hợp đồng</h3>
-
-            <button type="button" class="primary" @click="openAddHopDongForm">
-              Thêm hợp đồng
-            </button>
-          </div>
-
-          <table>
-            <thead>
-              <tr>
-                <th>Mã HĐ(Giường)</th>
-                <th>Người thuê</th>
-                <th>Ngày bắt đầu</th>
-                <th>Ngày kết thúc</th>
-                <th>Giá thuê</th>
-                <th>Trạng thái</th>
-                <th>Hành động</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              <tr v-for="item in hopDongs" :key="item.id">
-                <td>
-                  {{ item.maHopDong }}
-                </td>
-
-                <td>
-                  <button
-                    type="button"
-                    class="nguoi-thue-name"
-                    @click="openNguoiThueDetail(item.nguoiThue)"
-                  >
-                    {{ item.nguoiThue?.hoTen || "" }}
-                  </button>
-                </td>
-
-                <td>
-                  {{
-                    item.ngayBatDau
-                      ? new Date(item.ngayBatDau).toLocaleDateString("vi-VN")
-                      : ""
-                  }}
-                </td>
-
-                <td>
-                  {{
-                    item.ngayKetThuc
-                      ? new Date(item.ngayKetThuc).toLocaleDateString("vi-VN")
-                      : "Không xác định"
-                  }}
-                </td>
-
-                <td>
-                  {{ formatCurrency(item.tienThue) }}
-                </td>
-
-                <td>
-                  <span
-                    :class="[
-                      'status-badge',
-                      getTrangThaiHopDongDisplay(
-                        item.ngayBatDau,
-                        item.ngayKetThuc,
-                      ).status,
-                    ]"
-                  >
-                    {{
-                      getTrangThaiHopDongDisplay(
-                        item.ngayBatDau,
-                        item.ngayKetThuc,
-                      ).text
-                    }}
-                  </span>
-                </td>
-
-                <td class="row-actions">
-                  <button
-                    type="button"
-                    class="table-btn edit"
-                    @click="editHopDong(item)"
-                  >
-                    Sửa
-                  </button>
-
-                  <button
-                    type="button"
-                    class="table-btn delete"
-                    @click.stop="requestDeleteHopDong(item)"
-                  >
-                    Xóa
-                  </button>
-                </td>
-              </tr>
-
-              <tr v-if="hopDongs.length === 0">
-                <td colspan="7" style="text-align: center">Chưa có hợp đồng</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <!-- ===================================================
-           HÓA ĐƠN
-           =================================================== -->
-      <section v-else-if="currentTab === 'hoaDon'" class="panel-grid">
-        <div v-if="showHoaDonForm" class="panel">
-          <h3>
-            {{ editingHoaDonId ? "Sửa hóa đơn" : "Thêm hóa đơn" }}
-          </h3>
-
-          <form @submit.prevent="saveHoaDon" class="form-grid">
-            <label>
-              {{ requiredLabel("Hợp đồng") }}
-
-              <select
-                v-model="hoaDonForm.hopDongId"
-                @change="
-                  updateHoaDonTienPhong();
-                  syncHoaDonCode();
-                "
-                required
-              >
-                <option value="">Chọn hợp đồng</option>
-
-                <option
-                  v-for="item in hopDongs"
-                  :key="item.id"
-                  :value="item.id"
-                >
-                  {{ item.maHopDong }}
-                </option>
-              </select>
-            </label>
-
-            <label>
-              {{ requiredLabel("Tháng thanh toán") }}
-
-              <input
-                v-model="hoaDonForm.thangThanhToan"
-                type="date"
-                @change="
-                  syncHoaDonCode();
-                  hoaDonThangThanhToanError = '';
-                "
-                required
-              />
-
-              <div v-if="hoaDonThangThanhToanError" class="hoa-don-thang-error">
-                <span class="hoa-don-thang-error-icon">!</span>
-
-                <span>
-                  {{ hoaDonThangThanhToanError }}
-                </span>
-              </div>
-            </label>
-
-            <label>
-              {{ requiredLabel("Tiền phòng") }}
-
-              <div class="currency-input">
-                <input :value="hoaDonForm.tienPhong" type="text" readonly />
-
-                <span>VND</span>
-              </div>
-            </label>
-
-            <label>
-              {{ requiredLabel("Tiền điện") }}
-
-              <div class="currency-input">
-                <input
-                  :value="tienDienDisplay"
-                  type="text"
-                  inputmode="numeric"
-                  placeholder="0"
-                  @input="handleTienDienInput"
-                  required
-                />
-
-                <span>VND</span>
-              </div>
-            </label>
-
-            <label>
-              {{ requiredLabel("Tiền nước") }}
-
-              <div class="currency-input">
-                <input
-                  :value="tienNuocDisplay"
-                  type="text"
-                  inputmode="numeric"
-                  placeholder="0"
-                  @input="handleTienNuocInput"
-                  required
-                />
-
-                <span>VND</span>
-              </div>
-            </label>
-
-            <label>
-              {{ requiredLabel("Tiền dịch vụ khác") }}
-
-              <div class="currency-input">
-                <input
-                  :value="tienDichVuKhacDisplay"
-                  type="text"
-                  inputmode="numeric"
-                  placeholder="0"
-                  @input="handleTienDichVuKhacInput"
-                  required
-                />
-
-                <span>VND</span>
-              </div>
-            </label>
-
-            <label>
-              {{ requiredLabel("Tổng tiền") }}
-
-              <div class="currency-input">
-                <input
-                  :value="hoaDonForm.tongTien"
-                  inputmode="numeric"
-                  type="text"
-                  readonly
-                />
-
-                <span>VND</span>
-              </div>
-            </label>
-
-            <label>
-              {{ requiredLabel("Trạng thái") }}
-
-              <select v-model="hoaDonForm.trangThai">
-                <option value="chua_thanh_toan">Chưa thanh toán</option>
-
-                <option value="da_thanh_toan">Đã thanh toán</option>
-              </select>
-            </label>
-
-            <label class="full-width">
-              Ghi chú
-
-              <textarea
-                v-model="hoaDonForm.ghiChu"
-                rows="3"
-                placeholder="Nhập ghi chú cho hóa đơn..."
-              ></textarea>
-            </label>
-
-            <div class="invoice-form-actions">
-              <div class="invoice-form-actions-left">
-                <button class="primary" type="submit">
-                  {{ editingHoaDonId ? "Cập nhật" : "Lưu" }}
-                </button>
-
-                <button
-                  class="secondary"
-                  type="button"
-                  @click="closeHoaDonForm"
-                >
-                  Hủy
-                </button>
-              </div>
+        <section v-else-if="currentTab === 'nguoiThue'" class="panel-grid">
+          <!-- CHI TIẾT -->
+          <NguoiThueDetail
+            v-if="showNguoiThueDetail && selectedNguoiThue"
+            :nguoi-thue="selectedNguoiThue"
+            @close="closeNguoiThueDetail"
+          />
+
+          <!-- FORM THÊM / SỬA -->
+          <!-- FORM THÊM / SỬA NGƯỜI THUÊ -->
+          <div v-else-if="showNguoiThueForm" class="panel">
+            <div class="panel-header">
+              <h3>
+                {{ editingNguoiThueId ? "Sửa người thuê" : "Thêm người thuê" }}
+              </h3>
 
               <button
                 type="button"
-                class="btn-them-hoa-don"
-                @click="handleThemHoaDonChoCacGiuong"
-                :disabled="editingHoaDonId !== null"
+                class="secondary"
+                @click="showNguoiThueForm = false"
               >
-                Thêm HĐ cho các Giường
+                Quay lại
               </button>
             </div>
-          </form>
-        </div>
 
-        <div v-else class="panel">
-          <div class="panel-header">
-            <h3>Danh sách hóa đơn</h3>
+            <form class="form-grid" @submit.prevent="saveNguoiThue">
+              <label>
+                {{ requiredLabel("Họ tên") }}
 
-            <button type="button" class="primary" @click="openAddHoaDonForm">
-              Thêm hóa đơn
-            </button>
+                <input v-model="nguoiThueForm.hoTen" type="text" required />
+              </label>
+
+              <label>
+                {{ requiredLabel("CCCD") }}
+
+                <input v-model="nguoiThueForm.cccd" type="text" required />
+              </label>
+
+              <label>
+                {{ requiredLabel("Số điện thoại") }}
+
+                <input
+                  v-model="nguoiThueForm.sdt"
+                  type="text"
+                  @input="handleSoDienThoaiInput"
+                  required
+                />
+
+                <small v-if="soDienThoaiError" class="error-text">
+                  {{ soDienThoaiError }}
+                </small>
+              </label>
+
+              <label>
+                Email
+
+                <input v-model="nguoiThueForm.email" type="email" />
+              </label>
+
+              <label>
+                Địa chỉ
+
+                <input v-model="nguoiThueForm.diaChi" type="text" />
+              </label>
+
+              <label>
+                Ngày sinh
+
+                <input v-model="nguoiThueForm.ngaySinh" type="date" />
+              </label>
+
+              <label>
+                Biển số xe
+
+                <input v-model="nguoiThueForm.bienSoXe" type="text" />
+              </label>
+
+              <div class="cccd-edit-section">
+                <!-- CCCD MẶT TRƯỚC -->
+                <div class="cccd-edit-card">
+                  <label>
+                    CCCD mặt trước
+
+                    <input
+                      ref="cccdMatTruocInput"
+                      type="file"
+                      accept="image/*"
+                      @change="handleCccdMatTruocChange"
+                    />
+                  </label>
+
+                  <div
+                    v-if="cccdMatTruocPreviewUrl"
+                    class="cccd-edit-image-wrapper"
+                  >
+                    <img
+                      :src="cccdMatTruocPreviewUrl"
+                      alt="CCCD mặt trước"
+                      class="cccd-edit-image"
+                    />
+                  </div>
+
+                  <div v-else class="cccd-edit-empty">
+                    Chưa có ảnh CCCD mặt trước
+                  </div>
+                </div>
+
+                <!-- CCCD MẶT SAU -->
+                <div class="cccd-edit-card">
+                  <label>
+                    CCCD mặt sau
+
+                    <input
+                      ref="cccdMatSauInput"
+                      type="file"
+                      accept="image/*"
+                      @change="handleCccdMatSauChange"
+                    />
+                  </label>
+
+                  <div
+                    v-if="cccdMatSauPreviewUrl"
+                    class="cccd-edit-image-wrapper"
+                  >
+                    <img
+                      :src="cccdMatSauPreviewUrl"
+                      alt="CCCD mặt sau"
+                      class="cccd-edit-image"
+                    />
+                  </div>
+
+                  <div v-else class="cccd-edit-empty">
+                    Chưa có ảnh CCCD mặt sau
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-actions">
+                <div class="form-actions-right">
+                  <button
+                    type="button"
+                    class="secondary"
+                    @click="showNguoiThueForm = false"
+                  >
+                    Hủy
+                  </button>
+
+                  <button type="submit" class="primary">
+                    {{ editingNguoiThueId ? "Cập nhật" : "Thêm" }}
+                  </button>
+                </div>
+              </div>
+            </form>
           </div>
 
-          <table>
-            <thead>
-              <tr>
-                <th>Mã HĐ</th>
-                <th>Người thuê</th>
-                <th>Tổng tiền</th>
-                <th>Trạng thái</th>
-                <th>Ngày nộp</th>
-                <th>Hành động</th>
-              </tr>
-            </thead>
+          <!-- DANH SÁCH -->
+          <div v-else class="panel">
+            <div class="panel-header">
+              <h3>Danh sách người thuê</h3>
 
-            <tbody>
-              <tr v-for="item in hoaDons" :key="item.id">
-                <td>
-                  {{ item.maHoaDon }}
-                </td>
+              <div class="nguoi-thue-header-actions">
+                <div class="nguoi-thue-search">
+                  <input
+                    v-model="nguoiThueSearch"
+                    type="text"
+                    placeholder="Tìm Họ tên hoặc CCCD..."
+                    autocomplete="off"
+                  />
 
-                <td>
-                  {{ item.hopDong?.nguoiThue?.hoTen ?? "" }}
-                </td>
-
-                <td>
-                  {{ formatCurrency(item.tongTien) }}
-                </td>
-
-                <td>
-                  <span
-                    :class="[
-                      'status-badge',
-                      item.trangThai === 'da_thanh_toan'
-                        ? 'status-paid'
-                        : 'status-unpaid',
-                    ]"
+                  <button
+                    v-if="nguoiThueSearch"
+                    type="button"
+                    class="nguoi-thue-search-clear"
+                    @click="nguoiThueSearch = ''"
                   >
+                    ×
+                  </button>
+                </div>
+
+                <button
+                  type="button"
+                  class="primary"
+                  @click="openAddNguoiThueForm"
+                >
+                  Thêm người thuê
+                </button>
+              </div>
+            </div>
+
+            <table>
+              <thead>
+                <tr>
+                  <th>Họ tên</th>
+                  <th>CCCD</th>
+                  <th>Số điện thoại</th>
+                  <th>Email</th>
+                  <th>Biển số xe</th>
+                  <th>Hành động</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                <tr v-for="item in filteredNguoiThues" :key="item.id">
+                  <td>
+                    <button
+                      type="button"
+                      class="nguoi-thue-name-link"
+                      @click="openNguoiThueDetail(item)"
+                    >
+                      {{ item.hoTen }}
+                    </button>
+                  </td>
+
+                  <td>{{ item.cccd }}</td>
+
+                  <td>{{ item.sdt }}</td>
+
+                  <td>{{ item.email }}</td>
+
+                  <td>{{ item.bienSoXe }}</td>
+
+                  <td class="row-actions">
+                    <button
+                      type="button"
+                      class="table-btn edit"
+                      @click="editNguoiThue(item)"
+                    >
+                      Sửa
+                    </button>
+
+                    <button
+                      type="button"
+                      class="table-btn delete"
+                      @click="requestDeleteNguoiThue(item)"
+                    >
+                      Xóa
+                    </button>
+                  </td>
+                </tr>
+                <tr v-if="filteredNguoiThues.length === 0">
+                  <td colspan="6" class="nguoi-thue-empty">
+                    Không tìm thấy người thuê phù hợp.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- ===================================================
+           HỢP ĐỒNG
+           =================================================== -->
+        <section v-else-if="currentTab === 'hopDong'" class="panel-grid">
+          <!-- Chi tiết người thuê -->
+          <NguoiThueDetail
+            v-if="showNguoiThueDetail && selectedNguoiThue"
+            :nguoi-thue="selectedNguoiThue"
+            @close="closeNguoiThueDetail"
+          />
+          <!-- ===================================================
+       FORM THÊM / SỬA HỢP ĐỒNG
+       =================================================== -->
+          <div v-else-if="showHopDongForm" class="panel">
+            <h3>
+              {{ editingHopDongId ? "Sửa hợp đồng" : "Thêm hợp đồng" }}
+            </h3>
+
+            <form @submit.prevent="saveHopDong" class="form-grid">
+              <label>
+                {{ requiredLabel("Nhà trọ") }}
+
+                <select
+                  v-model="hopDongForm.nhaTroId"
+                  @change="handleNhaTroChangeForHopDong"
+                  required
+                >
+                  <option value="">Chọn nhà trọ</option>
+
+                  <option
+                    v-for="item in nhaTros"
+                    :key="item.id"
+                    :value="item.id"
+                  >
+                    {{ item.maNhaTro }} - {{ item.tenNhaTro }}
+                  </option>
+                </select>
+              </label>
+
+              <label v-if="hopDongForm.nhaTroId">
+                {{ requiredLabel("Phòng") }}
+
+                <select
+                  v-model="hopDongForm.phongId"
+                  @change="handlePhongChangeForHopDong"
+                  required
+                >
+                  <option value="">Chọn phòng</option>
+
+                  <option
+                    v-for="item in hopDongPhongOptions"
+                    :key="item.id"
+                    :value="item.id"
+                  >
+                    {{ item.maPhong }} - Tầng {{ item.tangSo }}
+                  </option>
+                </select>
+
+                <small
+                  v-if="hopDongPhongOptions.length === 0"
+                  class="form-hint"
+                >
+                  Nhà trọ này chưa có phòng.
+                </small>
+              </label>
+
+              <label v-if="hopDongForm.phongId">
+                {{ requiredLabel("Giường") }}
+
+                <select
+                  v-model="hopDongForm.giuongId"
+                  @change="handleGiuongChangeForHopDong"
+                  required
+                >
+                  <option value="">Chọn giường</option>
+
+                  <option
+                    v-for="item in hopDongGiuongOptions"
+                    :key="item.id"
+                    :value="item.id"
+                  >
+                    {{ item.maGiuong }} - Giường {{ item.giuongSo }}
+                  </option>
+                </select>
+
+                <small
+                  v-if="hopDongGiuongOptions.length === 0"
+                  class="form-hint"
+                >
+                  Nhà trọ này không còn giường trống để lập hợp đồng.
+                </small>
+              </label>
+
+              <label>
+                {{ requiredLabel("Người thuê") }}
+
+                <select v-model="hopDongForm.nguoiThueId" required>
+                  <option value="">Chọn người thuê</option>
+
+                  <option
+                    v-for="item in filteredNguoiThues"
+                    :key="item.id"
+                    :value="item.id"
+                  >
+                    {{ item.hoTen }}
+                  </option>
+                </select>
+              </label>
+
+              <label>
+                {{ requiredLabel("Ngày bắt đầu") }}
+
+                <input
+                  v-model="hopDongForm.ngayBatDau"
+                  type="date"
+                  @change="syncHopDongCode"
+                  required
+                />
+              </label>
+
+              <label>
+                Ngày kết thúc
+
+                <input
+                  v-model="hopDongForm.ngayKetThuc"
+                  type="date"
+                  :min="hopDongForm.ngayBatDau || undefined"
+                  @change="validateNgayHopDong"
+                />
+              </label>
+
+              <label>
+                {{ requiredLabel("Giá thuê") }}
+
+                <div class="currency-input">
+                  <input
+                    :value="tienThueDisplay"
+                    type="text"
+                    placeholder="Giá thuê"
+                    @input="handleTienThueInput"
+                    required
+                  />
+
+                  <span>VND</span>
+                </div>
+              </label>
+
+              <label>
+                {{ requiredLabel("Chu kỳ thanh toán") }}
+
+                <select v-model.number="hopDongForm.chuKyThanhToan" required>
+                  <option :value="1">Hàng tháng</option>
+
+                  <option :value="3">3 tháng</option>
+
+                  <option :value="6">6 tháng</option>
+
+                  <option :value="12">12 tháng</option>
+                </select>
+              </label>
+
+              <label>
+                Đặt cọc
+
+                <div class="currency-input">
+                  <input
+                    :value="tienDatCocDisplay"
+                    type="text"
+                    placeholder="Số tiền đặt cọc"
+                  />
+
+                  <span>VND</span>
+                </div>
+              </label>
+
+              <label>
+                {{ requiredLabel("Trạng thái") }}
+
+                <select v-model="hopDongForm.trangThai">
+                  <option value="active">Có hiệu lực</option>
+
+                  <option value="sap_het_han">Sắp hết hiệu lực</option>
+
+                  <option value="expired">Hết hiệu lực</option>
+                </select>
+              </label>
+
+              <label class="full-width">
+                Ghi chú
+
+                <textarea
+                  v-model="hopDongForm.ghiChu"
+                  rows="3"
+                  placeholder="Nhập ghi chú cho hợp đồng..."
+                ></textarea>
+              </label>
+
+              <div class="actions">
+                <button class="primary" type="submit">
+                  {{ editingHopDongId ? "Cập nhật" : "Lưu" }}
+                </button>
+
+                <button
+                  class="secondary"
+                  type="button"
+                  @click="closeHopDongForm"
+                >
+                  Hủy
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- ===================================================
+       DANH SÁCH HỢP ĐỒNG
+       =================================================== -->
+          <div v-else class="panel">
+            <div class="panel-header">
+              <h3>Danh sách hợp đồng</h3>
+
+              <button type="button" class="primary" @click="openAddHopDongForm">
+                Thêm hợp đồng
+              </button>
+            </div>
+
+            <table>
+              <thead>
+                <tr>
+                  <th>Mã HĐ(Giường)</th>
+                  <th>Người thuê</th>
+                  <th>Ngày bắt đầu</th>
+                  <th>Ngày kết thúc</th>
+                  <th>Giá thuê</th>
+                  <th>Trạng thái</th>
+                  <th>Hành động</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                <tr v-for="item in hopDongs" :key="item.id">
+                  <td>
+                    {{ item.maHopDong }}
+                  </td>
+
+                  <td>
+                    <button
+                      type="button"
+                      class="nguoi-thue-name"
+                      @click="openNguoiThueDetail(item.nguoiThue)"
+                    >
+                      {{ item.nguoiThue?.hoTen || "" }}
+                    </button>
+                  </td>
+
+                  <td>
                     {{
-                      item.trangThai === "da_thanh_toan"
-                        ? "Đã thanh toán"
-                        : "Chưa thanh toán"
+                      item.ngayBatDau
+                        ? new Date(item.ngayBatDau).toLocaleDateString("vi-VN")
+                        : ""
                     }}
+                  </td>
+
+                  <td>
+                    {{
+                      item.ngayKetThuc
+                        ? new Date(item.ngayKetThuc).toLocaleDateString("vi-VN")
+                        : "Không xác định"
+                    }}
+                  </td>
+
+                  <td>
+                    {{ formatCurrency(item.tienThue) }}
+                  </td>
+
+                  <td>
+                    <span
+                      :class="[
+                        'status-badge',
+                        getTrangThaiHopDongDisplay(
+                          item.ngayBatDau,
+                          item.ngayKetThuc,
+                        ).status,
+                      ]"
+                    >
+                      {{
+                        getTrangThaiHopDongDisplay(
+                          item.ngayBatDau,
+                          item.ngayKetThuc,
+                        ).text
+                      }}
+                    </span>
+                  </td>
+
+                  <td class="row-actions">
+                    <button
+                      type="button"
+                      class="table-btn edit"
+                      @click="editHopDong(item)"
+                    >
+                      Sửa
+                    </button>
+
+                    <button
+                      type="button"
+                      class="table-btn delete"
+                      @click.stop="requestDeleteHopDong(item)"
+                    >
+                      Xóa
+                    </button>
+                  </td>
+                </tr>
+
+                <tr v-if="hopDongs.length === 0">
+                  <td colspan="7" style="text-align: center">
+                    Chưa có hợp đồng
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- ===================================================
+           HÓA ĐƠN
+           =================================================== -->
+        <section v-else-if="currentTab === 'hoaDon'" class="panel-grid">
+          <div v-if="showHoaDonForm" class="panel">
+            <h3>
+              {{ editingHoaDonId ? "Sửa hóa đơn" : "Thêm hóa đơn" }}
+            </h3>
+
+            <form @submit.prevent="saveHoaDon" class="form-grid">
+              <label>
+                {{ requiredLabel("Hợp đồng") }}
+
+                <select
+                  v-model="hoaDonForm.hopDongId"
+                  @change="
+                    updateHoaDonTienPhong();
+                    syncHoaDonCode();
+                  "
+                  required
+                >
+                  <option value="">Chọn hợp đồng</option>
+
+                  <option
+                    v-for="item in hopDongs"
+                    :key="item.id"
+                    :value="item.id"
+                  >
+                    {{ item.maHopDong }}
+                  </option>
+                </select>
+              </label>
+
+              <label>
+                {{ requiredLabel("Tháng thanh toán") }}
+
+                <input
+                  v-model="hoaDonForm.thangThanhToan"
+                  type="date"
+                  @change="
+                    syncHoaDonCode();
+                    hoaDonThangThanhToanError = '';
+                  "
+                  required
+                />
+
+                <div
+                  v-if="hoaDonThangThanhToanError"
+                  class="hoa-don-thang-error"
+                >
+                  <span class="hoa-don-thang-error-icon">!</span>
+
+                  <span>
+                    {{ hoaDonThangThanhToanError }}
                   </span>
-                </td>
+                </div>
+              </label>
 
-                <td>
-                  {{
-                    item.trangThai === "da_thanh_toan" && item.ngayNop
-                      ? new Date(item.ngayNop).toLocaleDateString("vi-VN")
-                      : ""
-                  }}
-                </td>
+              <label>
+                {{ requiredLabel("Tiền phòng") }}
 
-                <td class="row-actions">
-                  <button class="table-btn edit" @click="editHoaDon(item)">
-                    Sửa
+                <div class="currency-input">
+                  <input :value="tienPhongDisplay" type="text" readonly />
+
+                  <span>VND</span>
+                </div>
+              </label>
+
+              <label>
+                {{ requiredLabel("Tiền điện") }}
+
+                <div class="currency-input">
+                  <input
+                    :value="tienDienDisplay"
+                    type="text"
+                    inputmode="numeric"
+                    placeholder="0"
+                    @input="handleTienDienInput"
+                    required
+                  />
+
+                  <span>VND</span>
+                </div>
+              </label>
+
+              <label>
+                {{ requiredLabel("Tiền nước") }}
+
+                <div class="currency-input">
+                  <input
+                    :value="tienNuocDisplay"
+                    type="text"
+                    inputmode="numeric"
+                    placeholder="0"
+                    @input="handleTienNuocInput"
+                    required
+                  />
+
+                  <span>VND</span>
+                </div>
+              </label>
+
+              <label>
+                {{ requiredLabel("Tiền dịch vụ khác") }}
+
+                <div class="currency-input">
+                  <input
+                    :value="tienDichVuKhacDisplay"
+                    type="text"
+                    inputmode="numeric"
+                    placeholder="0"
+                    @input="handleTienDichVuKhacInput"
+                    required
+                  />
+
+                  <span>VND</span>
+                </div>
+              </label>
+
+              <label>
+                {{ requiredLabel("Tổng tiền") }}
+
+                <div class="currency-input">
+                  <input :value="tongTienDisplay" type="text" readonly />
+
+                  <span>VND</span>
+                </div>
+              </label>
+
+              <label>
+                {{ requiredLabel("Trạng thái") }}
+
+                <select v-model="hoaDonForm.trangThai">
+                  <option value="chua_thanh_toan">Chưa thanh toán</option>
+
+                  <option value="da_thanh_toan">Đã thanh toán</option>
+                </select>
+              </label>
+
+              <label class="full-width">
+                Ghi chú
+
+                <textarea
+                  v-model="hoaDonForm.ghiChu"
+                  rows="3"
+                  placeholder="Nhập ghi chú cho hóa đơn..."
+                ></textarea>
+              </label>
+
+              <div class="invoice-form-actions">
+                <div class="invoice-form-actions-left">
+                  <button class="primary" type="submit">
+                    {{ editingHoaDonId ? "Cập nhật" : "Lưu" }}
                   </button>
 
                   <button
+                    class="secondary"
                     type="button"
-                    class="table-btn delete"
-                    @click.stop="requestDeleteHoaDon(item)"
+                    @click="closeHoaDonForm"
                   >
-                    Xóa
+                    Hủy
                   </button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
-    </main>
+                </div>
 
-    <!-- =====================================================
+                <button
+                  type="button"
+                  class="btn-them-hoa-don"
+                  @click="handleThemHoaDonChoCacGiuong"
+                  :disabled="editingHoaDonId !== null"
+                >
+                  Thêm HĐ cho các Giường
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <div v-else class="panel">
+            <div class="panel-header">
+              <h3>Danh sách hóa đơn</h3>
+
+              <button type="button" class="primary" @click="openAddHoaDonForm">
+                Thêm hóa đơn
+              </button>
+            </div>
+
+            <table>
+              <thead>
+                <tr>
+                  <th>Mã HĐ</th>
+                  <th>Người thuê</th>
+                  <th>Tổng tiền</th>
+                  <th>Trạng thái</th>
+                  <th>Ngày nộp</th>
+                  <th>Hành động</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                <tr v-for="item in hoaDons" :key="item.id">
+                  <td>
+                    {{ item.maHoaDon }}
+                  </td>
+
+                  <td>
+                    {{ item.hopDong?.nguoiThue?.hoTen ?? "" }}
+                  </td>
+
+                  <td>
+                    {{ formatCurrency(item.tongTien) }}
+                  </td>
+
+                  <td>
+                    <span
+                      :class="[
+                        'status-badge',
+                        item.trangThai === 'da_thanh_toan'
+                          ? 'status-paid'
+                          : 'status-unpaid',
+                      ]"
+                    >
+                      {{
+                        item.trangThai === "da_thanh_toan"
+                          ? "Đã thanh toán"
+                          : "Chưa thanh toán"
+                      }}
+                    </span>
+                  </td>
+
+                  <td>
+                    {{
+                      item.trangThai === "da_thanh_toan" && item.ngayNop
+                        ? new Date(item.ngayNop).toLocaleDateString("vi-VN")
+                        : ""
+                    }}
+                  </td>
+
+                  <td class="row-actions">
+                    <button class="table-btn edit" @click="editHoaDon(item)">
+                      Sửa
+                    </button>
+
+                    <button
+                      type="button"
+                      class="table-btn delete"
+                      @click.stop="requestDeleteHoaDon(item)"
+                    >
+                      Xóa
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+
+      <!-- =====================================================
      MODAL XÓA NHÀ TRỌ
      ===================================================== -->
-    <div
-      v-if="showDeleteNhaTroModal"
-      class="modal-overlay"
-      @click.self="closeDeleteNhaTroModal"
-    >
-      <div class="delete-modal">
-        <div class="delete-modal-header">
-          <div class="warning-icon">⚠</div>
+      <div
+        v-if="showDeleteNhaTroModal"
+        class="modal-overlay"
+        @click.self="closeDeleteNhaTroModal"
+      >
+        <div class="delete-modal">
+          <div class="delete-modal-header">
+            <div class="warning-icon">⚠</div>
 
-          <div>
-            <h3>Xác nhận xóa nhà trọ</h3>
-
-            <p>
-              {{ deleteNhaTroInfo.tenNhaTro }}
-            </p>
-          </div>
-        </div>
-
-        <div class="delete-modal-body">
-          <!-- Nhà trọ đang có dữ liệu liên quan -->
-          <template
-            v-if="
-              deleteNhaTroInfo.soPhong > 0 ||
-              deleteNhaTroInfo.soGiuong > 0 ||
-              deleteNhaTroInfo.soHopDong > 0 ||
-              deleteNhaTroInfo.soHoaDon > 0
-            "
-          >
-            <p class="warning-message">
-              <strong>Không thể xóa nhà trọ này!</strong>
-            </p>
-
-            <p>
-              Nhà trọ
-              <strong>{{ deleteNhaTroInfo.tenNhaTro }}</strong>
-              đang có dữ liệu liên quan.
-            </p>
-
-            <div class="related-data">
-              <div v-if="deleteNhaTroInfo.soPhong > 0" class="related-item">
-                <span>Phòng</span>
-                <strong>{{ deleteNhaTroInfo.soPhong }}</strong>
-              </div>
-
-              <div v-if="deleteNhaTroInfo.soGiuong > 0" class="related-item">
-                <span>Giường</span>
-                <strong>{{ deleteNhaTroInfo.soGiuong }}</strong>
-              </div>
-
-              <div v-if="deleteNhaTroInfo.soHopDong > 0" class="related-item">
-                <span>Hợp đồng</span>
-                <strong>{{ deleteNhaTroInfo.soHopDong }}</strong>
-              </div>
-
-              <div v-if="deleteNhaTroInfo.soHoaDon > 0" class="related-item">
-                <span>Hóa đơn</span>
-                <strong>{{ deleteNhaTroInfo.soHoaDon }}</strong>
-              </div>
-            </div>
-
-            <p class="delete-modal-note">
-              Hãy xóa hoặc xử lý các dữ liệu liên quan trước khi xóa nhà trọ.
-            </p>
-          </template>
-
-          <!-- Nhà trọ không có dữ liệu liên quan -->
-          <template v-else>
-            <p class="confirm-message">
-              Bạn có chắc chắn muốn xóa nhà trọ
-              <strong>
-                {{ deleteNhaTroInfo.tenNhaTro }}
-              </strong>
-              không?
-            </p>
-
-            <p class="delete-modal-note">Thao tác này không thể hoàn tác.</p>
-          </template>
-
-          <p v-if="deleteErrorMessage" class="error-message">
-            {{ deleteErrorMessage }}
-          </p>
-        </div>
-
-        <!-- CHỈ CÓ 1 KHỐI BUTTON -->
-        <div class="delete-modal-actions">
-          <button
-            class="secondary"
-            type="button"
-            @click="closeDeleteNhaTroModal"
-          >
-            Đóng
-          </button>
-
-          <button
-            v-if="
-              deleteNhaTroInfo.soPhong === 0 &&
-              deleteNhaTroInfo.soGiuong === 0 &&
-              deleteNhaTroInfo.soHopDong === 0 &&
-              deleteNhaTroInfo.soHoaDon === 0
-            "
-            class="danger-button"
-            type="button"
-            @click="confirmDeleteNhaTro"
-          >
-            Xác nhận xóa
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- =====================================================
-         MODAL XÓA PHÒNG
-         ===================================================== -->
-    <div
-      v-if="showDeletePhongModal"
-      class="modal-overlay"
-      @click.self="closeDeletePhongModal"
-    >
-      <div class="delete-modal">
-        <div class="delete-modal-header">
-          <div class="warning-icon">⚠</div>
-
-          <div>
-            <h3>Xác nhận xóa phòng</h3>
-
-            <p>
-              {{ deletePhongInfo.maPhong }}
-
-              <span v-if="deletePhongInfo.tenNhaTro">
-                - {{ deletePhongInfo.tenNhaTro }}
-              </span>
-            </p>
-          </div>
-        </div>
-
-        <div class="delete-modal-body">
-          <template v-if="deletePhongInfo.soGiuong > 0">
-            <div class="warning-message">
-              <strong> Không thể xóa phòng này! </strong>
+            <div>
+              <h3>Xác nhận xóa nhà trọ</h3>
 
               <p>
-                Phòng đang có dữ liệu giường liên quan. Bạn cần xử lý các dữ
-                liệu này trước khi xóa.
+                {{ deleteNhaTroInfo.tenNhaTro }}
               </p>
             </div>
+          </div>
 
-            <div class="related-data">
-              <div class="related-item">
-                <span>Giường</span>
+          <div class="delete-modal-body">
+            <!-- Nhà trọ đang có dữ liệu liên quan -->
+            <template
+              v-if="
+                deleteNhaTroInfo.soPhong > 0 ||
+                deleteNhaTroInfo.soGiuong > 0 ||
+                deleteNhaTroInfo.soHopDong > 0 ||
+                deleteNhaTroInfo.soHoaDon > 0
+              "
+            >
+              <p class="warning-message">
+                <strong>Không thể xóa nhà trọ này!</strong>
+              </p>
 
-                <strong>
-                  {{ deletePhongInfo.soGiuong }}
-                </strong>
+              <p>
+                Nhà trọ
+                <strong>{{ deleteNhaTroInfo.tenNhaTro }}</strong>
+                đang có dữ liệu liên quan.
+              </p>
+
+              <div class="related-data">
+                <div v-if="deleteNhaTroInfo.soPhong > 0" class="related-item">
+                  <span>Phòng</span>
+                  <strong>{{ deleteNhaTroInfo.soPhong }}</strong>
+                </div>
+
+                <div v-if="deleteNhaTroInfo.soGiuong > 0" class="related-item">
+                  <span>Giường</span>
+                  <strong>{{ deleteNhaTroInfo.soGiuong }}</strong>
+                </div>
+
+                <div v-if="deleteNhaTroInfo.soHopDong > 0" class="related-item">
+                  <span>Hợp đồng</span>
+                  <strong>{{ deleteNhaTroInfo.soHopDong }}</strong>
+                </div>
+
+                <div v-if="deleteNhaTroInfo.soHoaDon > 0" class="related-item">
+                  <span>Hóa đơn</span>
+                  <strong>{{ deleteNhaTroInfo.soHoaDon }}</strong>
+                </div>
               </div>
-            </div>
 
-            <p class="delete-modal-note">
-              Hãy xóa hoặc xử lý các giường thuộc phòng trước khi thực hiện thao
-              tác này.
+              <p class="delete-modal-note">
+                Hãy xóa hoặc xử lý các dữ liệu liên quan trước khi xóa nhà trọ.
+              </p>
+            </template>
+
+            <!-- Nhà trọ không có dữ liệu liên quan -->
+            <template v-else>
+              <p class="confirm-message">
+                Bạn có chắc chắn muốn xóa nhà trọ
+                <strong>
+                  {{ deleteNhaTroInfo.tenNhaTro }}
+                </strong>
+                không?
+              </p>
+
+              <p class="delete-modal-note">Thao tác này không thể hoàn tác.</p>
+            </template>
+
+            <p v-if="deleteErrorMessage" class="error-message">
+              {{ deleteErrorMessage }}
             </p>
-          </template>
+          </div>
 
-          <template v-else>
-            <p class="confirm-message">
-              Bạn có chắc chắn muốn xóa phòng
-              <strong>
+          <!-- CHỈ CÓ 1 KHỐI BUTTON -->
+          <div class="delete-modal-actions">
+            <button
+              class="secondary"
+              type="button"
+              @click="closeDeleteNhaTroModal"
+            >
+              Đóng
+            </button>
+
+            <button
+              v-if="
+                deleteNhaTroInfo.soPhong === 0 &&
+                deleteNhaTroInfo.soGiuong === 0 &&
+                deleteNhaTroInfo.soHopDong === 0 &&
+                deleteNhaTroInfo.soHoaDon === 0
+              "
+              class="danger-button"
+              type="button"
+              @click="confirmDeleteNhaTro"
+            >
+              Xác nhận xóa
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- =====================================================
+         MODAL XÓA PHÒNG
+         ===================================================== -->
+      <div
+        v-if="showDeletePhongModal"
+        class="modal-overlay"
+        @click.self="closeDeletePhongModal"
+      >
+        <div class="delete-modal">
+          <div class="delete-modal-header">
+            <div class="warning-icon">⚠</div>
+
+            <div>
+              <h3>Xác nhận xóa phòng</h3>
+
+              <p>
                 {{ deletePhongInfo.maPhong }}
+
+                <span v-if="deletePhongInfo.tenNhaTro">
+                  - {{ deletePhongInfo.tenNhaTro }}
+                </span>
+              </p>
+            </div>
+          </div>
+
+          <div class="delete-modal-body">
+            <template v-if="deletePhongInfo.soGiuong > 0">
+              <div class="warning-message">
+                <strong> Không thể xóa phòng này! </strong>
+
+                <p>
+                  Phòng đang có dữ liệu giường liên quan. Bạn cần xử lý các dữ
+                  liệu này trước khi xóa.
+                </p>
+              </div>
+
+              <div class="related-data">
+                <div class="related-item">
+                  <span>Giường</span>
+
+                  <strong>
+                    {{ deletePhongInfo.soGiuong }}
+                  </strong>
+                </div>
+              </div>
+
+              <p class="delete-modal-note">
+                Hãy xóa hoặc xử lý các giường thuộc phòng trước khi thực hiện
+                thao tác này.
+              </p>
+            </template>
+
+            <template v-else>
+              <p class="confirm-message">
+                Bạn có chắc chắn muốn xóa phòng
+                <strong>
+                  {{ deletePhongInfo.maPhong }}
+                </strong>
+                không?
+              </p>
+
+              <p class="delete-modal-note">Thao tác này không thể hoàn tác.</p>
+            </template>
+
+            <p v-if="deletePhongErrorMessage" class="error-message">
+              {{ deletePhongErrorMessage }}
+            </p>
+          </div>
+
+          <div class="delete-modal-actions">
+            <button
+              class="secondary"
+              type="button"
+              @click="closeDeletePhongModal"
+            >
+              Đóng
+            </button>
+
+            <button
+              v-if="deletePhongInfo.soGiuong === 0"
+              class="danger-button"
+              type="button"
+              @click="confirmDeletePhong"
+            >
+              Xác nhận xóa
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- =====================================================
+         MODAL XÓA HỢP ĐỒNG
+         ===================================================== -->
+      <div
+        v-if="showDeleteHopDongModal"
+        class="modal-overlay"
+        @click.self="closeDeleteHopDongModal"
+      >
+        <div class="modal">
+          <div class="modal-header">
+            <h3>Xác nhận xóa hợp đồng</h3>
+
+            <button
+              type="button"
+              class="modal-close"
+              @click="closeDeleteHopDongModal"
+            >
+              ×
+            </button>
+          </div>
+
+          <div class="modal-body">
+            <p>
+              Bạn có chắc chắn muốn xóa hợp đồng
+              <strong>
+                {{ deleteHopDongInfo.maHopDong }}
               </strong>
               không?
             </p>
 
-            <p class="delete-modal-note">Thao tác này không thể hoàn tác.</p>
-          </template>
+            <p v-if="deleteHopDongErrorMessage" class="delete-error-message">
+              {{ deleteHopDongErrorMessage }}
+            </p>
+          </div>
 
-          <p v-if="deletePhongErrorMessage" class="error-message">
-            {{ deletePhongErrorMessage }}
-          </p>
-        </div>
+          <div class="modal-actions">
+            <button
+              type="button"
+              class="secondary"
+              @click="closeDeleteHopDongModal"
+            >
+              Hủy
+            </button>
 
-        <div class="delete-modal-actions">
-          <button
-            class="secondary"
-            type="button"
-            @click="closeDeletePhongModal"
-          >
-            Đóng
-          </button>
-
-          <button
-            v-if="deletePhongInfo.soGiuong === 0"
-            class="danger-button"
-            type="button"
-            @click="confirmDeletePhong"
-          >
-            Xác nhận xóa
-          </button>
+            <button type="button" class="danger" @click="confirmDeleteHopDong">
+              Xóa
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+      <div
+        v-if="showHopDongHoaDonErrorModal"
+        class="modal-overlay"
+        @click.self="closeHopDongHoaDonErrorModal"
+      >
+        <div class="modal">
+          <div class="modal-header">Không thể xóa hợp đồng</div>
 
-    <!-- =====================================================
-         MODAL XÓA HỢP ĐỒNG
-         ===================================================== -->
-    <div
-      v-if="showDeleteHopDongModal"
-      class="modal-overlay"
-      @click.self="closeDeleteHopDongModal"
-    >
-      <div class="modal">
-        <div class="modal-header">
-          <h3>Xác nhận xóa hợp đồng</h3>
+          <div class="modal-body">
+            <p class="delete-error-message">
+              {{ hopDongHoaDonErrorMessage }}
+            </p>
+          </div>
 
-          <button
-            type="button"
-            class="modal-close"
-            @click="closeDeleteHopDongModal"
-          >
-            ×
-          </button>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="secondary"
+              @click="closeHopDongHoaDonErrorModal"
+            >
+              Đóng
+            </button>
+          </div>
         </div>
+      </div>
+      <!-- =====================================================
+         MODAL XÓA GIƯỜNG
+         ===================================================== -->
+      <div
+        v-if="showDeleteGiuongModal"
+        class="modal-overlay"
+        @click.self="closeDeleteGiuongModal"
+      >
+        <div class="delete-modal">
+          <div class="delete-modal-header">
+            <div class="warning-icon">⚠</div>
 
-        <div class="modal-body">
+            <div>
+              <h3>Xác nhận xóa giường</h3>
+
+              <p>
+                {{ deleteGiuongInfo.maGiuong }}
+
+                <span v-if="deleteGiuongInfo.maPhong">
+                  - Phòng {{ deleteGiuongInfo.maPhong }}
+                </span>
+              </p>
+            </div>
+          </div>
+
+          <div class="delete-modal-body">
+            <!-- GIƯỜNG ĐÃ CÓ HỢP ĐỒNG -->
+            <template v-if="deleteGiuongInfo.soHopDong > 0">
+              <div class="warning-message">
+                <strong>Không thể xóa giường này!</strong>
+
+                <p>
+                  Giường đang được sử dụng trong
+                  <strong>
+                    {{ deleteGiuongInfo.soHopDong }}
+                  </strong>
+                  hợp đồng.
+                </p>
+
+                <p>
+                  Vui lòng xóa hoặc xử lý hợp đồng liên quan trước khi xóa
+                  giường.
+                </p>
+              </div>
+
+              <div class="related-data">
+                <div class="related-item">
+                  <span>Mã HD(Giường)</span>
+                  <strong>
+                    {{ deleteGiuongInfo.maGiuong }}
+                  </strong>
+                </div>
+
+                <div class="related-item" v-if="deleteGiuongInfo.maPhong">
+                  <span>Phòng</span>
+                  <strong>
+                    {{ deleteGiuongInfo.maPhong }}
+                  </strong>
+                </div>
+
+                <div class="related-item">
+                  <span>Số hợp đồng</span>
+                  <strong>
+                    {{ deleteGiuongInfo.soHopDong }}
+                  </strong>
+                </div>
+              </div>
+            </template>
+
+            <!-- GIƯỜNG CHƯA CÓ HỢP ĐỒNG -->
+            <template v-else>
+              <p class="confirm-message">
+                Bạn có chắc chắn muốn xóa giường
+                <strong>
+                  {{ deleteGiuongInfo.maGiuong }}
+                </strong>
+
+                <span v-if="deleteGiuongInfo.maPhong">
+                  của phòng
+                  <strong>
+                    {{ deleteGiuongInfo.maPhong }}
+                  </strong>
+                </span>
+
+                không?
+              </p>
+
+              <p class="delete-modal-note">Thao tác này không thể hoàn tác.</p>
+            </template>
+
+            <p v-if="deleteGiuongErrorMessage" class="error-message">
+              {{ deleteGiuongErrorMessage }}
+            </p>
+          </div>
+
+          <div class="delete-modal-actions">
+            <button
+              class="secondary"
+              type="button"
+              @click="closeDeleteGiuongModal"
+            >
+              Đóng
+            </button>
+
+            <button
+              v-if="deleteGiuongInfo.soHopDong === 0"
+              class="danger-button"
+              type="button"
+              @click="confirmDeleteGiuong"
+            >
+              Xác nhận xóa
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- =====================================================
+         MODAL XÓA NGƯỜI THUÊ
+         ===================================================== -->
+      <div
+        v-if="showDeleteNguoiThueModal"
+        class="modal-overlay"
+        @click.self="closeDeleteNguoiThueModal"
+      >
+        <div class="delete-modal">
+          <div class="delete-modal-header">
+            <div class="warning-icon">⚠</div>
+
+            <div>
+              <h3>Xác nhận xóa người thuê</h3>
+
+              <p>
+                {{ deleteNguoiThueInfo.hoTen }}
+
+                <span v-if="deleteNguoiThueInfo.cccd">
+                  - CCCD: {{ deleteNguoiThueInfo.cccd }}
+                </span>
+              </p>
+            </div>
+          </div>
+
+          <div class="delete-modal-body">
+            <!-- Người thuê đang có hợp đồng -->
+            <template v-if="deleteNguoiThueInfo.hopDongIds.length > 0">
+              <p class="warning-message">
+                Bạn chú ý người thuê
+                <strong>{{ deleteNguoiThueInfo.hoTen }}</strong>
+                đang có trong hợp đồng
+                <strong>
+                  {{ deleteNguoiThueInfo.hopDongIds.join(", ") }}
+                </strong>
+                nên không thể xóa được.
+              </p>
+
+              <p class="delete-modal-note">Cần thực hiện xóa hợp đồng trước.</p>
+            </template>
+
+            <!-- Người thuê không có hợp đồng -->
+            <template v-else>
+              <p class="confirm-message">
+                Bạn có chắc chắn muốn xóa người thuê
+                <strong>
+                  {{ deleteNguoiThueInfo.hoTen }}
+                </strong>
+                không?
+              </p>
+
+              <p class="delete-modal-note">Thao tác này không thể hoàn tác.</p>
+            </template>
+
+            <p v-if="deleteNguoiThueErrorMessage" class="error-message">
+              {{ deleteNguoiThueErrorMessage }}
+            </p>
+          </div>
+
+          <div class="delete-modal-actions">
+            <button
+              class="secondary"
+              type="button"
+              @click="closeDeleteNguoiThueModal"
+            >
+              Đóng
+            </button>
+
+            <button
+              v-if="deleteNguoiThueInfo.hopDongIds.length === 0"
+              class="danger-button"
+              type="button"
+              @click="confirmDeleteNguoiThue"
+            >
+              Xác nhận xóa
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- =====================================================
+         MODAL XÓA HÓA ĐƠN
+         ===================================================== -->
+      <div
+        v-if="showDeleteHoaDonModal"
+        class="modal-backdrop"
+        @click.self="closeDeleteHoaDonModal"
+      >
+        <div class="modal">
+          <h3>Xóa hóa đơn</h3>
+
           <p>
-            Bạn có chắc chắn muốn xóa hợp đồng
+            Bạn có chắc chắn muốn xóa hóa đơn
             <strong>
-              {{ deleteHopDongInfo.maHopDong }}
+              {{ deleteHoaDonInfo.maHoaDon }}
             </strong>
             không?
           </p>
 
-          <p v-if="deleteHopDongErrorMessage" class="delete-error-message">
-            {{ deleteHopDongErrorMessage }}
+          <p v-if="deleteHoaDonErrorMessage" class="error-message">
+            {{ deleteHoaDonErrorMessage }}
           </p>
-        </div>
 
-        <div class="modal-actions">
-          <button
-            type="button"
-            class="secondary"
-            @click="closeDeleteHopDongModal"
-          >
-            Hủy
-          </button>
+          <div class="modal-actions">
+            <button type="button" @click="closeDeleteHoaDonModal">Hủy</button>
 
-          <button type="button" class="danger" @click="confirmDeleteHopDong">
-            Xóa
-          </button>
-        </div>
-      </div>
-    </div>
-    <div
-      v-if="showHopDongHoaDonErrorModal"
-      class="modal-overlay"
-      @click.self="closeHopDongHoaDonErrorModal"
-    >
-      <div class="modal">
-        <div class="modal-header">Không thể xóa hợp đồng</div>
-
-        <div class="modal-body">
-          <p class="delete-error-message">
-            {{ hopDongHoaDonErrorMessage }}
-          </p>
-        </div>
-
-        <div class="modal-footer">
-          <button
-            type="button"
-            class="secondary"
-            @click="closeHopDongHoaDonErrorModal"
-          >
-            Đóng
-          </button>
-        </div>
-      </div>
-    </div>
-    <!-- =====================================================
-         MODAL XÓA GIƯỜNG
-         ===================================================== -->
-    <div
-      v-if="showDeleteGiuongModal"
-      class="modal-overlay"
-      @click.self="closeDeleteGiuongModal"
-    >
-      <div class="delete-modal">
-        <div class="delete-modal-header">
-          <div class="warning-icon">⚠</div>
-
-          <div>
-            <h3>Xác nhận xóa giường</h3>
-
-            <p>
-              {{ deleteGiuongInfo.maGiuong }}
-
-              <span v-if="deleteGiuongInfo.maPhong">
-                - Phòng {{ deleteGiuongInfo.maPhong }}
-              </span>
-            </p>
+            <button
+              type="button"
+              class="btn danger"
+              @click="confirmDeleteHoaDon"
+            >
+              Xóa
+            </button>
           </div>
         </div>
-
-        <div class="delete-modal-body">
-          <!-- GIƯỜNG ĐÃ CÓ HỢP ĐỒNG -->
-          <template v-if="deleteGiuongInfo.soHopDong > 0">
-            <div class="warning-message">
-              <strong>Không thể xóa giường này!</strong>
-
-              <p>
-                Giường đang được sử dụng trong
-                <strong>
-                  {{ deleteGiuongInfo.soHopDong }}
-                </strong>
-                hợp đồng.
-              </p>
-
-              <p>
-                Vui lòng xóa hoặc xử lý hợp đồng liên quan trước khi xóa giường.
-              </p>
-            </div>
-
-            <div class="related-data">
-              <div class="related-item">
-                <span>Mã HD(Giường)</span>
-                <strong>
-                  {{ deleteGiuongInfo.maGiuong }}
-                </strong>
-              </div>
-
-              <div class="related-item" v-if="deleteGiuongInfo.maPhong">
-                <span>Phòng</span>
-                <strong>
-                  {{ deleteGiuongInfo.maPhong }}
-                </strong>
-              </div>
-
-              <div class="related-item">
-                <span>Số hợp đồng</span>
-                <strong>
-                  {{ deleteGiuongInfo.soHopDong }}
-                </strong>
-              </div>
-            </div>
-          </template>
-
-          <!-- GIƯỜNG CHƯA CÓ HỢP ĐỒNG -->
-          <template v-else>
-            <p class="confirm-message">
-              Bạn có chắc chắn muốn xóa giường
-              <strong>
-                {{ deleteGiuongInfo.maGiuong }}
-              </strong>
-
-              <span v-if="deleteGiuongInfo.maPhong">
-                của phòng
-                <strong>
-                  {{ deleteGiuongInfo.maPhong }}
-                </strong>
-              </span>
-
-              không?
-            </p>
-
-            <p class="delete-modal-note">Thao tác này không thể hoàn tác.</p>
-          </template>
-
-          <p v-if="deleteGiuongErrorMessage" class="error-message">
-            {{ deleteGiuongErrorMessage }}
-          </p>
-        </div>
-
-        <div class="delete-modal-actions">
-          <button
-            class="secondary"
-            type="button"
-            @click="closeDeleteGiuongModal"
-          >
-            Đóng
-          </button>
-
-          <button
-            v-if="deleteGiuongInfo.soHopDong === 0"
-            class="danger-button"
-            type="button"
-            @click="confirmDeleteGiuong"
-          >
-            Xác nhận xóa
-          </button>
-        </div>
       </div>
+      <Footer />
     </div>
-
-    <!-- =====================================================
-         MODAL XÓA NGƯỜI THUÊ
-         ===================================================== -->
-    <div
-      v-if="showDeleteNguoiThueModal"
-      class="modal-overlay"
-      @click.self="closeDeleteNguoiThueModal"
-    >
-      <div class="delete-modal">
-        <div class="delete-modal-header">
-          <div class="warning-icon">⚠</div>
-
-          <div>
-            <h3>Xác nhận xóa người thuê</h3>
-
-            <p>
-              {{ deleteNguoiThueInfo.hoTen }}
-
-              <span v-if="deleteNguoiThueInfo.cccd">
-                - CCCD: {{ deleteNguoiThueInfo.cccd }}
-              </span>
-            </p>
-          </div>
-        </div>
-
-        <div class="delete-modal-body">
-          <!-- Người thuê đang có hợp đồng -->
-          <template v-if="deleteNguoiThueInfo.hopDongIds.length > 0">
-            <p class="warning-message">
-              Bạn chú ý người thuê
-              <strong>{{ deleteNguoiThueInfo.hoTen }}</strong>
-              đang có trong hợp đồng
-              <strong>
-                {{ deleteNguoiThueInfo.hopDongIds.join(", ") }}
-              </strong>
-              nên không thể xóa được.
-            </p>
-
-            <p class="delete-modal-note">Cần thực hiện xóa hợp đồng trước.</p>
-          </template>
-
-          <!-- Người thuê không có hợp đồng -->
-          <template v-else>
-            <p class="confirm-message">
-              Bạn có chắc chắn muốn xóa người thuê
-              <strong>
-                {{ deleteNguoiThueInfo.hoTen }}
-              </strong>
-              không?
-            </p>
-
-            <p class="delete-modal-note">Thao tác này không thể hoàn tác.</p>
-          </template>
-
-          <p v-if="deleteNguoiThueErrorMessage" class="error-message">
-            {{ deleteNguoiThueErrorMessage }}
-          </p>
-        </div>
-
-        <div class="delete-modal-actions">
-          <button
-            class="secondary"
-            type="button"
-            @click="closeDeleteNguoiThueModal"
-          >
-            Đóng
-          </button>
-
-          <button
-            v-if="deleteNguoiThueInfo.hopDongIds.length === 0"
-            class="danger-button"
-            type="button"
-            @click="confirmDeleteNguoiThue"
-          >
-            Xác nhận xóa
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- =====================================================
-         MODAL XÓA HÓA ĐƠN
-         ===================================================== -->
-    <div
-      v-if="showDeleteHoaDonModal"
-      class="modal-backdrop"
-      @click.self="closeDeleteHoaDonModal"
-    >
-      <div class="modal">
-        <h3>Xóa hóa đơn</h3>
-
-        <p>
-          Bạn có chắc chắn muốn xóa hóa đơn
-          <strong>
-            {{ deleteHoaDonInfo.maHoaDon }}
-          </strong>
-          không?
-        </p>
-
-        <p v-if="deleteHoaDonErrorMessage" class="error-message">
-          {{ deleteHoaDonErrorMessage }}
-        </p>
-
-        <div class="modal-actions">
-          <button type="button" @click="closeDeleteHoaDonModal">Hủy</button>
-
-          <button type="button" class="btn danger" @click="confirmDeleteHoaDon">
-            Xóa
-          </button>
-        </div>
-      </div>
-    </div>
-    <Footer />
   </div>
-</div>
 </template>
 
 <style scoped>
@@ -6545,7 +6745,7 @@ tbody tr:hover {
    ========================================================= */
 
 @media (max-width: 900px) {
-    .form-grid {
+  .form-grid {
     grid-template-columns: 1fr;
     gap: 14px;
   }
@@ -6605,10 +6805,10 @@ tbody tr:hover {
   }
 
   .content {
-  width: 100%;
-  padding: 10px;
-  box-sizing: border-box;
-}
+    width: 100%;
+    padding: 10px;
+    box-sizing: border-box;
+  }
 
   .topbar {
     padding-left: 58px;
@@ -6846,7 +7046,6 @@ tbody tr:hover {
    ========================================================= */
 
 @media (max-width: 600px) {
-
   /* =========================
      BODY
      ========================= */
@@ -6857,7 +7056,6 @@ tbody tr:hover {
     padding: 8px;
     box-sizing: border-box;
   }
-
 
   /* =========================
      PANEL / FORM CONTAINER
@@ -6872,7 +7070,6 @@ tbody tr:hover {
 
     box-sizing: border-box;
   }
-
 
   /* =========================
      FORM GRID
@@ -6897,7 +7094,6 @@ tbody tr:hover {
     min-width: 0;
   }
 
-
   /* =========================
      INPUT / SELECT / TEXTAREA
      ========================= */
@@ -6915,7 +7111,6 @@ tbody tr:hover {
 
     box-sizing: border-box;
   }
-
 
   /* =========================
      BUTTON FORM
@@ -6938,7 +7133,6 @@ tbody tr:hover {
   .actions button {
     width: 100%;
   }
-
 
   /* =========================
      MODAL BACKDROP
@@ -6965,7 +7159,6 @@ tbody tr:hover {
     box-sizing: border-box;
   }
 
-
   /* =========================
      MODAL
      ========================= */
@@ -6973,7 +7166,6 @@ tbody tr:hover {
   .modal-backdrop .modal,
   .modal-overlay > .modal,
   .delete-modal {
-
     width: 100vw;
     max-width: 100vw;
 
@@ -6995,7 +7187,6 @@ tbody tr:hover {
     flex-direction: column;
   }
 
-
   /* =========================
      MODAL HEADER
      ========================= */
@@ -7007,7 +7198,6 @@ tbody tr:hover {
 
     box-sizing: border-box;
   }
-
 
   /* =========================
      MODAL BODY
@@ -7026,7 +7216,6 @@ tbody tr:hover {
     box-sizing: border-box;
   }
 
-
   /* =========================
      MODAL FOOTER
      ========================= */
@@ -7034,14 +7223,12 @@ tbody tr:hover {
   .modal-footer,
   .modal-actions,
   .delete-modal-actions {
-
     flex-shrink: 0;
 
     width: 100%;
 
     box-sizing: border-box;
   }
-
 
   /* =========================
      CCCD
@@ -7064,7 +7251,6 @@ tbody tr:hover {
 
     box-sizing: border-box;
   }
-
 
   /* =========================
      TABLE

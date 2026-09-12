@@ -19,27 +19,35 @@ import { PhongModule } from './modules/phong/phong.module';
 import { TaiKhoanModule } from './modules/tai-khoan/tai-khoan.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
+import { Tenant } from './entities/tenant.entity';
+import { GoiDichVu } from './entities/goi-dich-vu.entity';
+import { Subscription } from './entities/subscription.entity';
+import { SubscriptionModule } from './modules/subscription/subscription.module';
+import { GoiDichVuModule } from './modules/goi-dich-vu/goi-dich-vu.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot(),
     TypeOrmModule.forRoot({
-  type: 'postgres',
-  url: process.env.DATABASE_URL,
+      type: 'postgres',
+      url: process.env.DATABASE_URL,
 
-  entities: [
-    TaiKhoan,
-    NhaTro,
-    Phong,
-    Giuong,
-    NguoiThue,
-    HopDong,
-    HoaDon,
-  ],
+      entities: [
+        TaiKhoan,
+        NhaTro,
+        Phong,
+        Giuong,
+        NguoiThue,
+        HopDong,
+        HoaDon,
+        Tenant,
+        GoiDichVu,
+        Subscription,
+      ],
 
-  synchronize: true,
-  logging: false,
-}),
+      synchronize: true,
+      logging: false,
+    }),
     AuthModule,
     TaiKhoanModule,
     NhaTroModule,
@@ -49,6 +57,8 @@ import { ConfigModule } from '@nestjs/config';
     HopDongModule,
     HoaDonModule,
     DashboardModule,
+    GoiDichVuModule,
+    SubscriptionModule,
   ],
   controllers: [AppController],
   providers: [AppService],

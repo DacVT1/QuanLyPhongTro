@@ -3,10 +3,14 @@ import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { join } from 'path';
 import express from 'express';
+import { seedDatabase } from './seed';
+import { DataSource } from 'typeorm';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  const dataSource = app.get(DataSource);
 
+  await seedDatabase(dataSource);
   app.setGlobalPrefix('api');
 
   app.useGlobalPipes(
@@ -18,8 +22,7 @@ async function bootstrap() {
   );
 
   const corsOrigins = (
-    process.env.CORS_ORIGINS ||
-    'http://localhost:5173,http://127.0.0.1:5173'
+    process.env.CORS_ORIGINS || 'http://localhost:5173,http://127.0.0.1:5173'
   )
     .split(',')
     .map((origin) => origin.trim().replace(/\/$/, ''))
@@ -69,9 +72,7 @@ async function bootstrap() {
     ],
   });
 
-  const storageDir =
-    process.env.STORAGE_DIR ||
-    join(process.cwd(), 'uploads');
+  const storageDir = process.env.STORAGE_DIR || join(process.cwd(), 'uploads');
 
   app.use('/uploads', express.static(storageDir));
 
@@ -79,10 +80,6 @@ async function bootstrap() {
   const port = process.env.PORT ?? 3000;
 
   await app.listen(port, '0.0.0.0');
-
-  console.log(`Backend running on port ${port}`);
-  console.log(`CORS origins: ${corsOrigins.join(', ')}`);
-  console.log(`Storage directory: ${storageDir}`);
 }
 
 bootstrap();

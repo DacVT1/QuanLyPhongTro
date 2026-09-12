@@ -5,29 +5,27 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { TaiKhoan } from '../../entities/tai-khoan.entity';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { Tenant } from '../../entities/tenant.entity';
+import { GoiDichVu } from 'src/entities/goi-dich-vu.entity';
+import { Subscription } from 'src/entities/subscription.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([TaiKhoan]),
+    TypeOrmModule.forFeature([TaiKhoan, Tenant, GoiDichVu, Subscription]),
 
     JwtModule.register({
-  secret: process.env.JWT_SECRET || 'quan-ly-phong-tro-secret-key',
-  signOptions: {
-    expiresIn: '1d',
-  },
-}),
+      secret: process.env.JWT_SECRET || 'quan-ly-phong-tro-secret-key',
+      signOptions: {
+        expiresIn: '1d',
+      },
+    }),
   ],
 
-  controllers: [
-    AuthController,
-  ],
+  controllers: [AuthController],
 
-  providers: [
-    AuthService,
-  ],
+  providers: [JwtAuthGuard, AuthService],
 
-  exports: [
-    AuthService,
-  ],
+  exports: [AuthService, JwtModule, JwtAuthGuard, TypeOrmModule],
 })
 export class AuthModule {}
