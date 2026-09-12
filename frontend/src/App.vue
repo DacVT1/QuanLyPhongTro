@@ -80,8 +80,6 @@ onUnmounted(() => {
 });
 
 async function handleLogin(data: any) {
-  console.log("===== HANDLE LOGIN =====");
-
   accessToken.value = data.accessToken;
   currentUser.value = data.user;
 
@@ -92,10 +90,6 @@ async function handleLogin(data: any) {
   // Chuyển giao diện ngay sau khi xác thực thành công
   currentTab.value = "dashboard";
   authMode.value = "login";
-
-  console.log("Login state updated");
-  console.log("accessToken:", !!accessToken.value);
-  console.log("currentUser:", currentUser.value);
 
   // Tải dữ liệu sau, không được chặn việc chuyển giao diện
   try {
