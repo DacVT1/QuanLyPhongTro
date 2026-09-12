@@ -269,6 +269,13 @@ export class AuthService {
     if (!response.ok) {
       const errorText = await response.text();
 
+      console.error('========== RESEND EMAIL ERROR ==========');
+      console.error('Status:', response.status);
+      console.error('Response:', errorText);
+      console.error('Email:', email);
+      console.error('MAIL_FROM:', mailFrom);
+      console.error('========================================');
+
       throw new Error(`Resend API error: ${response.status} ${errorText}`);
     }
   }
