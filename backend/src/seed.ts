@@ -128,6 +128,7 @@ export async function seedDatabase(dataSource: DataSource) {
     loaiPhong: 'phong_tieu_chuan',
     dienTich: 25,
     nhaTro,
+    tenant,
   });
 
   const giuong = await giuongRepository.save({

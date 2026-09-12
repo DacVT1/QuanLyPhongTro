@@ -2,13 +2,14 @@
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
 
 import { Doughnut } from "vue-chartjs";
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, onMounted, ref, watch, onUnmounted } from "vue";
 import api from "./services/api";
 import { getImageUrl } from "./utils/image";
 import NguoiThueDetail from "./components/nguoi-thue/NguoiThueDetail.vue";
 import Login from "@/components/auth/Login.vue";
 import Register from "./components/auth/Register.vue";
 import Footer from "./components/Footer.vue";
+import RegisterVerification from "./components/auth/RegisterVerification.vue";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 const cccdMatTruocPreviewUrl = ref("");
@@ -28,26 +29,74 @@ const currentTab = ref("dashboard");
 const isMenuOpen = ref(false);
 const soDienThoaiError = ref("");
 
-const authMode = ref<"login" | "register">("login");
+const authMode = ref<"login" | "register" | "registerVerification">("login");
+
+const registerIdentifier = ref("");
 
 const accessToken = ref(localStorage.getItem("accessToken"));
 
 const currentUser = ref<any | null>(
   JSON.parse(localStorage.getItem("currentUser") || "null"),
 );
+const isAuthenticated = computed(() => {
+  return !!accessToken.value && !!currentUser.value;
+});
+function handleUnauthorized() {
+  console.warn("Phiên đăng nhập không còn hợp lệ.");
+
+  // Xóa trạng thái đăng nhập trong Vue
+  accessToken.value = null;
+  currentUser.value = null;
+
+  // Xóa dữ liệu đang hiển thị
+  nhaTros.value = [];
+  phongs.value = [];
+  giuongs.value = [];
+  nguoiThues.value = [];
+  hopDongs.value = [];
+  hoaDons.value = [];
+
+  summary.value = {
+    totalNhaTro: 0,
+    totalPhong: 0,
+    totalGiuong: 0,
+    totalHopDong: 0,
+    totalHoaDon: 0,
+  };
+
+  // Đưa giao diện về Login
+  currentTab.value = "dashboard";
+  authMode.value = "login";
+}
+onMounted(() => {
+  window.addEventListener("auth:unauthorized", handleUnauthorized);
+});
+onMounted(() => {
+  window.addEventListener("auth:unauthorized", handleUnauthorized);
+});
+
+onUnmounted(() => {
+  window.removeEventListener("auth:unauthorized", handleUnauthorized);
+});
 
 async function handleLogin(data: any) {
   accessToken.value = data.accessToken;
   currentUser.value = data.user;
 
   localStorage.setItem("accessToken", data.accessToken);
+
   localStorage.setItem("currentUser", JSON.stringify(data.user));
 
-  // Sau khi đăng nhập lại, phải tải lại dữ liệu của tenant hiện tại
-  await loadData();
-
-  // Đảm bảo giao diện bắt đầu từ Dashboard
+  // Chuyển giao diện ngay sau khi xác thực thành công
   currentTab.value = "dashboard";
+  authMode.value = "login";
+
+  // Tải dữ liệu sau, không được chặn việc chuyển giao diện
+  try {
+    await loadData();
+  } catch (error) {
+    console.error("Đăng nhập thành công nhưng không thể tải dữ liệu:", error);
+  }
 }
 
 function logout() {
@@ -79,7 +128,19 @@ function logout() {
   currentTab.value = "dashboard";
   authMode.value = "login";
 }
+function handleOtpRequired(identifier: string) {
+  registerIdentifier.value = identifier;
+  authMode.value = "registerVerification";
+}
 
+function handleRegisterVerified() {
+  registerIdentifier.value = "";
+  authMode.value = "login";
+}
+
+function handleBackToRegister() {
+  authMode.value = "register";
+}
 const tienDienDisplay = ref("0");
 const tienNuocDisplay = ref("0");
 const tienDichVuKhacDisplay = ref("0");
@@ -712,6 +773,22 @@ const nhaTroForm = ref({
   moTa: "",
 });
 
+const maNhaTroError = ref("");
+
+function handleMaNhaTroInput(event: Event) {
+  const input = event.target as HTMLInputElement;
+  const value = input.value;
+
+  // Chỉ cho phép chữ cái và số
+  if (!/^[a-zA-Z0-9]*$/.test(value)) {
+    maNhaTroError.value = "Mã nhà trọ chỉ được nhập chữ và số.";
+    return;
+  }
+
+  maNhaTroError.value = "";
+  nhaTroForm.value.maNhaTro = value;
+}
+
 const phongForm = ref({
   maPhong: "",
   tangSo: "",
@@ -1224,6 +1301,7 @@ function resetPhongForm() {
   phongForm.value = {
     maPhong: "",
     tangSo: "",
+    phongSo: "",
     soGiuongToiDa: 8,
     loaiPhong: "phong_tieu_chuan",
     dienTich: 25,
@@ -1375,8 +1453,20 @@ function resetHoaDonForm() {
 }
 
 async function saveNhaTro() {
+  maNhaTroError.value = "";
+
+  const maNhaTro = nhaTroForm.value.maNhaTro.trim();
+
+  if (maNhaTro && !/^[a-zA-Z0-9]+$/.test(maNhaTro)) {
+    maNhaTroError.value = "Mã nhà trọ chỉ được nhập chữ và số.";
+    return;
+  }
+
   try {
-    const payload = { ...nhaTroForm.value };
+    const payload = {
+      ...nhaTroForm.value,
+      maNhaTro,
+    };
 
     if (editingNhaTroId.value) {
       await api.patch(`/nha-tro/${editingNhaTroId.value}`, payload);
@@ -2086,6 +2176,7 @@ function editPhong(item: any) {
   phongForm.value = {
     maPhong: item.maPhong ?? "",
     tangSo: item.tangSo ?? "",
+    phongSo: item.phongSo ?? "",
     soGiuongToiDa: item.soGiuongToiDa ?? 8,
     loaiPhong: item.loaiPhong ?? "phong_tieu_chuan",
     dienTich: item.dienTich ?? 25,
@@ -2383,23 +2474,41 @@ function syncHoaDonCode() {
 }
 
 onMounted(() => {
-  loadData();
+  // Lắng nghe sự kiện phiên đăng nhập không còn hợp lệ
+  window.addEventListener("auth:unauthorized", handleUnauthorized);
+
+  // Chỉ tải dữ liệu khi người dùng đang đăng nhập
+  if (isAuthenticated.value) {
+    loadData();
+  }
 });
 </script>
 
 <template>
   <Login
-    v-if="!accessToken && authMode === 'login'"
+    v-if="!isAuthenticated && authMode === 'login'"
     @login-success="handleLogin"
     @register="authMode = 'register'"
   />
 
   <Register
-    v-else-if="!accessToken && authMode === 'register'"
+    v-else-if="!isAuthenticated && authMode === 'register'"
     @login="authMode = 'login'"
+    @otp-required="handleOtpRequired"
   />
 
-  <div v-else class="app-shell" :class="{ 'menu-open': isMenuOpen }">
+  <RegisterVerification
+    v-else-if="!isAuthenticated && authMode === 'registerVerification'"
+    :identifier="registerIdentifier"
+    @verified="handleRegisterVerified"
+    @back="handleBackToRegister"
+  />
+
+  <div
+    v-else-if="isAuthenticated"
+    class="app-shell"
+    :class="{ 'menu-open': isMenuOpen }"
+  >
     <!-- =====================================================
          NÚT MỞ MENU
          ===================================================== -->
@@ -2713,6 +2822,9 @@ onMounted(() => {
                   placeholder="Ví dụ: CG"
                   required
                 />
+                <div v-if="maNhaTroError" class="text-red-500 text-sm mt-1">
+                  {{ maNhaTroError }}
+                </div>
               </label>
 
               <label>
