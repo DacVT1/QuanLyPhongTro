@@ -32,8 +32,8 @@ async function register() {
     return;
   }
 
-  if (!isPhoneOrEmail(identifier)) {
-    errorMessage.value = "Vui lòng nhập số điện thoại hoặc email hợp lệ";
+  if (!isValidEmail(identifier)) {
+    errorMessage.value = "Vui lòng nhập email hợp lệ";
     return;
   }
 
@@ -45,11 +45,14 @@ async function register() {
   try {
     loading.value = true;
 
-    await api.post("/auth/register", {
+    const response = await api.post("/auth/register", {
       username: identifier,
       password: password.value,
       tenHienThi: tenHienThi.value.trim(),
     });
+
+    successMessage.value =
+      response.data?.message || "Mã xác thực đã được gửi về email";
 
     emit("otpRequired", identifier);
   } catch (error: any) {
@@ -58,14 +61,10 @@ async function register() {
     loading.value = false;
   }
 }
-function isPhoneOrEmail(value: string) {
-  const input = value.trim();
-
-  const phoneRegex = /^(0|\+84)[0-9]{9,10}$/;
-
+function isValidEmail(value: string) {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-  return phoneRegex.test(input) || emailRegex.test(input);
+  return emailRegex.test(value.trim());
 }
 </script>
 
