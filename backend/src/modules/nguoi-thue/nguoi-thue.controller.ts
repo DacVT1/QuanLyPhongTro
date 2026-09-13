@@ -11,9 +11,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 
-import {
-  FileFieldsInterceptor,
-} from '@nestjs/platform-express';
+import { FileFieldsInterceptor } from '@nestjs/platform-express';
 
 import { diskStorage } from 'multer';
 import { extname, join } from 'path';
@@ -23,16 +21,15 @@ import { NguoiThueService } from './nguoi-thue.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import type { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+const storageDir = process.env.STORAGE_DIR || join(process.cwd(), 'uploads');
 
 @Controller('nguoi-thue')
 @UseGuards(JwtAuthGuard)
 export class NguoiThueController {
-  constructor(
-    private readonly nguoiThueService: NguoiThueService,
-  ) {}
+  constructor(private readonly nguoiThueService: NguoiThueService) {}
 
   @Get()
-  findAll(@CurrentUser() user: JwtPayload,) {
+  findAll(@CurrentUser() user: JwtPayload) {
     return this.nguoiThueService.findAll(user.tenantId);
   }
 
@@ -56,34 +53,18 @@ export class NguoiThueController {
       ],
       {
         storage: diskStorage({
-          destination: join(
-            process.cwd(),
-            'uploads',
-            'nguoi-thue',
-          ),
+          destination: join(storageDir, 'nguoi-thue'),
 
           filename: (_req, file, cb) => {
-            const extension = extname(
-              file.originalname,
-            );
+            const extension = extname(file.originalname);
 
-            cb(
-              null,
-              `${randomUUID()}${extension}`,
-            );
+            cb(null, `${randomUUID()}${extension}`);
           },
         }),
 
         fileFilter: (_req, file, cb) => {
-          if (
-            !file.mimetype.startsWith('image/')
-          ) {
-            return cb(
-              new Error(
-                'Chi cho phep upload file anh',
-              ),
-              false,
-            );
+          if (!file.mimetype.startsWith('image/')) {
+            return cb(new Error('Chi cho phep upload file anh'), false);
           }
 
           cb(null, true);
@@ -105,17 +86,14 @@ export class NguoiThueController {
     @CurrentUser() user: JwtPayload,
   ) {
     if (files?.cccdMatTruoc?.[0]) {
-      payload.cccdMatTruoc =
-        `/uploads/nguoi-thue/${files.cccdMatTruoc[0].filename}`;
+      payload.cccdMatTruoc = `/uploads/nguoi-thue/${files.cccdMatTruoc[0].filename}`;
     }
 
     if (files?.cccdMatSau?.[0]) {
-      payload.cccdMatSau =
-        `/uploads/nguoi-thue/${files.cccdMatSau[0].filename}`;
+      payload.cccdMatSau = `/uploads/nguoi-thue/${files.cccdMatSau[0].filename}`;
     }
 
-    return this.nguoiThueService.create(payload,
-    user.tenantId);
+    return this.nguoiThueService.create(payload, user.tenantId);
   }
 
   @Patch(':id')
@@ -133,34 +111,18 @@ export class NguoiThueController {
       ],
       {
         storage: diskStorage({
-          destination: join(
-            process.cwd(),
-            'uploads',
-            'nguoi-thue',
-          ),
+          destination: join(storageDir, 'nguoi-thue'),
 
           filename: (_req, file, cb) => {
-            const extension = extname(
-              file.originalname,
-            );
+            const extension = extname(file.originalname);
 
-            cb(
-              null,
-              `${randomUUID()}${extension}`,
-            );
+            cb(null, `${randomUUID()}${extension}`);
           },
         }),
 
         fileFilter: (_req, file, cb) => {
-          if (
-            !file.mimetype.startsWith('image/')
-          ) {
-            return cb(
-              new Error(
-                'Chi cho phep upload file anh',
-              ),
-              false,
-            );
+          if (!file.mimetype.startsWith('image/')) {
+            return cb(new Error('Chi cho phep upload file anh'), false);
           }
 
           cb(null, true);
@@ -183,20 +145,14 @@ export class NguoiThueController {
     @CurrentUser() user: JwtPayload,
   ) {
     if (files?.cccdMatTruoc?.[0]) {
-      payload.cccdMatTruoc =
-        `/uploads/nguoi-thue/${files.cccdMatTruoc[0].filename}`;
+      payload.cccdMatTruoc = `/uploads/nguoi-thue/${files.cccdMatTruoc[0].filename}`;
     }
 
     if (files?.cccdMatSau?.[0]) {
-      payload.cccdMatSau =
-        `/uploads/nguoi-thue/${files.cccdMatSau[0].filename}`;
+      payload.cccdMatSau = `/uploads/nguoi-thue/${files.cccdMatSau[0].filename}`;
     }
 
-    return this.nguoiThueService.update(
-      id,
-      payload,
-      user.tenantId,
-    );
+    return this.nguoiThueService.update(id, payload, user.tenantId);
   }
 
   @Delete(':id')
