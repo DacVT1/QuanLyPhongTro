@@ -141,6 +141,7 @@ function handleRegisterVerified() {
 function handleBackToRegister() {
   authMode.value = "register";
 }
+
 const tienDienDisplay = ref("0");
 const tienNuocDisplay = ref("0");
 const tienDichVuKhacDisplay = ref("0");
@@ -152,6 +153,7 @@ const showNguoiThueDetail = ref(false);
 const selectedNguoiThue = ref<any | null>(null);
 const tienPhongDisplay = ref("");
 const tongTienDisplay = ref("");
+const ngaySinhError = ref("");
 function openNguoiThueDetail(item: any) {
   selectedNguoiThue.value = item;
   showNguoiThueDetail.value = true;
@@ -642,7 +644,11 @@ const nhaTros = ref<any[]>([]);
 const phongs = ref<any[]>([]);
 const giuongs = ref<any[]>([]);
 const nguoiThues = ref<any[]>([]);
+
 const nguoiThueSearch = ref("");
+const hopDongSearch = ref("");
+const hoaDonSearch = ref("");
+
 const hopDongs = ref<any[]>([]);
 const hoaDons = ref<any[]>([]);
 
@@ -676,6 +682,42 @@ const filteredNguoiThues = computed(() => {
 
     // Tìm chuỗi ở BẤT KỲ vị trí nào
     return hoTen.includes(keyword) || cccd.includes(keyword);
+  });
+});
+
+const filteredHopDongs = computed(() => {
+  const keyword = normalizeSearchText(hopDongSearch.value);
+
+  // Không nhập gì -> hiển thị toàn bộ hợp đồng
+  if (!keyword) {
+    return hopDongs.value;
+  }
+
+  return hopDongs.value.filter((item: any) => {
+    const hoTen = normalizeSearchText(item.nguoiThue?.hoTen ?? "");
+
+    const maHopDong = normalizeSearchText(item.maHopDong ?? "");
+
+    // Tìm theo Họ tên hoặc Mã hợp đồng
+    return hoTen.includes(keyword) || maHopDong.includes(keyword);
+  });
+});
+
+const filteredHoaDons = computed(() => {
+  const keyword = normalizeSearchText(hoaDonSearch.value);
+
+  // Không nhập gì -> hiển thị toàn bộ hóa đơn
+  if (!keyword) {
+    return hoaDons.value;
+  }
+
+  return hoaDons.value.filter((item: any) => {
+    const hoTen = normalizeSearchText(item.hopDong?.nguoiThue?.hoTen ?? "");
+
+    const maHopDong = normalizeSearchText(item.hopDong?.maHopDong ?? "");
+
+    // Tìm theo Họ tên hoặc Mã hợp đồng
+    return hoTen.includes(keyword) || maHopDong.includes(keyword);
   });
 });
 
@@ -884,18 +926,35 @@ const giuongSoOptions = computed(() => {
 
   const soGiuongToiDa = Number(phong?.soGiuongToiDa ?? 8);
 
-  // Các giường đã được thêm của phòng đang chọn
+  // Các giường đã được thêm trong phòng đang chọn,
+  // ngoại trừ giường hiện tại nếu đang sửa.
   const giuongDaThem = giuongs.value
     .filter(
       (item: any) =>
-        String(item.phong?.id) === String(giuongForm.value.phongId),
+        String(item.phong?.id) === String(giuongForm.value.phongId) &&
+        String(item.id) !== String(editingGiuongId.value),
     )
     .map((item: any) => Number(item.giuongSo));
 
-  // Chỉ trả về các số giường chưa được thêm
-  return Array.from({ length: soGiuongToiDa }, (_, index) => index + 1).filter(
-    (soGiuong) => !giuongDaThem.includes(soGiuong),
-  );
+  // Chỉ hiển thị những số giường chưa được sử dụng.
+  const availableGiuongSo = Array.from(
+    { length: soGiuongToiDa },
+    (_, index) => index + 1,
+  ).filter((soGiuong) => !giuongDaThem.includes(soGiuong));
+
+  // Khi sửa giường, luôn giữ lại Giường số hiện tại
+  // để select có thể hiển thị đúng giá trị đang sửa.
+  const currentGiuongSo = Number(giuongForm.value.giuongSo);
+
+  if (
+    editingGiuongId.value &&
+    currentGiuongSo > 0 &&
+    !availableGiuongSo.includes(currentGiuongSo)
+  ) {
+    availableGiuongSo.push(currentGiuongSo);
+  }
+
+  return availableGiuongSo.sort((a, b) => a - b);
 });
 
 const giuongForm = ref({
@@ -906,6 +965,31 @@ const giuongForm = ref({
   // trangThai: "trong",
   datCocSom: false,
 });
+
+const giuongPhongOptions = computed(() => {
+  const nhaTroId = giuongForm.value.nhaTroId;
+
+  if (!nhaTroId) {
+    return [];
+  }
+
+  return phongs.value.filter(
+    (item: any) => String(item.nhaTro?.id) === String(nhaTroId),
+  );
+});
+
+function handleNhaTroChangeForGiuong() {
+  // Đã đổi nhà trọ -> phòng cũ không còn hợp lệ
+  giuongForm.value.phongId = "";
+
+  // Giường cũng phải reset theo phòng
+  giuongForm.value.giuongSo = "";
+}
+
+function handlePhongChangeForGiuong() {
+  // Đổi phòng -> reset giường
+  giuongForm.value.giuongSo = "";
+}
 
 const nguoiThueForm = ref({
   hoTen: "",
@@ -1812,6 +1896,12 @@ async function saveNguoiThue() {
   if (!validateSoDienThoai()) {
     return;
   }
+  if (!String(nguoiThueForm.value.ngaySinh || "").trim()) {
+    ngaySinhError.value = "Vui lòng nhập Ngày sinh.";
+    return;
+  }
+
+  ngaySinhError.value = "";
   const formData = new FormData();
 
   formData.append("hoTen", nguoiThueForm.value.hoTen);
@@ -3127,7 +3217,11 @@ onMounted(() => {
               <label>
                 {{ requiredLabel("Nhà trọ") }}
 
-                <select v-model="giuongForm.nhaTroId" required>
+                <select
+                  v-model="giuongForm.nhaTroId"
+                  required
+                  @change="handleNhaTroChangeForGiuong"
+                >
                   <option value="">Chọn nhà trọ</option>
 
                   <option
@@ -3148,11 +3242,12 @@ onMounted(() => {
                   v-model="giuongForm.phongId"
                   required
                   :disabled="!giuongForm.nhaTroId"
+                  @change="handlePhongChangeForGiuong"
                 >
                   <option value="">Chọn phòng</option>
 
                   <option
-                    v-for="item in phongs"
+                    v-for="item in giuongPhongOptions"
                     :key="item.id"
                     :value="item.id"
                   >
@@ -3361,7 +3456,7 @@ onMounted(() => {
               </label>
 
               <label>
-                Email
+                {{ requiredLabel("Email") }}
 
                 <input v-model="nguoiThueForm.email" type="email" />
               </label>
@@ -3373,9 +3468,12 @@ onMounted(() => {
               </label>
 
               <label>
-                Ngày sinh
+                {{ requiredLabel("Ngày sinh") }}
 
-                <input v-model="nguoiThueForm.ngaySinh" type="date" />
+                <input v-model="nguoiThueForm.ngaySinh" type="date" required />
+                <div v-if="ngaySinhError" class="field-error">
+                  {{ ngaySinhError }}
+                </div>
               </label>
 
               <label>
@@ -3775,7 +3873,23 @@ onMounted(() => {
           <div v-else class="panel">
             <div class="panel-header">
               <h3>Danh sách hợp đồng</h3>
+              <div class="nguoi-thue-search">
+                <input
+                  v-model="hopDongSearch"
+                  type="text"
+                  placeholder="Tìm Tên hoặc Mã hợp đồng..."
+                  autocomplete="off"
+                />
 
+                <button
+                  v-if="hopDongSearch"
+                  type="button"
+                  class="nguoi-thue-search-clear"
+                  @click="hopDongSearch = ''"
+                >
+                  ×
+                </button>
+              </div>
               <button type="button" class="primary" @click="openAddHopDongForm">
                 Thêm hợp đồng
               </button>
@@ -3795,7 +3909,7 @@ onMounted(() => {
               </thead>
 
               <tbody>
-                <tr v-for="item in hopDongs" :key="item.id">
+                <tr v-for="item in filteredHopDongs" :key="item.id">
                   <td>
                     {{ item.maHopDong }}
                   </td>
@@ -3868,9 +3982,13 @@ onMounted(() => {
                   </td>
                 </tr>
 
-                <tr v-if="hopDongs.length === 0">
+                <tr v-if="filteredHopDongs.length === 0">
                   <td colspan="7" style="text-align: center">
-                    Chưa có hợp đồng
+                    {{
+                      hopDongSearch
+                        ? "Không tìm thấy hợp đồng phù hợp."
+                        : "Chưa có hợp đồng"
+                    }}
                   </td>
                 </tr>
               </tbody>
@@ -4057,7 +4175,23 @@ onMounted(() => {
           <div v-else class="panel">
             <div class="panel-header">
               <h3>Danh sách hóa đơn</h3>
+              <div class="nguoi-thue-search">
+                <input
+                  v-model="hoaDonSearch"
+                  type="text"
+                  placeholder="Tìm Tên hoặc Mã hợp đồng..."
+                  autocomplete="off"
+                />
 
+                <button
+                  v-if="hoaDonSearch"
+                  type="button"
+                  class="nguoi-thue-search-clear"
+                  @click="hoaDonSearch = ''"
+                >
+                  ×
+                </button>
+              </div>
               <button type="button" class="primary" @click="openAddHoaDonForm">
                 Thêm hóa đơn
               </button>
@@ -4076,7 +4210,7 @@ onMounted(() => {
               </thead>
 
               <tbody>
-                <tr v-for="item in hoaDons" :key="item.id">
+                <tr v-for="item in filteredHoaDons" :key="item.id">
                   <td>
                     {{ item.maHoaDon }}
                   </td>
