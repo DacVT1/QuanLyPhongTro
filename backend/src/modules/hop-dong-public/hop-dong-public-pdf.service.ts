@@ -144,13 +144,13 @@ export class HopDongPublicPdfService {
       };
 
       const addSectionTitle = (title: string) => {
-        doc.font(fontPath).fontSize(12).font('Helvetica-Bold').text(title, {
+        doc.font(fontPath).fontSize(12).text(title, {
           align: 'left',
         });
 
         doc.moveDown(0.5);
 
-        doc.font(fontPath).font('Helvetica');
+        doc.font(fontPath).fontSize(11);
       };
 
       const addParagraph = (
@@ -162,7 +162,6 @@ export class HopDongPublicPdfService {
       ) => {
         doc
           .font(fontPath)
-          .font('Helvetica')
           .fontSize(11)
           .text(text, {
             width: 495,
@@ -180,7 +179,6 @@ export class HopDongPublicPdfService {
       ) => {
         doc
           .font(fontPath)
-          .font('Helvetica')
           .fontSize(11)
           .text(`${label}: ${value ?? ''}`, {
             width: 495,
@@ -196,7 +194,6 @@ export class HopDongPublicPdfService {
 
       doc
         .font(fontPath)
-        .font('Helvetica-Bold')
         .fontSize(13)
         .text('CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM', {
           align: 'center',
@@ -204,13 +201,9 @@ export class HopDongPublicPdfService {
 
       doc.moveDown(0.2);
 
-      doc
-        .font(fontPath)
-        .font('Helvetica-Bold')
-        .fontSize(12)
-        .text('Độc lập - Tự do - Hạnh phúc', {
-          align: 'center',
-        });
+      doc.font(fontPath).fontSize(12).text('Độc lập - Tự do - Hạnh phúc', {
+        align: 'center',
+      });
 
       doc.moveDown(0.2);
 
@@ -223,13 +216,9 @@ export class HopDongPublicPdfService {
 
       doc.moveDown(1);
 
-      doc
-        .font(fontPath)
-        .font('Helvetica-Bold')
-        .fontSize(17)
-        .text('HỢP ĐỒNG THUÊ TRỌ', {
-          align: 'center',
-        });
+      doc.font(fontPath).fontSize(17).text('HỢP ĐỒNG THUÊ TRỌ', {
+        align: 'center',
+      });
 
       doc.moveDown(0.8);
 
