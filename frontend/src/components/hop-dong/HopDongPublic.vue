@@ -61,7 +61,18 @@ const submitting = ref(false);
 const errorMessage = ref("");
 const successMessage = ref("");
 
-const nhaTros = ref<NhaTro[]>([]);
+const nhaTros = ref<NhaTro[]>([
+  {
+    id: "cau-giay",
+    tenNhaTro: "Cầu Giấy",
+    soTang: 10,
+  },
+  {
+    id: "xuan-thuy",
+    tenNhaTro: "Xuân Thủy",
+    soTang: 10,
+  },
+]);
 const phongs = ref<Phong[]>([]);
 const giuongs = ref<Giuong[]>([]);
 
@@ -448,108 +459,21 @@ async function loadData() {
   errorMessage.value = "";
 
   try {
-    /*
-     * Lưu ý:
-     *
-     * Đây là endpoint public dự kiến.
-     * Sau khi tạo backend public API,
-     * thay phần này bằng:
-     *
-     * GET /public/hop-dong/:token
-     *
-     * để lấy đúng dữ liệu của hợp đồng.
-     */
+    const response = await api.get("/public/hop-dong/data");
 
-    const token = new URLSearchParams(window.location.search).get("token");
+    const data = response.data;
 
-    if (token) {
-      const response = await api.get(
-        `/public/hop-dong/${encodeURIComponent(token)}`,
-      );
+    nhaTros.value = data?.nhaTros ?? [];
 
-      const data = response.data;
+    phongs.value = data?.phongs ?? [];
 
-      if (data?.benA) {
-        benA.value = {
-          hoTen: data.benA.hoTen ?? "",
-          cccd: data.benA.cccd ?? "",
-          ngayCap: data.benA.ngayCap ?? "",
-          noiCap: data.benA.noiCap ?? "",
-          sdt: data.benA.sdt ?? "",
-          nganHang: data.benA.nganHang ?? "",
-          soTaiKhoan: data.benA.soTaiKhoan ?? "",
-          chuTaiKhoan: data.benA.chuTaiKhoan ?? "",
-          diaChi: data.benA.diaChi ?? "",
-        };
-      }
-
-      if (data?.nhaTros) {
-        nhaTros.value = data.nhaTros;
-      }
-
-      if (data?.phongs) {
-        phongs.value = data.phongs;
-      }
-
-      if (data?.giuongs) {
-        giuongs.value = data.giuongs;
-      }
-
-      /*
-       * Nếu token đã xác định sẵn nhà trọ/phòng/giường
-       * thì tự động chọn.
-       */
-      if (data?.nhaTro?.id) {
-        form.value.nhaTroId = String(data.nhaTro.id);
-      }
-
-      if (data?.phong?.id) {
-        form.value.tangSo = String(data.phong.tangSo ?? "");
-
-        form.value.phongId = String(data.phong.id);
-      }
-
-      if (data?.giuong?.id) {
-        form.value.giuongId = String(data.giuong.id);
-      }
-
-      if (data?.giuong?.giaGiuong) {
-        /*
-         * Giá thuê được lấy từ giường,
-         * không cho Bên B tự sửa.
-         */
-      }
-
-      return;
-    }
-
-    /*
-     * Chế độ local development:
-     *
-     * Nếu chưa có token thì tạm load dữ liệu
-     * để kiểm tra giao diện.
-     *
-     * Khi triển khai production nên bỏ nhánh này
-     * và bắt buộc token.
-     */
-
-    const [nhaTroResponse, phongResponse, giuongResponse] = await Promise.all([
-      api.get("/nha-tro"),
-      api.get("/phong"),
-      api.get("/giuong"),
-    ]);
-
-    nhaTros.value = nhaTroResponse.data ?? [];
-
-    phongs.value = phongResponse.data ?? [];
-
-    giuongs.value = giuongResponse.data ?? [];
+    giuongs.value = data?.giuongs ?? [];
   } catch (error: any) {
     console.error("Không thể tải dữ liệu hợp đồng:", error);
 
     errorMessage.value =
       error?.response?.data?.message ??
-      "Không thể tải thông tin hợp đồng. Vui lòng kiểm tra lại đường dẫn.";
+      "Không thể tải thông tin hợp đồng. Vui lòng thử lại.";
   } finally {
     loading.value = false;
   }
