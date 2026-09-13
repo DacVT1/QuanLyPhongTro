@@ -147,7 +147,7 @@ export class NguoiThueService {
     // Xóa người thuê trong database trước
     await this.repository.remove(item);
 
-    // Xóa ảnh CCCD tương ứng
+    // Xóa các file ảnh CCCD vật lý tương ứng.
     const storageDir =
       process.env.STORAGE_DIR || join(process.cwd(), 'uploads');
 
@@ -158,21 +158,37 @@ export class NguoiThueService {
         return;
       }
 
-      try {
-        const fileName = basename(imagePath);
+      const fileName = basename(imagePath);
 
-        const filePath = join(nguoiThueUploadDir, fileName);
+      // Hỗ trợ cả vị trí lưu hiện tại và các vị trí cũ.
+      const candidatePaths = [
+        join(nguoiThueUploadDir, fileName),
+        join(process.cwd(), 'uploads', 'nguoi-thue', fileName),
+        join(process.cwd(), 'backend', 'uploads', 'nguoi-thue', fileName),
+      ];
 
-        await unlink(filePath);
+      const uniquePaths = [...new Set(candidatePaths)];
 
-        console.log(`Đã xóa ảnh CCCD: ${filePath}`);
-      } catch (error: any) {
-        // File không tồn tại thì không cần báo lỗi
-        if (error?.code === 'ENOENT') {
-          return;
+      let deleted = false;
+
+      for (const filePath of uniquePaths) {
+        try {
+          await unlink(filePath);
+
+          console.log(`Đã xóa ảnh CCCD: ${filePath}`);
+          deleted = true;
+        } catch (error: any) {
+          // File không tồn tại thì thử vị trí tiếp theo.
+          if (error?.code !== 'ENOENT') {
+            console.error(`Không thể xóa ảnh CCCD: ${filePath}`, error);
+          }
         }
+      }
 
-        console.error(`Không thể xóa ảnh CCCD: ${imagePath}`, error);
+      if (!deleted) {
+        console.warn(
+          `Không tìm thấy file ảnh CCCD để xóa. DB path: ${imagePath}`,
+        );
       }
     };
 
