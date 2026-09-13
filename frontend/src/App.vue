@@ -141,6 +141,7 @@ function handleRegisterVerified() {
 function handleBackToRegister() {
   authMode.value = "register";
 }
+
 const tienDienDisplay = ref("0");
 const tienNuocDisplay = ref("0");
 const tienDichVuKhacDisplay = ref("0");
@@ -907,6 +908,31 @@ const giuongForm = ref({
   // trangThai: "trong",
   datCocSom: false,
 });
+
+const giuongPhongOptions = computed(() => {
+  const nhaTroId = giuongForm.value.nhaTroId;
+
+  if (!nhaTroId) {
+    return [];
+  }
+
+  return phongs.value.filter(
+    (item: any) => String(item.nhaTro?.id) === String(nhaTroId),
+  );
+});
+
+function handleNhaTroChangeForGiuong() {
+  // Đã đổi nhà trọ -> phòng cũ không còn hợp lệ
+  giuongForm.value.phongId = "";
+
+  // Giường cũng phải reset theo phòng
+  giuongForm.value.giuongSo = "";
+}
+
+function handlePhongChangeForGiuong() {
+  // Đổi phòng -> reset giường
+  giuongForm.value.giuongSo = "";
+}
 
 const nguoiThueForm = ref({
   hoTen: "",
@@ -3134,7 +3160,11 @@ onMounted(() => {
               <label>
                 {{ requiredLabel("Nhà trọ") }}
 
-                <select v-model="giuongForm.nhaTroId" required>
+                <select
+                  v-model="giuongForm.nhaTroId"
+                  required
+                  @change="handleNhaTroChangeForGiuong"
+                >
                   <option value="">Chọn nhà trọ</option>
 
                   <option
@@ -3155,11 +3185,12 @@ onMounted(() => {
                   v-model="giuongForm.phongId"
                   required
                   :disabled="!giuongForm.nhaTroId"
+                  @change="handlePhongChangeForGiuong"
                 >
                   <option value="">Chọn phòng</option>
 
                   <option
-                    v-for="item in phongs"
+                    v-for="item in giuongPhongOptions"
                     :key="item.id"
                     :value="item.id"
                   >
