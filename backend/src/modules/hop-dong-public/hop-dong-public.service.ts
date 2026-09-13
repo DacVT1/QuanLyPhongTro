@@ -91,6 +91,24 @@ export class HopDongPublicService {
 
     // 6. Tạo PDF
     const pdfBuffer = await this.pdfService.generate({
+      // =========================
+      // BÊN A
+      // =========================
+      benA: {
+        hoTen: 'Nguyễn Thị Chi',
+        cccd: '0909889908098',
+        ngayCap: '12/13/2026',
+        noiCap: 'Bộ công an',
+        sdt: '098989898',
+        nganHang: 'Viettin bank',
+        soTaiKhoan: '09453242344',
+        chuTaiKhoan: 'Nguyễn Thị Chi',
+        diaChi: 'Cầu Giấy',
+      },
+
+      // =========================
+      // BÊN B
+      // =========================
       hoTen: body.hoTen,
       cccd: body.cccd,
       sdt: body.sdt,
@@ -99,16 +117,32 @@ export class HopDongPublicService {
       diaChi: body.diaChi,
       bienSoXe: body.bienSoXe,
 
+      // =========================
+      // ĐIỀU 1
+      // =========================
       tenNhaTro: phong.nhaTro?.tenNhaTro ?? '',
+      diaChiNhaTro: phong.nhaTro?.diaChi ?? '',
       tangSo: phong.tangSo,
       maPhong: phong.maPhong,
       giuongSo: giuong.giuongSo,
 
+      // =========================
+      // ĐIỀU 2
+      // =========================
       tienDatCoc: Number(body.tienDatCoc),
       tienThue: Number(giuong.giaGiuong),
 
+      // =========================
+      // ĐIỀU 3
+      // =========================
       ngayBatDau: body.ngayBatDau,
       ngayKetThuc: body.ngayKetThuc,
+
+      // =========================
+      // XÁC NHẬN
+      // =========================
+      benBDaKy: Boolean(body.benBDaKy),
+      dongYHopDong: Boolean(body.dongYHopDong),
     });
 
     // 7. Tạo tên file
