@@ -3486,6 +3486,11 @@ onMounted(() => {
                     </button>
                   </td>
                 </tr>
+                <tr v-if="filteredGiuongs.length === 0">
+                  <td colspan="4" class="empty-state">
+                    Không tìm thấy giường có mã phù hợp.
+                  </td>
+                </tr>
               </tbody>
             </table>
           </div>
