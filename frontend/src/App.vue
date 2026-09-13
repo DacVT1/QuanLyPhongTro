@@ -141,6 +141,7 @@ function handleRegisterVerified() {
 function handleBackToRegister() {
   authMode.value = "register";
 }
+
 const tienDienDisplay = ref("0");
 const tienNuocDisplay = ref("0");
 const tienDichVuKhacDisplay = ref("0");
@@ -885,18 +886,35 @@ const giuongSoOptions = computed(() => {
 
   const soGiuongToiDa = Number(phong?.soGiuongToiDa ?? 8);
 
-  // Các giường đã được thêm của phòng đang chọn
+  // Các giường đã được thêm trong phòng đang chọn,
+  // ngoại trừ giường hiện tại nếu đang sửa.
   const giuongDaThem = giuongs.value
     .filter(
       (item: any) =>
-        String(item.phong?.id) === String(giuongForm.value.phongId),
+        String(item.phong?.id) === String(giuongForm.value.phongId) &&
+        String(item.id) !== String(editingGiuongId.value),
     )
     .map((item: any) => Number(item.giuongSo));
 
-  // Chỉ trả về các số giường chưa được thêm
-  return Array.from({ length: soGiuongToiDa }, (_, index) => index + 1).filter(
-    (soGiuong) => !giuongDaThem.includes(soGiuong),
-  );
+  // Chỉ hiển thị những số giường chưa được sử dụng.
+  const availableGiuongSo = Array.from(
+    { length: soGiuongToiDa },
+    (_, index) => index + 1,
+  ).filter((soGiuong) => !giuongDaThem.includes(soGiuong));
+
+  // Khi sửa giường, luôn giữ lại Giường số hiện tại
+  // để select có thể hiển thị đúng giá trị đang sửa.
+  const currentGiuongSo = Number(giuongForm.value.giuongSo);
+
+  if (
+    editingGiuongId.value &&
+    currentGiuongSo > 0 &&
+    !availableGiuongSo.includes(currentGiuongSo)
+  ) {
+    availableGiuongSo.push(currentGiuongSo);
+  }
+
+  return availableGiuongSo.sort((a, b) => a - b);
 });
 
 const giuongForm = ref({
@@ -907,6 +925,31 @@ const giuongForm = ref({
   // trangThai: "trong",
   datCocSom: false,
 });
+
+const giuongPhongOptions = computed(() => {
+  const nhaTroId = giuongForm.value.nhaTroId;
+
+  if (!nhaTroId) {
+    return [];
+  }
+
+  return phongs.value.filter(
+    (item: any) => String(item.nhaTro?.id) === String(nhaTroId),
+  );
+});
+
+function handleNhaTroChangeForGiuong() {
+  // Đã đổi nhà trọ -> phòng cũ không còn hợp lệ
+  giuongForm.value.phongId = "";
+
+  // Giường cũng phải reset theo phòng
+  giuongForm.value.giuongSo = "";
+}
+
+function handlePhongChangeForGiuong() {
+  // Đổi phòng -> reset giường
+  giuongForm.value.giuongSo = "";
+}
 
 const nguoiThueForm = ref({
   hoTen: "",
@@ -3134,7 +3177,11 @@ onMounted(() => {
               <label>
                 {{ requiredLabel("Nhà trọ") }}
 
-                <select v-model="giuongForm.nhaTroId" required>
+                <select
+                  v-model="giuongForm.nhaTroId"
+                  required
+                  @change="handleNhaTroChangeForGiuong"
+                >
                   <option value="">Chọn nhà trọ</option>
 
                   <option
@@ -3155,11 +3202,12 @@ onMounted(() => {
                   v-model="giuongForm.phongId"
                   required
                   :disabled="!giuongForm.nhaTroId"
+                  @change="handlePhongChangeForGiuong"
                 >
                   <option value="">Chọn phòng</option>
 
                   <option
-                    v-for="item in phongs"
+                    v-for="item in giuongPhongOptions"
                     :key="item.id"
                     :value="item.id"
                   >
