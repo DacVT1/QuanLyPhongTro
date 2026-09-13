@@ -19,6 +19,6 @@ import { HopDongPublicPdfService } from './hop-dong-public-pdf.service';
 
   controllers: [HopDongPublicController],
 
-  providers: [HopDongPublicService],
+  providers: [HopDongPublicService, HopDongPublicPdfService],
 })
 export class HopDongPublicModule {}

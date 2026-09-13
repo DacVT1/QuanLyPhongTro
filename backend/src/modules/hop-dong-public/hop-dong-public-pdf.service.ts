@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import PDFDocument from 'pdfkit';
+import * as path from 'path';
 
 interface ContractPdfData {
   hoTen: string;
@@ -26,6 +27,11 @@ interface ContractPdfData {
 export class HopDongPublicPdfService {
   async generate(data: ContractPdfData): Promise<Buffer> {
     return new Promise((resolve, reject) => {
+      const fontPath = path.resolve(
+        __dirname,
+        '../../../assets/fonts/DejaVuSans.ttf',
+      );
+
       const doc = new PDFDocument({
         size: 'A4',
         margin: 50,
@@ -42,7 +48,7 @@ export class HopDongPublicPdfService {
       });
 
       doc.on('error', reject);
-
+      doc.font(fontPath);
       // Nếu dùng font Unicode:
       // doc.font('backend/assets/fonts/DejaVuSans.ttf');
 

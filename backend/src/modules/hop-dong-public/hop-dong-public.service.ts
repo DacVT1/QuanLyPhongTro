@@ -118,7 +118,7 @@ export class HopDongPublicService {
 
     // 8. Gửi cho Bên B + Bên A
     await this.emailService.sendContractPdf(
-      [body.email, 'nguyenchihau@gmail.com'],
+      [body.email, 'nguyenchihaucan@gmail.com'],
       fileName,
       pdfBuffer,
       body.hoTen,
