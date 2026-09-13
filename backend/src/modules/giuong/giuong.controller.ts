@@ -25,22 +25,18 @@ export class GiuongController {
   }
 
   @Get(':id')
-  findOne(
-    @Param('id') id: string,
-    @CurrentUser() user: JwtPayload,
-  ) {
+  findOne(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
     return this.giuongService.findOne(id, user.tenantId);
   }
 
+  @Post('them-nhieu')
+  createMany(@Body() payload: any, @CurrentUser() user: JwtPayload) {
+    return this.giuongService.createMany(payload, user.tenantId);
+  }
+
   @Post()
-  create(
-    @Body() payload: any,
-    @CurrentUser() user: JwtPayload,
-  ) {
-    return this.giuongService.create(
-      payload,
-      user.tenantId,
-    );
+  create(@Body() payload: any, @CurrentUser() user: JwtPayload) {
+    return this.giuongService.create(payload, user.tenantId);
   }
 
   @Patch(':id')
@@ -49,21 +45,11 @@ export class GiuongController {
     @Body() payload: any,
     @CurrentUser() user: JwtPayload,
   ) {
-    return this.giuongService.update(
-      id,
-      payload,
-      user.tenantId,
-    );
+    return this.giuongService.update(id, payload, user.tenantId);
   }
 
   @Delete(':id')
-  remove(
-    @Param('id') id: string,
-    @CurrentUser() user: JwtPayload,
-  ) {
-    return this.giuongService.remove(
-      id,
-      user.tenantId,
-    );
+  remove(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
+    return this.giuongService.remove(id, user.tenantId);
   }
 }
