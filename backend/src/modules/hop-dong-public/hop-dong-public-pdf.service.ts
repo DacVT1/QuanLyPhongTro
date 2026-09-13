@@ -91,8 +91,9 @@ export class HopDongPublicPdfService {
 
       doc.on('error', reject);
 
-      // Font Unicode hỗ trợ tiếng Việt
-      doc.font(fontPath);
+      // Font Unicode hỗ trợ đầy đủ tiếng Việt
+      doc.registerFont('Vietnamese', fontPath);
+      doc.font('Vietnamese');
 
       // =====================================================
       // HELPER
@@ -131,7 +132,7 @@ export class HopDongPublicPdfService {
           doc.switchToPage(pageIndex);
 
           doc
-            .font(fontPath)
+            .font('Vietnamese')
             .fontSize(8)
             .fillColor('#666666')
             .text(`Trang ${pageIndex + 1}/${range.count}`, 50, 810, {
@@ -144,13 +145,13 @@ export class HopDongPublicPdfService {
       };
 
       const addSectionTitle = (title: string) => {
-        doc.font(fontPath).fontSize(12).text(title, {
+        doc.font('Vietnamese').fontSize(12).text(title, {
           align: 'left',
         });
 
         doc.moveDown(0.5);
 
-        doc.font(fontPath).fontSize(11);
+        doc.font('Vietnamese').fontSize(11);
       };
 
       const addParagraph = (
@@ -161,7 +162,7 @@ export class HopDongPublicPdfService {
         },
       ) => {
         doc
-          .font(fontPath)
+          .font('Vietnamese')
           .fontSize(11)
           .text(text, {
             width: 495,
@@ -178,7 +179,7 @@ export class HopDongPublicPdfService {
         value: string | number | undefined,
       ) => {
         doc
-          .font(fontPath)
+          .font('Vietnamese')
           .fontSize(11)
           .text(`${label}: ${value ?? ''}`, {
             width: 495,
@@ -193,7 +194,7 @@ export class HopDongPublicPdfService {
       // =====================================================
 
       doc
-        .font(fontPath)
+        .font('Vietnamese')
         .fontSize(13)
         .text('CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM', {
           align: 'center',
@@ -201,14 +202,14 @@ export class HopDongPublicPdfService {
 
       doc.moveDown(0.2);
 
-      doc.font(fontPath).fontSize(12).text('Độc lập - Tự do - Hạnh phúc', {
+      doc.font('Vietnamese').fontSize(12).text('Độc lập - Tự do - Hạnh phúc', {
         align: 'center',
       });
 
       doc.moveDown(0.2);
 
       doc
-        .font(fontPath)
+        .font('Vietnamese')
         .fontSize(10)
         .text('----------------------------------------', {
           align: 'center',
@@ -216,7 +217,7 @@ export class HopDongPublicPdfService {
 
       doc.moveDown(1);
 
-      doc.font(fontPath).fontSize(17).text('HỢP ĐỒNG THUÊ TRỌ', {
+      doc.font('Vietnamese').fontSize(17).text('HỢP ĐỒNG THUÊ TRỌ', {
         align: 'center',
       });
 
@@ -408,27 +409,18 @@ export class HopDongPublicPdfService {
 
       const signatureY = doc.y;
 
-      doc
-        .font(fontPath)
-        .font('Helvetica-Bold')
-        .fontSize(11)
-        .text('BÊN CHO THUÊ', 50, signatureY, {
-          width: 220,
-          align: 'center',
-        });
+      doc.font('Vietnamese').fontSize(11).text('BÊN CHO THUÊ', 50, signatureY, {
+        width: 220,
+        align: 'center',
+      });
+
+      doc.font('Vietnamese').fontSize(11).text('BÊN THUÊ', 325, signatureY, {
+        width: 220,
+        align: 'center',
+      });
 
       doc
-        .font(fontPath)
-        .font('Helvetica-Bold')
-        .fontSize(11)
-        .text('BÊN THUÊ', 325, signatureY, {
-          width: 220,
-          align: 'center',
-        });
-
-      doc
-        .font(fontPath)
-        .font('Helvetica')
+        .font('Vietnamese')
         .fontSize(10)
         .text('(BÊN A)', 50, signatureY + 18, {
           width: 220,
@@ -436,8 +428,7 @@ export class HopDongPublicPdfService {
         });
 
       doc
-        .font(fontPath)
-        .font('Helvetica')
+        .font('Vietnamese')
         .fontSize(10)
         .text('(BÊN B)', 325, signatureY + 18, {
           width: 220,
@@ -445,19 +436,17 @@ export class HopDongPublicPdfService {
         });
 
       doc
-        .font(fontPath)
-        .font('Helvetica')
+        .font('Vietnamese')
         .fontSize(9)
-        .text('(Ký, ghi rõ họ tên)', 50, signatureY + 35, {
+        .text('(Xác nhận ký, ghi rõ họ tên)', 50, signatureY + 35, {
           width: 220,
           align: 'center',
         });
 
       doc
-        .font(fontPath)
-        .font('Helvetica')
+        .font('Vietnamese')
         .fontSize(9)
-        .text('(Ký, ghi rõ họ tên)', 325, signatureY + 35, {
+        .text('(Xác nhận ký, ghi rõ họ tên)', 325, signatureY + 35, {
           width: 220,
           align: 'center',
         });
@@ -481,7 +470,7 @@ export class HopDongPublicPdfService {
 
       doc
         .font(fontPath)
-        .font('Helvetica-Bold')
+        .font('Vietnamese')
         .fontSize(10)
         .text(data.benA.hoTen || 'Bên A', 50, signatureY + 125, {
           width: 220,
@@ -490,7 +479,7 @@ export class HopDongPublicPdfService {
 
       doc
         .font(fontPath)
-        .font('Helvetica-Bold')
+        .font('Vietnamese')
         .fontSize(10)
         .text(data.hoTen || '........................', 325, signatureY + 125, {
           width: 220,
@@ -499,7 +488,7 @@ export class HopDongPublicPdfService {
 
       doc
         .font(fontPath)
-        .font('Helvetica')
+        .font('Vietnamese')
         .fontSize(9)
         .text('Đã ký', 50, signatureY + 145, {
           width: 220,
@@ -508,7 +497,7 @@ export class HopDongPublicPdfService {
 
       doc
         .font(fontPath)
-        .font('Helvetica')
+        .font('Vietnamese')
         .fontSize(9)
         .text(
           data.benBDaKy ? 'Tôi xác nhận đã ký' : 'Chưa xác nhận ký',

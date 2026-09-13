@@ -1071,7 +1071,7 @@ onMounted(() => {
 
               <p class="signature-role">(BÊN A)</p>
 
-              <p class="signature-note">(Ký, ghi rõ họ tên)</p>
+              <p class="signature-note">(Xác nhận ký, ghi rõ họ tên)</p>
 
               <div class="signature-space"></div>
 
@@ -1093,7 +1093,7 @@ onMounted(() => {
 
               <p class="signature-role">(BÊN B)</p>
 
-              <p class="signature-note">(Ký, ghi rõ họ tên)</p>
+              <p class="signature-note">(Xác nhận ký, ghi rõ họ tên)</p>
 
               <div class="signature-space"></div>
 
