@@ -152,6 +152,7 @@ const showNguoiThueDetail = ref(false);
 const selectedNguoiThue = ref<any | null>(null);
 const tienPhongDisplay = ref("");
 const tongTienDisplay = ref("");
+const ngaySinhError = ref("");
 function openNguoiThueDetail(item: any) {
   selectedNguoiThue.value = item;
   showNguoiThueDetail.value = true;
@@ -1812,6 +1813,12 @@ async function saveNguoiThue() {
   if (!validateSoDienThoai()) {
     return;
   }
+  if (!String(nguoiThueForm.value.ngaySinh || "").trim()) {
+    ngaySinhError.value = "Vui lòng nhập Ngày sinh.";
+    return;
+  }
+
+  ngaySinhError.value = "";
   const formData = new FormData();
 
   formData.append("hoTen", nguoiThueForm.value.hoTen);
@@ -3361,7 +3368,7 @@ onMounted(() => {
               </label>
 
               <label>
-                Email
+                {{ requiredLabel("Email") }}
 
                 <input v-model="nguoiThueForm.email" type="email" />
               </label>
@@ -3373,9 +3380,12 @@ onMounted(() => {
               </label>
 
               <label>
-                Ngày sinh
+                {{ requiredLabel("Ngày sinh") }}
 
-                <input v-model="nguoiThueForm.ngaySinh" type="date" />
+                <input v-model="nguoiThueForm.ngaySinh" type="date" required />
+                <div v-if="ngaySinhError" class="field-error">
+                  {{ ngaySinhError }}
+                </div>
               </label>
 
               <label>
