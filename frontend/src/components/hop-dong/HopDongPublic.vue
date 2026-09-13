@@ -18,7 +18,7 @@ interface NhaTro {
 interface Phong {
   id: string | number;
   maPhong?: string;
-  phongSo?: string | number;
+  //   phongSo?: string | number;
   tangSo?: number;
   nhaTro?: {
     id: string | number;
@@ -219,21 +219,19 @@ const tangOptions = computed(() => {
  * ======================================================= */
 
 const phongOptions = computed(() => {
-  if (!form.value.nhaTroId) {
+  // Chưa chọn Nhà trọ hoặc Tầng
+  // => không cho Phòng hiển thị
+  if (!form.value.nhaTroId || !form.value.tangSo) {
     return [];
   }
 
-  let result = phongs.value.filter(
-    (item) => String(item.nhaTro?.id) === String(form.value.nhaTroId),
-  );
+  return phongs.value.filter((item) => {
+    const dungNhaTro = String(item.nhaTro?.id) === String(form.value.nhaTroId);
 
-  if (form.value.tangSo) {
-    result = result.filter(
-      (item) => Number(item.tangSo) === Number(form.value.tangSo),
-    );
-  }
+    const dungTang = Number(item.tangSo) === Number(form.value.tangSo);
 
-  return result;
+    return dungNhaTro && dungTang;
+  });
 });
 
 /* =========================================================
@@ -241,33 +239,27 @@ const phongOptions = computed(() => {
  * ======================================================= */
 
 const giuongOptions = computed(() => {
-  if (!form.value.nhaTroId) {
+  // Chưa chọn Nhà trọ / Tầng / Phòng
+  // => không hiển thị giường
+  if (!form.value.nhaTroId || !form.value.tangSo || !form.value.phongId) {
     return [];
   }
 
-  let result = giuongs.value.filter(
-    (item) => String(item.phong?.nhaTro?.id) === String(form.value.nhaTroId),
-  );
+  return giuongs.value.filter((item) => {
+    // Giường phải thuộc đúng Phòng
+    const dungPhong = String(item.phong?.id) === String(form.value.phongId);
 
-  if (form.value.phongId) {
-    result = result.filter(
-      (item) => String(item.phong?.id) === String(form.value.phongId),
-    );
-  }
+    // Giường phải thuộc đúng Nhà trọ
+    const dungNhaTro =
+      String(item.phong?.nhaTro?.id) === String(form.value.nhaTroId);
 
-  /*
-   * Chỉ hiển thị giường chưa thuê.
-   *
-   * Backend vẫn phải kiểm tra lại trạng thái
-   * trước khi tạo hợp đồng.
-   */
-  result = result.filter((item) => {
+    // Chỉ cho thuê giường chưa thuê
     const status = String(item.trangThai ?? "").toLowerCase();
 
-    return !["da_thue", "đã thuê", "occupied"].includes(status);
-  });
+    const chuaThue = !["da_thue", "đã thuê", "occupied"].includes(status);
 
-  return result;
+    return dungPhong && dungNhaTro && chuaThue;
+  });
 });
 
 /* =========================================================
@@ -830,7 +822,7 @@ onMounted(() => {
                     :key="item.id"
                     :value="item.id"
                   >
-                    Phòng {{ item.phongSo }}
+                    Phòng {{ item.maPhong }}
                   </option>
                 </select>
               </div>
@@ -848,9 +840,7 @@ onMounted(() => {
                   >
                     Giường {{ item.giuongSo }}
                     <template v-if="item.giaGiuong">
-                      -
-                      {{ formatMoney(item.giaGiuong) }}
-                      đ/tháng
+                      - {{ formatMoney(item.giaGiuong) }} đ/tháng
                     </template>
                   </option>
                 </select>
