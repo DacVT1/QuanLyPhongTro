@@ -80,7 +80,7 @@ const benA = ref<BenA>({
   nganHang: "Viettin bank",
   soTaiKhoan: "09453242344",
   chuTaiKhoan: "Nguyễn Thị Chi",
-  diaChi: "Cầu Giấy Hà Nội",
+  diaChi: "Cầu Giấy ",
 });
 
 /* =========================================================
@@ -410,14 +410,29 @@ function validateForm() {
     return false;
   }
 
-  if (!form.value.benBDaKy) {
-    errorMessage.value = "Vui lòng xác nhận Bên B đã ký hợp đồng.";
-    return false;
-  }
-
   if (!form.value.dongYHopDong) {
     errorMessage.value =
       "Vui lòng tích vào ô đồng ý với toàn bộ nội dung hợp đồng.";
+    return false;
+  }
+
+  if (!form.value.ngaySinh) {
+    errorMessage.value = "Vui lòng chọn ngày sinh.";
+    return false;
+  }
+
+  if (!form.value.diaChi.trim()) {
+    errorMessage.value = "Vui lòng nhập địa chỉ.";
+    return false;
+  }
+
+  if (!form.value.bienSoXe.trim()) {
+    errorMessage.value = "Vui lòng nhập biển số xe.";
+    return false;
+  }
+
+  if (form.value.tienDatCoc <= 0) {
+    errorMessage.value = "Vui lòng nhập tiền đặt cọc.";
     return false;
   }
 
@@ -808,14 +823,14 @@ onMounted(() => {
               </div>
 
               <div class="form-group">
-                <label>Ngày sinh</label>
+                <label>Ngày sinh <span>*</span></label>
 
                 <input v-model="form.ngaySinh" type="date" />
               </div>
             </div>
 
             <div class="form-row">
-              <label>Địa chỉ</label>
+              <label>Địa chỉ <span>*</span></label>
 
               <input
                 v-model="form.diaChi"
@@ -825,7 +840,7 @@ onMounted(() => {
             </div>
 
             <div class="form-row">
-              <label>Biển số xe</label>
+              <label>Biển số xe <span>*</span></label>
 
               <input
                 v-model="form.bienSoXe"
@@ -935,7 +950,7 @@ onMounted(() => {
           <div class="section-content">
             <div class="form-grid-2">
               <div class="form-group">
-                <label>Giá thuê</label>
+                <label>Giá thuê <span>*</span></label>
 
                 <div class="money-input">
                   <input
@@ -1196,7 +1211,7 @@ onMounted(() => {
             <button
               type="button"
               class="submit-button"
-              :disabled="submitting || !form.dongYHopDong || !form.benBDaKy"
+              :disabled="submitting || !form.dongYHopDong"
               @click="submitContract"
             >
               <span v-if="submitting"> Đang xử lý... </span>
