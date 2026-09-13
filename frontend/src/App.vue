@@ -644,7 +644,11 @@ const nhaTros = ref<any[]>([]);
 const phongs = ref<any[]>([]);
 const giuongs = ref<any[]>([]);
 const nguoiThues = ref<any[]>([]);
+
 const nguoiThueSearch = ref("");
+const hopDongSearch = ref("");
+const hoaDonSearch = ref("");
+
 const hopDongs = ref<any[]>([]);
 const hoaDons = ref<any[]>([]);
 
@@ -678,6 +682,42 @@ const filteredNguoiThues = computed(() => {
 
     // Tìm chuỗi ở BẤT KỲ vị trí nào
     return hoTen.includes(keyword) || cccd.includes(keyword);
+  });
+});
+
+const filteredHopDongs = computed(() => {
+  const keyword = normalizeSearchText(hopDongSearch.value);
+
+  // Không nhập gì -> hiển thị toàn bộ hợp đồng
+  if (!keyword) {
+    return hopDongs.value;
+  }
+
+  return hopDongs.value.filter((item: any) => {
+    const hoTen = normalizeSearchText(item.nguoiThue?.hoTen ?? "");
+
+    const maHopDong = normalizeSearchText(item.maHopDong ?? "");
+
+    // Tìm theo Họ tên hoặc Mã hợp đồng
+    return hoTen.includes(keyword) || maHopDong.includes(keyword);
+  });
+});
+
+const filteredHoaDons = computed(() => {
+  const keyword = normalizeSearchText(hoaDonSearch.value);
+
+  // Không nhập gì -> hiển thị toàn bộ hóa đơn
+  if (!keyword) {
+    return hoaDons.value;
+  }
+
+  return hoaDons.value.filter((item: any) => {
+    const hoTen = normalizeSearchText(item.hopDong?.nguoiThue?.hoTen ?? "");
+
+    const maHopDong = normalizeSearchText(item.hopDong?.maHopDong ?? "");
+
+    // Tìm theo Họ tên hoặc Mã hợp đồng
+    return hoTen.includes(keyword) || maHopDong.includes(keyword);
   });
 });
 
@@ -3833,7 +3873,23 @@ onMounted(() => {
           <div v-else class="panel">
             <div class="panel-header">
               <h3>Danh sách hợp đồng</h3>
+              <div class="nguoi-thue-search">
+                <input
+                  v-model="hopDongSearch"
+                  type="text"
+                  placeholder="Tìm Tên hoặc Mã hợp đồng..."
+                  autocomplete="off"
+                />
 
+                <button
+                  v-if="hopDongSearch"
+                  type="button"
+                  class="nguoi-thue-search-clear"
+                  @click="hopDongSearch = ''"
+                >
+                  ×
+                </button>
+              </div>
               <button type="button" class="primary" @click="openAddHopDongForm">
                 Thêm hợp đồng
               </button>
@@ -3853,7 +3909,7 @@ onMounted(() => {
               </thead>
 
               <tbody>
-                <tr v-for="item in hopDongs" :key="item.id">
+                <tr v-for="item in filteredHopDongs" :key="item.id">
                   <td>
                     {{ item.maHopDong }}
                   </td>
@@ -3926,9 +3982,13 @@ onMounted(() => {
                   </td>
                 </tr>
 
-                <tr v-if="hopDongs.length === 0">
+                <tr v-if="filteredHopDongs.length === 0">
                   <td colspan="7" style="text-align: center">
-                    Chưa có hợp đồng
+                    {{
+                      hopDongSearch
+                        ? "Không tìm thấy hợp đồng phù hợp."
+                        : "Chưa có hợp đồng"
+                    }}
                   </td>
                 </tr>
               </tbody>
@@ -4115,7 +4175,23 @@ onMounted(() => {
           <div v-else class="panel">
             <div class="panel-header">
               <h3>Danh sách hóa đơn</h3>
+              <div class="nguoi-thue-search">
+                <input
+                  v-model="hoaDonSearch"
+                  type="text"
+                  placeholder="Tìm Tên hoặc Mã hợp đồng..."
+                  autocomplete="off"
+                />
 
+                <button
+                  v-if="hoaDonSearch"
+                  type="button"
+                  class="nguoi-thue-search-clear"
+                  @click="hoaDonSearch = ''"
+                >
+                  ×
+                </button>
+              </div>
               <button type="button" class="primary" @click="openAddHoaDonForm">
                 Thêm hóa đơn
               </button>
@@ -4134,7 +4210,7 @@ onMounted(() => {
               </thead>
 
               <tbody>
-                <tr v-for="item in hoaDons" :key="item.id">
+                <tr v-for="item in filteredHoaDons" :key="item.id">
                   <td>
                     {{ item.maHoaDon }}
                   </td>
