@@ -62,8 +62,10 @@ export class HopDongPublicPdfService {
   async generate(data: ContractPdfData): Promise<Buffer> {
     return new Promise((resolve, reject) => {
       const fontPath = path.resolve(
-        __dirname,
-        '../../assets/fonts/DejaVuSans.ttf',
+        process.cwd(),
+        'assets',
+        'fonts',
+        'DejaVuSans.ttf',
       );
 
       const doc = new PDFDocument({
