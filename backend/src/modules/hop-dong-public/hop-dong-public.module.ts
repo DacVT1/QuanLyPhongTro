@@ -8,9 +8,14 @@ import { Giuong } from '../../entities/giuong.entity';
 
 import { HopDongPublicController } from './hop-dong-public.controller';
 import { HopDongPublicService } from './hop-dong-public.service';
+import { EmailModule } from '../email/email.module';
+import { HopDongPublicPdfService } from './hop-dong-public-pdf.service';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([TaiKhoan, NhaTro, Phong, Giuong])],
+  imports: [
+    TypeOrmModule.forFeature([TaiKhoan, NhaTro, Phong, Giuong]),
+    EmailModule,
+  ],
 
   controllers: [HopDongPublicController],
 

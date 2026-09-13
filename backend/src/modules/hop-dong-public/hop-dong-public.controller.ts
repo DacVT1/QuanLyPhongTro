@@ -1,4 +1,4 @@
-import { Controller, Get } from '@nestjs/common';
+import { Body, Controller, Get, Post } from '@nestjs/common';
 
 import { HopDongPublicService } from './hop-dong-public.service';
 
@@ -16,5 +16,9 @@ export class HopDongPublicController {
   @Get('data')
   getData() {
     return this.hopDongPublicService.getData();
+  }
+  @Post('submit')
+  async submitContract(@Body() body: any) {
+    return this.hopDongPublicService.submitContract(body);
   }
 }
