@@ -24,6 +24,7 @@ import { GoiDichVu } from './entities/goi-dich-vu.entity';
 import { Subscription } from './entities/subscription.entity';
 import { SubscriptionModule } from './modules/subscription/subscription.module';
 import { GoiDichVuModule } from './modules/goi-dich-vu/goi-dich-vu.module';
+import { HopDongPublicModule } from './modules/hop-dong-public/hop-dong-public.module';
 
 @Module({
   imports: [
@@ -55,6 +56,7 @@ import { GoiDichVuModule } from './modules/goi-dich-vu/goi-dich-vu.module';
     GiuongModule,
     NguoiThueModule,
     HopDongModule,
+    HopDongPublicModule,
     HoaDonModule,
     DashboardModule,
     GoiDichVuModule,

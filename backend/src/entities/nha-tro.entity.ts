@@ -6,6 +6,7 @@ import {
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
+  Unique,
   UpdateDateColumn,
 } from 'typeorm';
 import { TaiKhoan } from './tai-khoan.entity';
@@ -13,11 +14,12 @@ import { Phong } from './phong.entity';
 import { Tenant } from './tenant.entity';
 
 @Entity({ name: 'nha_tro' })
+@Unique('UQ_nha_tro_ma_tenant', ['maNhaTro', 'tenant'])
 export class NhaTro {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ unique: true, nullable: true })
+  @Column({ nullable: true })
   maNhaTro: string;
 
   @Column()
@@ -46,6 +48,6 @@ export class NhaTro {
   phongs: Phong[];
 
   @ManyToOne(() => Tenant, { nullable: false })
-@JoinColumn({ name: 'tenant_id' })
-tenant: Tenant;
+  @JoinColumn({ name: 'tenant_id' })
+  tenant: Tenant;
 }

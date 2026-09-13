@@ -198,6 +198,120 @@ export class GiuongService {
     return this.repository.save(giuong);
   }
 
+  async createMany(payload: Partial<Giuong>, tenantId: string) {
+    if (!tenantId) {
+      throw new BadRequestException(
+        'Không xác định được tenant từ tài khoản đăng nhập.',
+      );
+    }
+
+    // Lấy tenant từ JWT
+    const tenant = await this.tenantRepository.findOne({
+      where: {
+        id: tenantId,
+      },
+    });
+
+    if (!tenant) {
+      throw new NotFoundException('Không tìm thấy tenant.');
+    }
+
+    const giaGiuong = Number(payload.giaGiuong ?? 0);
+
+    if (!Number.isInteger(giaGiuong) || giaGiuong < 0) {
+      throw new BadRequestException(
+        'Giá giường phải là số nguyên lớn hơn hoặc bằng 0.',
+      );
+    }
+
+    const datCocSom = Boolean(payload.datCocSom);
+
+    // Lấy tất cả phòng thuộc tenant hiện tại
+    const phongs = await this.phongRepository.find({
+      where: {
+        tenant: {
+          id: tenantId,
+        },
+      },
+      relations: {
+        nhaTro: true,
+        giuongs: true,
+      },
+      order: {
+        maPhong: 'ASC',
+      },
+    });
+
+    if (phongs.length === 0) {
+      throw new NotFoundException('Không tìm thấy phòng nào để thêm giường.');
+    }
+
+    let daTao = 0;
+    let daBoQua = 0;
+
+    const chiTiet: Array<{
+      maPhong: string;
+      soGiuongToiDa: number;
+      daTao: number;
+      daBoQua: number;
+    }> = [];
+
+    for (const phong of phongs) {
+      const soGiuongToiDa = Number(phong.soGiuongToiDa ?? 0);
+
+      if (!Number.isInteger(soGiuongToiDa) || soGiuongToiDa < 1) {
+        continue;
+      }
+
+      // Lấy các số giường đã tồn tại
+      const giuongDaCo = new Set(
+        (phong.giuongs ?? []).map((giuong) => Number(giuong.giuongSo)),
+      );
+
+      let daTaoTrongPhong = 0;
+      let daBoQuaTrongPhong = 0;
+
+      for (let giuongSo = 1; giuongSo <= soGiuongToiDa; giuongSo++) {
+        // Đã có giường -> bỏ qua
+        if (giuongDaCo.has(giuongSo)) {
+          daBoQua++;
+          daBoQuaTrongPhong++;
+          continue;
+        }
+
+        const giuong = this.repository.create({
+          maGiuong: `${phong.maPhong}_G${giuongSo}`,
+          giuongSo,
+          giaGiuong,
+          datCocSom,
+          trangThai: 'trong',
+          phong,
+          tenant,
+        });
+
+        await this.repository.save(giuong);
+
+        daTao++;
+        daTaoTrongPhong++;
+      }
+
+      chiTiet.push({
+        maPhong: phong.maPhong,
+        soGiuongToiDa,
+        daTao: daTaoTrongPhong,
+        daBoQua: daBoQuaTrongPhong,
+      });
+    }
+
+    return {
+      message: 'Đã xử lý thêm giường cho tất cả các phòng.',
+      daTao,
+      daBoQua,
+      tongPhong: phongs.length,
+      chiTiet,
+    };
+  }
+
   async update(id: string, payload: Partial<Giuong>, tenantId: string) {
     const item = await this.repository.findOne({
       where: {

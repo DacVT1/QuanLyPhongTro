@@ -1107,6 +1107,7 @@ const editingPhongId = ref<string | null>(null);
 const showPhongForm = ref(false);
 const editingGiuongId = ref<string | null>(null);
 const showGiuongForm = ref(false);
+const giuongSearch = ref("");
 const editingNguoiThueId = ref<string | null>(null);
 const showNguoiThueForm = ref(false);
 const cccdMatTruocInput = ref<HTMLInputElement | null>(null);
@@ -1234,7 +1235,19 @@ async function confirmDeleteHoaDon() {
 }
 
 const deleteHopDongErrorMessage = ref("");
+const filteredGiuongs = computed(() => {
+  const keyword = giuongSearch.value.trim().toLowerCase();
 
+  if (!keyword) {
+    return giuongs.value;
+  }
+
+  return giuongs.value.filter((giuong: any) =>
+    String(giuong.maGiuong ?? "")
+      .toLowerCase()
+      .includes(keyword),
+  );
+});
 const giuongOptions = computed(() => {
   // Danh sách tối đa 8 giường
   const allOptions = Array.from({ length: 8 }, (_, index) => String(index + 1));
@@ -1778,7 +1791,62 @@ async function confirmDeleteHopDong() {
       : message || "Không thể xóa hợp đồng. Vui lòng thử lại.";
   }
 }
+async function handleThemNhieuGiuong() {
+  const tenNhaTro = nhaTros.value
+    .map((item: any) => item.tenNhaTro || item.maNhaTro)
+    .filter(Boolean);
 
+  if (tenNhaTro.length === 0) {
+    alert("Chưa có nhà trọ nào để thêm giường.");
+    return;
+  }
+
+  const danhSachNhaTro = tenNhaTro.join(", ");
+
+  const confirmed = window.confirm(
+    `Sẽ thêm tất cả các giường trong mỗi Phòng của các nhà trọ ${danhSachNhaTro}.\n\n` +
+      `Giường sẽ được tạo từ Giường số 1 đến số giường tối đa của từng Phòng.\n` +
+      `Những giường đã thêm rồi sẽ được bỏ qua và không tạo lại.\n\n` +
+      `Bạn có muốn tiếp tục không?`,
+  );
+
+  if (!confirmed) {
+    return;
+  }
+
+  try {
+    const payload = {
+      giaGiuong: Number(giuongForm.value.giaGiuong || 0),
+      datCocSom: Boolean(giuongForm.value.datCocSom),
+    };
+
+    const response = await api.post("/giuong/them-nhieu", payload);
+
+    const result = response.data;
+
+    await loadData();
+
+    resetGiuongForm();
+    showGiuongForm.value = false;
+
+    alert(
+      [
+        result?.message ?? "Đã xử lý thêm giường.",
+        `Tổng số phòng: ${Number(result?.tongPhong ?? 0)}`,
+        `Đã tạo: ${Number(result?.daTao ?? 0)} giường`,
+        `Đã bỏ qua: ${Number(result?.daBoQua ?? 0)} giường đã tồn tại`,
+      ].join("\n"),
+    );
+  } catch (error: any) {
+    console.error("Không thể thêm nhiều giường:", error);
+
+    const message =
+      error?.response?.data?.message ??
+      "Không thể thêm nhiều giường. Vui lòng thử lại.";
+
+    alert(Array.isArray(message) ? message.join("\n") : message);
+  }
+}
 async function saveGiuong() {
   const payload = {
     giuongSo: Number(giuongForm.value.giuongSo),
@@ -3296,6 +3364,15 @@ onMounted(() => {
                 </button>
 
                 <button
+                  v-if="!editingGiuongId"
+                  type="button"
+                  class="primary"
+                  @click="handleThemNhieuGiuong"
+                >
+                  Thêm nhiều giường
+                </button>
+
+                <button
                   type="button"
                   class="secondary"
                   @click="closeGiuongForm"
@@ -3310,7 +3387,22 @@ onMounted(() => {
           <div v-else class="panel">
             <div class="panel-header">
               <h3>Danh sách giường</h3>
+              <div class="search-box">
+                <input
+                  v-model="giuongSearch"
+                  type="text"
+                  placeholder="Tìm kiếm theo mã giường..."
+                />
 
+                <button
+                  v-if="giuongSearch"
+                  type="button"
+                  class="secondary"
+                  @click="giuongSearch = ''"
+                >
+                  Xóa
+                </button>
+              </div>
               <button type="button" class="primary" @click="openAddGiuongForm">
                 Thêm giường
               </button>
@@ -3331,7 +3423,7 @@ onMounted(() => {
               </thead>
 
               <tbody>
-                <tr v-for="item in giuongs" :key="item.id">
+                <tr v-for="item in filteredGiuongs" :key="item.id">
                   <td>{{ item.maGiuong }}</td>
 
                   <!-- <td>
@@ -3392,6 +3484,11 @@ onMounted(() => {
                     >
                       Xóa
                     </button>
+                  </td>
+                </tr>
+                <tr v-if="filteredGiuongs.length === 0">
+                  <td colspan="4" class="empty-state">
+                    Không tìm thấy giường có mã phù hợp.
                   </td>
                 </tr>
               </tbody>
