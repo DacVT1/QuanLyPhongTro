@@ -14,6 +14,7 @@ import {
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 
 import { diskStorage } from 'multer';
+import { mkdirSync } from 'fs';
 import { extname, join } from 'path';
 import { randomUUID } from 'crypto';
 
@@ -22,7 +23,11 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import type { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 const storageDir = process.env.STORAGE_DIR || join(process.cwd(), 'uploads');
+const nguoiThueUploadDir = join(storageDir, 'nguoi-thue');
 
+mkdirSync(nguoiThueUploadDir, {
+  recursive: true,
+});
 @Controller('nguoi-thue')
 @UseGuards(JwtAuthGuard)
 export class NguoiThueController {
@@ -53,7 +58,7 @@ export class NguoiThueController {
       ],
       {
         storage: diskStorage({
-          destination: join(storageDir, 'nguoi-thue'),
+          destination: nguoiThueUploadDir,
 
           filename: (_req, file, cb) => {
             const extension = extname(file.originalname);
@@ -111,7 +116,7 @@ export class NguoiThueController {
       ],
       {
         storage: diskStorage({
-          destination: join(storageDir, 'nguoi-thue'),
+          destination: nguoiThueUploadDir,
 
           filename: (_req, file, cb) => {
             const extension = extname(file.originalname);
