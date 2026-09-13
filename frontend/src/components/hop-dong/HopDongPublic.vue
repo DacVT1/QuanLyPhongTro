@@ -818,11 +818,11 @@ onMounted(() => {
                   <option value="">-- Chọn phòng --</option>
 
                   <option
-                    v-for="item in phongOptions"
+                    v-for="(item, index) in phongOptions"
                     :key="item.id"
                     :value="item.id"
                   >
-                    Phòng {{ item.maPhong }}
+                    Phòng {{ index + 1 }}
                   </option>
                 </select>
               </div>
@@ -839,9 +839,6 @@ onMounted(() => {
                     :value="item.id"
                   >
                     Giường {{ item.giuongSo }}
-                    <template v-if="item.giaGiuong">
-                      - {{ formatMoney(item.giaGiuong) }} đ/tháng
-                    </template>
                   </option>
                 </select>
               </div>
