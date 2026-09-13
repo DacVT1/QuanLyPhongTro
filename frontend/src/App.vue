@@ -886,18 +886,35 @@ const giuongSoOptions = computed(() => {
 
   const soGiuongToiDa = Number(phong?.soGiuongToiDa ?? 8);
 
-  // Các giường đã được thêm của phòng đang chọn
+  // Các giường đã được thêm trong phòng đang chọn,
+  // ngoại trừ giường hiện tại nếu đang sửa.
   const giuongDaThem = giuongs.value
     .filter(
       (item: any) =>
-        String(item.phong?.id) === String(giuongForm.value.phongId),
+        String(item.phong?.id) === String(giuongForm.value.phongId) &&
+        String(item.id) !== String(editingGiuongId.value),
     )
     .map((item: any) => Number(item.giuongSo));
 
-  // Chỉ trả về các số giường chưa được thêm
-  return Array.from({ length: soGiuongToiDa }, (_, index) => index + 1).filter(
-    (soGiuong) => !giuongDaThem.includes(soGiuong),
-  );
+  // Chỉ hiển thị những số giường chưa được sử dụng.
+  const availableGiuongSo = Array.from(
+    { length: soGiuongToiDa },
+    (_, index) => index + 1,
+  ).filter((soGiuong) => !giuongDaThem.includes(soGiuong));
+
+  // Khi sửa giường, luôn giữ lại Giường số hiện tại
+  // để select có thể hiển thị đúng giá trị đang sửa.
+  const currentGiuongSo = Number(giuongForm.value.giuongSo);
+
+  if (
+    editingGiuongId.value &&
+    currentGiuongSo > 0 &&
+    !availableGiuongSo.includes(currentGiuongSo)
+  ) {
+    availableGiuongSo.push(currentGiuongSo);
+  }
+
+  return availableGiuongSo.sort((a, b) => a - b);
 });
 
 const giuongForm = ref({
