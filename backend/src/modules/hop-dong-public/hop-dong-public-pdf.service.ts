@@ -468,46 +468,50 @@ export class HopDongPublicPdfService {
           height: 70,
         });
 
-      doc
-        .font(fontPath)
-        .font('Vietnamese')
-        .fontSize(10)
-        .text(data.benA.hoTen || 'Bên A', 50, signatureY + 125, {
-          width: 220,
-          align: 'center',
-        });
+      // =========================
+      // TRẠNG THÁI KÝ
+      // =========================
 
       doc
-        .font(fontPath)
-        .font('Vietnamese')
-        .fontSize(10)
-        .text(data.hoTen || '........................', 325, signatureY + 125, {
-          width: 220,
-          align: 'center',
-        });
-
-      doc
-        .font(fontPath)
         .font('Vietnamese')
         .fontSize(9)
-        .text('Đã ký', 50, signatureY + 145, {
+        .text('Đã ký', 50, signatureY + 125, {
           width: 220,
           align: 'center',
         });
 
       doc
-        .font(fontPath)
         .font('Vietnamese')
         .fontSize(9)
         .text(
           data.benBDaKy ? 'Tôi xác nhận đã ký' : 'Chưa xác nhận ký',
           325,
-          signatureY + 145,
+          signatureY + 125,
           {
             width: 220,
             align: 'center',
           },
         );
+
+      // =========================
+      // HỌ VÀ TÊN
+      // =========================
+
+      doc
+        .font('Vietnamese')
+        .fontSize(10)
+        .text(data.benA.hoTen || 'Bên A', 50, signatureY + 145, {
+          width: 220,
+          align: 'center',
+        });
+
+      doc
+        .font('Vietnamese')
+        .fontSize(10)
+        .text(data.hoTen || '........................', 325, signatureY + 145, {
+          width: 220,
+          align: 'center',
+        });
 
       // =====================================================
       // FOOTER PAGE NUMBER
