@@ -1107,8 +1107,12 @@ const editingPhongId = ref<string | null>(null);
 const showPhongForm = ref(false);
 const editingGiuongId = ref<string | null>(null);
 const showGiuongForm = ref(false);
+
 const giuongSearch = ref("");
+const giuongStatusFilter = ref("all");
+
 const editingNguoiThueId = ref<string | null>(null);
+
 const showNguoiThueForm = ref(false);
 const cccdMatTruocInput = ref<HTMLInputElement | null>(null);
 const cccdMatSauInput = ref<HTMLInputElement | null>(null);
@@ -1237,16 +1241,35 @@ async function confirmDeleteHoaDon() {
 const deleteHopDongErrorMessage = ref("");
 const filteredGiuongs = computed(() => {
   const keyword = giuongSearch.value.trim().toLowerCase();
+  const statusFilter = giuongStatusFilter.value;
 
-  if (!keyword) {
-    return giuongs.value;
-  }
+  return giuongs.value.filter((giuong: any) => {
+    // ==============================
+    // 1. Lọc theo mã giường
+    // ==============================
+    const matchKeyword =
+      !keyword ||
+      String(giuong.maGiuong ?? "")
+        .toLowerCase()
+        .includes(keyword);
 
-  return giuongs.value.filter((giuong: any) =>
-    String(giuong.maGiuong ?? "")
-      .toLowerCase()
-      .includes(keyword),
-  );
+    // ==============================
+    // 2. Lọc theo trạng thái
+    // ==============================
+    const trangThai = String(giuong.trangThai ?? "").toLowerCase();
+
+    const normalizedTrangThai =
+      trangThai === "da_thue" ||
+      trangThai === "đã thuê" ||
+      trangThai === "occupied"
+        ? "da_thue"
+        : "chua_thue";
+
+    const matchStatus =
+      statusFilter === "all" || normalizedTrangThai === statusFilter;
+
+    return matchKeyword && matchStatus;
+  });
 });
 const giuongOptions = computed(() => {
   // Danh sách tối đa 8 giường
@@ -3417,7 +3440,17 @@ onMounted(() => {
           <th>Giường số</th> -->
                   <th class="dat-coc-header">Cọc sớm</th>
                   <th>Giá giường</th>
-                  <th>Trạng thái</th>
+                  <th class="giuong-status-header">
+                    <div class="giuong-status-filter">
+                      <span>Trạng thái</span>
+
+                      <select v-model="giuongStatusFilter">
+                        <option value="all">Tất cả</option>
+                        <option value="chua_thue">Chưa thuê</option>
+                        <option value="da_thue">Đã thuê</option>
+                      </select>
+                    </div>
+                  </th>
                   <th>Hành động</th>
                 </tr>
               </thead>
@@ -7610,5 +7643,32 @@ tbody tr:hover {
 
     box-sizing: border-box;
   }
+}
+
+.giuong-status-header {
+  min-width: 150px;
+}
+
+.giuong-status-filter {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+}
+
+.giuong-status-filter > span {
+  font-weight: 600;
+}
+
+.giuong-status-filter select {
+  width: 100%;
+  min-height: 34px;
+  padding: 5px 8px;
+  border: 1px solid #cbd5e1;
+  border-radius: 5px;
+  background: #ffffff;
+  color: #1e293b;
+  font-size: 13px;
+  cursor: pointer;
 }
 </style>
