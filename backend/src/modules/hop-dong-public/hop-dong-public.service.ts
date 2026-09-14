@@ -512,13 +512,13 @@ export class HopDongPublicService {
     if (!giuong) {
       throw new NotFoundException('Không tìm thấy giường.');
     }
+
+    const status = String(giuong.trangThai ?? '').toLowerCase();
+
     if (['da_thue', 'đã thuê', 'occupied'].includes(status)) {
       throw new BadRequestException('Giường này đã được thuê.');
     }
 
-    if (giuong.phong?.id !== phong.id) {
-      throw new BadRequestException('Giường không thuộc phòng đã chọn.');
-    }
     if (giuong.phong?.id !== phong.id) {
       throw new BadRequestException('Giường không thuộc phòng đã chọn.');
     }
