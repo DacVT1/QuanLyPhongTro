@@ -312,9 +312,11 @@ export class HopDongPublicService {
       cccdMatSau?: Express.Multer.File[];
     },
   ) {
-    if (!body.email) {
+    if (!body.email || !body.email.trim()) {
       throw new BadRequestException('Email người thuê không được để trống.');
     }
+
+    body.email = body.email.trim().toLowerCase();
 
     const cccdMatTruoc = files?.cccdMatTruoc?.[0];
     const cccdMatSau = files?.cccdMatSau?.[0];
@@ -340,6 +342,14 @@ export class HopDongPublicService {
     if (!phong) {
       throw new NotFoundException('Không tìm thấy phòng.');
     }
+
+    const tenant = phong.nhaTro?.tenant;
+
+    if (!tenant) {
+      throw new NotFoundException('Không xác định được tenant của nhà trọ.');
+    }
+
+    await this.checkDuplicateNguoiThueEmail(body.email, tenant.id);
 
     // Tìm giường
     const giuong = await this.giuongRepository.findOne({
@@ -500,6 +510,12 @@ export class HopDongPublicService {
     if (!phong) {
       throw new NotFoundException('Không tìm thấy phòng.');
     }
+    const tenant = phong.nhaTro?.tenant;
+    if (!tenant) {
+      throw new NotFoundException('Không xác định được tenant của nhà trọ.');
+    }
+
+    await this.checkDuplicateNguoiThueEmail(body.email, tenant.id);
 
     const giuong = await this.giuongRepository.findOne({
       where: {
@@ -797,5 +813,32 @@ export class HopDongPublicService {
     });
 
     return await this.hopDongRepository.save(hopDong);
+  }
+
+  private async checkDuplicateNguoiThueEmail(
+    email: string,
+    tenantId: string,
+  ): Promise<void> {
+    const normalizedEmail = email.trim().toLowerCase();
+
+    if (!normalizedEmail) {
+      throw new BadRequestException('Email người thuê không được để trống.');
+    }
+
+    const existingNguoiThue = await this.nguoiThueRepository
+      .createQueryBuilder('nguoiThue')
+      .where('LOWER(TRIM(nguoiThue.email)) = :email', {
+        email: normalizedEmail,
+      })
+      .andWhere('nguoiThue.tenant_id = :tenantId', {
+        tenantId,
+      })
+      .getOne();
+
+    if (existingNguoiThue) {
+      throw new BadRequestException(
+        'Gmail này đã tồn tại trong danh sách người thuê. Vui lòng sử dụng Gmail khác.',
+      );
+    }
   }
 }
