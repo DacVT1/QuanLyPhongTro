@@ -324,9 +324,16 @@ export class HopDongPublicPdfService {
 
       doc.y = imageStartY + imageHeight + 40;
 
-      addParagraph('Hai bên thống nhất các điều khoản sau:', {
-        align: 'left',
-      });
+      doc
+        .font('Vietnamese')
+        .fontSize(11)
+        .text('Hai bên thống nhất các điều khoản sau:', {
+          width: 495,
+          align: 'left',
+          lineGap: 3,
+        });
+
+      doc.moveDown(0.4);
 
       // =====================================================
       // ĐIỀU 1
