@@ -68,7 +68,7 @@ const verificationEmail = ref("");
 const verificationLoading = ref(false);
 
 const verificationMessage = ref("");
-const verificationSigningMessage = ref("");
+const verificationSigningStatus = ref(false);
 
 const errorMessage = ref("");
 const successMessage = ref("");
@@ -621,9 +621,8 @@ async function submitContract() {
 
     verificationEmail.value = form.value.email.trim();
 
-    verificationSigningMessage.value = form.value.benBDaKy
-      ? "Bạn đã đồng ý và xác nhận đã ký"
-      : "Bạn đã không đồng ý và không ký";
+    // Lưu lại trạng thái ký của Bên B trước khi chuyển sang màn hình xác nhận
+    verificationSigningStatus.value = form.value.benBDaKy;
 
     verificationMessage.value = "";
 
@@ -723,9 +722,15 @@ onMounted(() => {
         <div class="verification-box">
           <h2>XÁC NHẬN HỢP ĐỒNG</h2>
 
-          <p class="verification-signing-message">
-            {{ verificationSigningMessage }}
-          </p>
+          <div class="verification-signing-status">
+            <p v-if="verificationSigningStatus" class="signing-agreed">
+              Bạn đã đồng ý và xác nhận đã ký
+            </p>
+
+            <p v-else class="signing-not-agreed">
+              Bạn đã không đồng ý và không ký
+            </p>
+          </div>
 
           <p class="verification-note">
             Mã xác nhận đã được gửi đến email của bạn.
@@ -771,9 +776,6 @@ onMounted(() => {
             Mã xác nhận có hiệu lực trong 10 phút.
           </p>
         </div>
-        <!-- =================================================
-           HEADER
-      ================================================== -->
       </template>
       <template v-else>
         <header class="contract-header">
@@ -1972,5 +1974,33 @@ select:disabled {
   color: #2563eb;
   font-size: 16px;
   text-align: center;
+}
+
+.verification-signing-status {
+  margin: 24px 0;
+  text-align: center;
+}
+
+.signing-agreed,
+.signing-not-agreed {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.signing-agreed {
+  color: #15803d;
+}
+
+.signing-not-agreed {
+  color: #dc2626;
+}
+
+.verification-email {
+  display: block;
+  margin: 12px 0 20px;
+  text-align: center;
+  font-size: 16px;
 }
 </style>
