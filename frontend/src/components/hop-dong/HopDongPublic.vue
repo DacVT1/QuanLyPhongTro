@@ -68,6 +68,8 @@ const verificationEmail = ref("");
 const verificationLoading = ref(false);
 
 const verificationMessage = ref("");
+const verificationSigningMessage = ref("");
+
 const errorMessage = ref("");
 const successMessage = ref("");
 
@@ -619,12 +621,17 @@ async function submitContract() {
 
     verificationEmail.value = form.value.email.trim();
 
-    verificationMessage.value =
-      response.data?.message ?? "Mã xác nhận đã được gửi đến email của bạn.";
+    verificationSigningMessage.value = form.value.benBDaKy
+      ? "Bạn đã đồng ý và xác nhận đã ký"
+      : "Bạn đã không đồng ý và không ký";
+
+    verificationMessage.value = "";
 
     verificationCode.value = "";
 
     verificationStep.value = true;
+
+    successMessage.value = "";
 
     successMessage.value =
       response.data?.message ??
@@ -757,9 +764,15 @@ onMounted(() => {
       <div v-if="verificationStep" class="verification-box">
         <h2>XÁC NHẬN HỢP ĐỒNG</h2>
 
-        <p>Mã xác nhận đã được gửi đến email:</p>
+        <p class="verification-signing-message">
+          {{ verificationSigningMessage }}
+        </p>
 
-        <strong>
+        <p class="verification-note">
+          Mã xác nhận đã được gửi đến email của bạn.
+        </p>
+
+        <strong class="verification-email">
           {{ verificationEmail }}
         </strong>
 
@@ -772,7 +785,7 @@ onMounted(() => {
         </div>
 
         <div class="verification-input">
-          <label> Mã xác nhận </label>
+          <label>Mã xác nhận</label>
 
           <input
             v-model="verificationCode"
@@ -1941,5 +1954,20 @@ select:disabled {
   margin-top: 16px;
   color: #64748b;
   font-size: 13px;
+}
+
+.verification-signing-message {
+  margin: 20px 0 12px;
+  font-size: 18px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.verification-email {
+  display: block;
+  margin: 12px 0 20px;
+  color: #2563eb;
+  font-size: 16px;
+  text-align: center;
 }
 </style>
