@@ -654,7 +654,19 @@ export class HopDongPublicService {
     if (!tenant) {
       throw new NotFoundException('Không xác định được tenant của nhà trọ.');
     }
+    // Kiểm tra Người thuê đã tồn tại theo CCCD trong cùng tenant
+    const existingNguoiThue = await this.nguoiThueRepository.findOne({
+      where: {
+        cccd: body.cccd?.trim(),
+        tenant: {
+          id: tenant.id,
+        },
+      },
+    });
 
+    if (existingNguoiThue) {
+      return existingNguoiThue;
+    }
     // Lưu ảnh CCCD
     const cccdMatTruoc = await this.saveNguoiThueImage(
       pending.cccdMatTruoc,
