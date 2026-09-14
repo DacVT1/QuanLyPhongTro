@@ -5,6 +5,7 @@ import { TaiKhoan } from '../../entities/tai-khoan.entity';
 import { NhaTro } from '../../entities/nha-tro.entity';
 import { Phong } from '../../entities/phong.entity';
 import { Giuong } from '../../entities/giuong.entity';
+import { NguoiThue } from '../../entities/nguoi-thue.entity';
 
 import { HopDongPublicController } from './hop-dong-public.controller';
 import { HopDongPublicService } from './hop-dong-public.service';
@@ -14,7 +15,14 @@ import { HopDongXacNhan } from '../../entities/hop-dong-xac-nhan.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([TaiKhoan, NhaTro, Phong, Giuong, HopDongXacNhan]),
+    TypeOrmModule.forFeature([
+      TaiKhoan,
+      NhaTro,
+      Phong,
+      Giuong,
+      HopDongXacNhan,
+      NguoiThue,
+    ]),
     EmailModule,
   ],
 
