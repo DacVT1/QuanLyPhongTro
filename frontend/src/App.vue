@@ -4297,7 +4297,7 @@ onMounted(() => {
             <table>
               <thead>
                 <tr>
-                  <th>Mã HĐ</th>
+                  <th>Mã HĐ(Giường)</th>
                   <th>Người thuê</th>
                   <th>Tổng tiền</th>
                   <th>Trạng thái</th>
@@ -4357,6 +4357,16 @@ onMounted(() => {
                     >
                       Xóa
                     </button>
+                  </td>
+                </tr>
+
+                <tr v-if="filteredHoaDons.length === 0">
+                  <td colspan="7" style="text-align: center">
+                    {{
+                      hoaDonSearch
+                        ? "Không tìm thấy hóa đơn phù hợp."
+                        : "Chưa có hóa đơn"
+                    }}
                   </td>
                 </tr>
               </tbody>
