@@ -50,4 +50,42 @@ export class HopDongPublicController {
   ) {
     return this.hopDongPublicService.submitContract(body, files);
   }
+
+  @Post('request-verification')
+  @UseInterceptors(
+    FileFieldsInterceptor([
+      {
+        name: 'cccdMatTruoc',
+        maxCount: 1,
+      },
+      {
+        name: 'cccdMatSau',
+        maxCount: 1,
+      },
+    ]),
+  )
+  async requestVerification(
+    @Body() body: any,
+    @UploadedFiles()
+    files: {
+      cccdMatTruoc?: Express.Multer.File[];
+      cccdMatSau?: Express.Multer.File[];
+    },
+  ) {
+    return this.hopDongPublicService.requestVerification(body, files);
+  }
+
+  @Post('verify')
+  async verifyContract(
+    @Body()
+    body: {
+      verificationId: string;
+      code: string;
+    },
+  ) {
+    return this.hopDongPublicService.verifyContract(
+      body.verificationId,
+      body.code,
+    );
+  }
 }

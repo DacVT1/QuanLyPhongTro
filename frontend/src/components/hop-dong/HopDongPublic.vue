@@ -57,7 +57,17 @@ interface BenA {
 
 const loading = ref(true);
 const submitting = ref(false);
+const verificationStep = ref(false);
 
+const verificationCode = ref("");
+
+const verificationId = ref("");
+
+const verificationEmail = ref("");
+
+const verificationLoading = ref(false);
+
+const verificationMessage = ref("");
 const errorMessage = ref("");
 const successMessage = ref("");
 
@@ -600,7 +610,21 @@ async function submitContract() {
     // =========================
     // GỬI HỢP ĐỒNG
     // =========================
-    const response = await api.post("/public/hop-dong/submit", formData);
+    const response = await api.post(
+      "/public/hop-dong/request-verification",
+      formData,
+    );
+
+    verificationId.value = response.data?.verificationId ?? "";
+
+    verificationEmail.value = form.value.email.trim();
+
+    verificationMessage.value =
+      response.data?.message ?? "Mã xác nhận đã được gửi đến email của bạn.";
+
+    verificationCode.value = "";
+
+    verificationStep.value = true;
 
     successMessage.value =
       response.data?.message ??
@@ -626,6 +650,56 @@ async function submitContract() {
   }
 }
 
+async function verifyContract() {
+  errorMessage.value = "";
+  successMessage.value = "";
+  verificationMessage.value = "";
+
+  const code = verificationCode.value.trim();
+
+  if (!code) {
+    verificationMessage.value = "Vui lòng nhập mã xác nhận.";
+
+    return;
+  }
+
+  if (!/^\d{6}$/.test(code)) {
+    verificationMessage.value = "Mã xác nhận phải gồm 6 chữ số.";
+
+    return;
+  }
+
+  verificationLoading.value = true;
+
+  try {
+    const response = await api.post("/public/hop-dong/verify", {
+      verificationId: verificationId.value,
+
+      code,
+    });
+
+    successMessage.value =
+      response.data?.message ??
+      "Xác nhận thành công. Hợp đồng đã được gửi đến email.";
+
+    verificationStep.value = false;
+
+    verificationCode.value = "";
+
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+  } catch (error: any) {
+    console.error("Không thể xác nhận OTP:", error);
+
+    verificationMessage.value =
+      error?.response?.data?.message ??
+      "Mã xác nhận không đúng. Vui lòng thử lại.";
+  } finally {
+    verificationLoading.value = false;
+  }
+}
 /* =========================================================
  * INIT
  * ======================================================= */
@@ -680,8 +754,53 @@ onMounted(() => {
       <div v-if="successMessage" class="message message-success">
         {{ successMessage }}
       </div>
+      <div v-if="verificationStep" class="verification-box">
+        <h2>XÁC NHẬN HỢP ĐỒNG</h2>
 
-      <template v-if="!loading">
+        <p>Mã xác nhận đã được gửi đến email:</p>
+
+        <strong>
+          {{ verificationEmail }}
+        </strong>
+
+        <p class="verification-note">
+          Vui lòng kiểm tra email và nhập mã xác nhận gồm 6 chữ số.
+        </p>
+
+        <div v-if="verificationMessage" class="message message-error">
+          {{ verificationMessage }}
+        </div>
+
+        <div class="verification-input">
+          <label> Mã xác nhận </label>
+
+          <input
+            v-model="verificationCode"
+            type="text"
+            inputmode="numeric"
+            maxlength="6"
+            autocomplete="one-time-code"
+            placeholder="Nhập mã 6 chữ số"
+          />
+        </div>
+
+        <button
+          type="button"
+          class="submit-button"
+          :disabled="verificationLoading"
+          @click="verifyContract"
+        >
+          <span v-if="verificationLoading"> Đang xác nhận... </span>
+
+          <span v-else> Xác nhận mã </span>
+        </button>
+
+        <p class="verification-expire">
+          Mã xác nhận có hiệu lực trong 10 phút.
+        </p>
+      </div>
+
+      <template v-if="!loading && !verificationStep">
         <!-- =================================================
              BÊN A
         ================================================== -->
@@ -1764,5 +1883,63 @@ select:disabled {
   font-size: 13px;
   color: #666;
   word-break: break-all;
+}
+
+.verification-box {
+  max-width: 560px;
+  margin: 40px auto;
+  padding: 32px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  background: #f8fafc;
+  text-align: center;
+}
+
+.verification-box h2 {
+  margin: 0 0 20px;
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.verification-box p {
+  margin: 8px 0;
+  line-height: 1.6;
+}
+
+.verification-box strong {
+  display: block;
+  margin: 8px 0 18px;
+  color: #2563eb;
+}
+
+.verification-note {
+  color: #475569;
+  font-size: 14px;
+}
+
+.verification-input {
+  margin: 24px 0;
+  text-align: left;
+}
+
+.verification-input label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 650;
+}
+
+.verification-input input {
+  width: 100%;
+  min-height: 48px;
+  text-align: center;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 8px;
+}
+
+.verification-expire {
+  margin-top: 16px;
+  color: #64748b;
+  font-size: 13px;
 }
 </style>
