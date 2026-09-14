@@ -545,33 +545,38 @@ export class HopDongPublicService {
     if (giuong.phong?.id !== phong.id) {
       throw new BadRequestException('Giường không thuộc phòng đã chọn.');
     }
-
-    const nguoiThue = await this.createNguoiThueFromContract(
-      pending,
-      giuong.phong,
-    );
-
-    if (!nguoiThue) {
-      throw new BadRequestException(
-        'Không thể xác định người thuê để tạo hợp đồng.',
+    const daDongY =
+      body.dongYHopDong === true ||
+      body.dongYHopDong === 'true' ||
+      body.dongYHopDong === 1 ||
+      body.dongYHopDong === '1';
+    if (daDongY) {
+      const nguoiThue = await this.createNguoiThueFromContract(
+        pending,
+        giuong.phong,
       );
+
+      if (!nguoiThue) {
+        throw new BadRequestException(
+          'Không thể xác định người thuê để tạo hợp đồng.',
+        );
+      }
+
+      const hopDong = await this.createHopDongFromContract(
+        pending,
+        phong,
+        giuong,
+        nguoiThue,
+      );
+
+      if (!hopDong) {
+        throw new BadRequestException('Không thể tạo hợp đồng.');
+      }
+
+      giuong.trangThai = 'da_thue';
+
+      await this.giuongRepository.save(giuong);
     }
-
-    const hopDong = await this.createHopDongFromContract(
-      pending,
-      phong,
-      giuong,
-      nguoiThue,
-    );
-
-    if (!hopDong) {
-      throw new BadRequestException('Không thể tạo hợp đồng.');
-    }
-
-    giuong.trangThai = 'da_thue';
-
-    await this.giuongRepository.save(giuong);
-
     const pdfBuffer = await this.pdfService.generate({
       benA: {
         hoTen: 'Nguyễn Thị Chi',
