@@ -327,7 +327,7 @@ export class HopDongPublicPdfService {
       doc
         .font('Vietnamese')
         .fontSize(11)
-        .text('Hai bên thống nhất các điều khoản sau:', {
+        .text('Hai bên thống nhất các điều khoản sau:', 50, doc.y, {
           width: 495,
           align: 'left',
           lineGap: 3,
@@ -542,7 +542,7 @@ export class HopDongPublicPdfService {
         .font('Vietnamese')
         .fontSize(9)
         .text(
-          data.benBDaKy ? 'Tôi xác nhận đã ký' : 'Chưa xác nhận ký',
+          data.benBDaKy ? 'Đã ký xác nhận' : 'Chưa ký xác nhận',
           325,
           signatureY + 125,
           {

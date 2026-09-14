@@ -1181,15 +1181,15 @@ onMounted(() => {
 
               <div class="signature-space"></div>
 
-              <div class="signature-name">
-                {{ benA.hoTen || "Bên A" }}
-              </div>
-
               <label class="signature-checkbox">
                 <input type="checkbox" checked disabled />
 
                 <span>Đã ký</span>
               </label>
+
+              <div class="signature-name">
+                {{ benA.hoTen || "Bên A" }}
+              </div>
             </div>
 
             <!-- BÊN B -->
@@ -1202,16 +1202,14 @@ onMounted(() => {
               <p class="signature-note">(Xác nhận ký, ghi rõ họ tên)</p>
 
               <div class="signature-space"></div>
-
-              <div class="signature-name">
-                {{ form.hoTen || "........................" }}
-              </div>
-
               <label class="signature-checkbox">
                 <input v-model="form.benBDaKy" type="checkbox" />
 
                 <span>Tôi xác nhận đã ký</span>
               </label>
+              <div class="signature-name">
+                {{ form.hoTen || "........................" }}
+              </div>
             </div>
           </div>
 
