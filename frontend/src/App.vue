@@ -1110,6 +1110,7 @@ const showGiuongForm = ref(false);
 
 const giuongSearch = ref("");
 const giuongStatusFilter = ref("all");
+const giuongStatusFilterOpen = ref(false);
 
 const editingNguoiThueId = ref<string | null>(null);
 
@@ -3444,11 +3445,57 @@ onMounted(() => {
                     <div class="giuong-status-filter">
                       <span>Trạng thái</span>
 
-                      <select v-model="giuongStatusFilter">
-                        <option value="all">Tất cả</option>
-                        <option value="chua_thue">Chưa thuê</option>
-                        <option value="da_thue">Đã thuê</option>
-                      </select>
+                      <button
+                        type="button"
+                        class="giuong-filter-button"
+                        title="Lọc trạng thái"
+                        @click.stop="
+                          giuongStatusFilterOpen = !giuongStatusFilterOpen
+                        "
+                      >
+                        <span class="giuong-filter-icon">☰</span>
+                      </button>
+
+                      <div
+                        v-if="giuongStatusFilterOpen"
+                        class="giuong-status-dropdown"
+                        @click.stop
+                      >
+                        <button
+                          type="button"
+                          :class="{ active: giuongStatusFilter === 'all' }"
+                          @click="
+                            giuongStatusFilter = 'all';
+                            giuongStatusFilterOpen = false;
+                          "
+                        >
+                          Tất cả
+                        </button>
+
+                        <button
+                          type="button"
+                          :class="{
+                            active: giuongStatusFilter === 'chua_thue',
+                          }"
+                          @click="
+                            giuongStatusFilter = 'chua_thue';
+                            giuongStatusFilterOpen = false;
+                          "
+                        >
+                          Chưa thuê
+                        </button>
+
+                        <button
+                          type="button"
+                          :class="{ active: giuongStatusFilter === 'da_thue' }"
+                          @click="
+                            giuongStatusFilter = 'da_thue';
+                            giuongStatusFilterOpen = false;
+                          "
+                        >
+                          Đã thuê
+                        </button>
+                      </div>
                     </div>
                   </th>
                   <th>Hành động</th>
@@ -7646,29 +7693,74 @@ tbody tr:hover {
 }
 
 .giuong-status-header {
-  min-width: 150px;
+  min-width: 130px;
 }
 
 .giuong-status-filter {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 6px;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
-.giuong-status-filter > span {
-  font-weight: 600;
-}
-
-.giuong-status-filter select {
-  width: 100%;
-  min-height: 34px;
-  padding: 5px 8px;
+.giuong-filter-button {
+  width: 28px;
+  height: 28px;
+  padding: 0;
   border: 1px solid #cbd5e1;
   border-radius: 5px;
   background: #ffffff;
-  color: #1e293b;
-  font-size: 13px;
+  color: #475569;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.giuong-filter-button:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.giuong-filter-icon {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.giuong-status-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 1000;
+  min-width: 130px;
+  padding: 5px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.giuong-status-dropdown button {
+  display: block;
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: #334155;
+  text-align: left;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.giuong-status-dropdown button:hover {
+  background: #f1f5f9;
+}
+
+.giuong-status-dropdown button.active {
+  background: #e2e8f0;
+  font-weight: 600;
+  color: #0f172a;
 }
 </style>
