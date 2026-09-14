@@ -719,25 +719,78 @@ onMounted(() => {
 <template>
   <div class="contract-page">
     <div class="contract-paper">
-      <!-- =================================================
+      <template v-if="verificationStep">
+        <div class="verification-box">
+          <h2>XÁC NHẬN HỢP ĐỒNG</h2>
+
+          <p class="verification-signing-message">
+            {{ verificationSigningMessage }}
+          </p>
+
+          <p class="verification-note">
+            Mã xác nhận đã được gửi đến email của bạn.
+          </p>
+
+          <strong class="verification-email">
+            {{ verificationEmail }}
+          </strong>
+
+          <p class="verification-note">
+            Vui lòng kiểm tra email và nhập mã xác nhận gồm 6 chữ số.
+          </p>
+
+          <div v-if="verificationMessage" class="message message-error">
+            {{ verificationMessage }}
+          </div>
+
+          <div class="verification-input">
+            <label>Mã xác nhận</label>
+
+            <input
+              v-model="verificationCode"
+              type="text"
+              inputmode="numeric"
+              maxlength="6"
+              autocomplete="one-time-code"
+              placeholder="Nhập mã 6 chữ số"
+            />
+          </div>
+
+          <button
+            type="button"
+            class="submit-button"
+            :disabled="verificationLoading"
+            @click="verifyContract"
+          >
+            <span v-if="verificationLoading"> Đang xác nhận... </span>
+
+            <span v-else> Xác nhận mã </span>
+          </button>
+
+          <p class="verification-expire">
+            Mã xác nhận có hiệu lực trong 10 phút.
+          </p>
+        </div>
+        <!-- =================================================
            HEADER
       ================================================== -->
+      </template>
+      <template v-else>
+        <header class="contract-header">
+          <div class="national-title">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
 
-      <header class="contract-header">
-        <div class="national-title">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
+          <div class="national-subtitle">Độc lập - Tự do - Hạnh phúc</div>
 
-        <div class="national-subtitle">Độc lập - Tự do - Hạnh phúc</div>
+          <div class="header-line"></div>
 
-        <div class="header-line"></div>
+          <h1>HỢP ĐỒNG THUÊ TRỌ</h1>
 
-        <h1>HỢP ĐỒNG THUÊ TRỌ</h1>
-
-        <p class="legal-basis">
-          Căn cứ Bộ luật Dân sự 2015 và Luật Nhà ở 2023, hai bên tự nguyện thỏa
-          thuận các điều khoản của hợp đồng như sau:
-        </p>
-      </header>
-
+          <p class="legal-basis">
+            Căn cứ Bộ luật Dân sự 2015 và Luật Nhà ở 2023, hai bên tự nguyện
+            thỏa thuận các điều khoản của hợp đồng như sau:
+          </p>
+        </header>
+      </template>
       <!-- =================================================
            LOADING
       ================================================== -->
@@ -760,57 +813,6 @@ onMounted(() => {
 
       <div v-if="successMessage" class="message message-success">
         {{ successMessage }}
-      </div>
-      <div v-if="verificationStep" class="verification-box">
-        <h2>XÁC NHẬN HỢP ĐỒNG</h2>
-
-        <p class="verification-signing-message">
-          {{ verificationSigningMessage }}
-        </p>
-
-        <p class="verification-note">
-          Mã xác nhận đã được gửi đến email của bạn.
-        </p>
-
-        <strong class="verification-email">
-          {{ verificationEmail }}
-        </strong>
-
-        <p class="verification-note">
-          Vui lòng kiểm tra email và nhập mã xác nhận gồm 6 chữ số.
-        </p>
-
-        <div v-if="verificationMessage" class="message message-error">
-          {{ verificationMessage }}
-        </div>
-
-        <div class="verification-input">
-          <label>Mã xác nhận</label>
-
-          <input
-            v-model="verificationCode"
-            type="text"
-            inputmode="numeric"
-            maxlength="6"
-            autocomplete="one-time-code"
-            placeholder="Nhập mã 6 chữ số"
-          />
-        </div>
-
-        <button
-          type="button"
-          class="submit-button"
-          :disabled="verificationLoading"
-          @click="verifyContract"
-        >
-          <span v-if="verificationLoading"> Đang xác nhận... </span>
-
-          <span v-else> Xác nhận mã </span>
-        </button>
-
-        <p class="verification-expire">
-          Mã xác nhận có hiệu lực trong 10 phút.
-        </p>
       </div>
 
       <template v-if="!loading && !verificationStep">
@@ -1957,9 +1959,10 @@ select:disabled {
 }
 
 .verification-signing-message {
-  margin: 20px 0 12px;
+  margin: 20px 0 16px;
   font-size: 18px;
   font-weight: 700;
+  line-height: 1.5;
   text-align: center;
 }
 
