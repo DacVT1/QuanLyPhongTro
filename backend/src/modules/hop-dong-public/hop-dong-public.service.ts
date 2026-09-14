@@ -12,6 +12,7 @@ import { Phong } from '../../entities/phong.entity';
 import { Giuong } from '../../entities/giuong.entity';
 import { HopDongPublicPdfService } from './hop-dong-public-pdf.service';
 import { EmailService } from '../email/email.service';
+import { HopDongXacNhan } from 'src/entities/hop-dong-xac-nhan.entity';
 
 @Injectable()
 export class HopDongPublicService {
@@ -35,16 +36,34 @@ export class HopDongPublicService {
 
     @InjectRepository(Giuong)
     private readonly giuongRepository: Repository<Giuong>,
+
+    @InjectRepository(HopDongXacNhan)
+    private readonly hopDongXacNhanRepository: Repository<HopDongXacNhan>,
     private readonly emailService: EmailService,
     private readonly pdfService: HopDongPublicPdfService,
   ) {}
 
-  async submitContract(body: any) {
+  async submitContract(
+    body: any,
+    files: {
+      cccdMatTruoc?: Express.Multer.File[];
+      cccdMatSau?: Express.Multer.File[];
+    },
+  ) {
     // 1. Validate dữ liệu
     if (!body.email) {
       throw new BadRequestException('Email người thuê không được để trống.');
     }
+    const cccdMatTruoc = files?.cccdMatTruoc?.[0];
+    const cccdMatSau = files?.cccdMatSau?.[0];
 
+    if (!cccdMatTruoc) {
+      throw new BadRequestException('Vui lòng cung cấp ảnh CCCD mặt trước.');
+    }
+
+    if (!cccdMatSau) {
+      throw new BadRequestException('Vui lòng cung cấp ảnh CCCD mặt sau.');
+    }
     // 2. Tìm phòng
     const phong = await this.phongRepository.findOne({
       where: {
@@ -116,6 +135,8 @@ export class HopDongPublicService {
       ngaySinh: body.ngaySinh,
       diaChi: body.diaChi,
       bienSoXe: body.bienSoXe,
+      cccdMatTruoc: cccdMatTruoc.buffer,
+      cccdMatSau: cccdMatSau.buffer,
 
       // =========================
       // ĐIỀU 1
@@ -141,8 +162,17 @@ export class HopDongPublicService {
       // =========================
       // XÁC NHẬN
       // =========================
-      benBDaKy: Boolean(body.benBDaKy),
-      dongYHopDong: Boolean(body.dongYHopDong),
+      benBDaKy:
+        body.benBDaKy === true ||
+        body.benBDaKy === 'true' ||
+        body.benBDaKy === 1 ||
+        body.benBDaKy === '1',
+
+      dongYHopDong:
+        body.dongYHopDong === true ||
+        body.dongYHopDong === 'true' ||
+        body.dongYHopDong === 1 ||
+        body.dongYHopDong === '1',
     });
 
     // 7. Tạo tên file
@@ -249,6 +279,285 @@ export class HopDongPublicService {
       nhaTros,
       phongs,
       giuongs,
+    };
+  }
+
+  async requestVerification(
+    body: any,
+    files: {
+      cccdMatTruoc?: Express.Multer.File[];
+      cccdMatSau?: Express.Multer.File[];
+    },
+  ) {
+    if (!body.email) {
+      throw new BadRequestException('Email người thuê không được để trống.');
+    }
+
+    const cccdMatTruoc = files?.cccdMatTruoc?.[0];
+    const cccdMatSau = files?.cccdMatSau?.[0];
+
+    if (!cccdMatTruoc) {
+      throw new BadRequestException('Vui lòng cung cấp ảnh CCCD mặt trước.');
+    }
+
+    if (!cccdMatSau) {
+      throw new BadRequestException('Vui lòng cung cấp ảnh CCCD mặt sau.');
+    }
+
+    // Tìm phòng
+    const phong = await this.phongRepository.findOne({
+      where: {
+        id: body.phongId,
+      },
+      relations: {
+        nhaTro: true,
+      },
+    });
+
+    if (!phong) {
+      throw new NotFoundException('Không tìm thấy phòng.');
+    }
+
+    // Tìm giường
+    const giuong = await this.giuongRepository.findOne({
+      where: {
+        id: body.giuongId,
+      },
+      relations: {
+        phong: {
+          nhaTro: true,
+        },
+      },
+    });
+
+    if (!giuong) {
+      throw new NotFoundException('Không tìm thấy giường.');
+    }
+
+    const status = String(giuong.trangThai ?? '').toLowerCase();
+
+    if (['da_thue', 'đã thuê', 'occupied'].includes(status)) {
+      throw new BadRequestException('Giường này đã được thuê.');
+    }
+
+    // OTP 6 số
+    const verificationCode = Math.floor(
+      100000 + Math.random() * 900000,
+    ).toString();
+
+    // OTP hết hạn sau 10 phút
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+    const benBDaKy =
+      body.benBDaKy === true ||
+      body.benBDaKy === 'true' ||
+      body.benBDaKy === 1 ||
+      body.benBDaKy === '1';
+
+    const dongYHopDong =
+      body.dongYHopDong === true ||
+      body.dongYHopDong === 'true' ||
+      body.dongYHopDong === 1 ||
+      body.dongYHopDong === '1';
+
+    if (!dongYHopDong) {
+      throw new BadRequestException('Bên B chưa đồng ý với nội dung hợp đồng.');
+    }
+
+    const pendingContract = this.hopDongXacNhanRepository.create({
+      email: body.email.trim(),
+      hoTen: body.hoTen.trim(),
+
+      verificationCode,
+
+      expiresAt,
+
+      verified: false,
+
+      attemptCount: 0,
+
+      contractData: {
+        hoTen: body.hoTen,
+        cccd: body.cccd,
+        sdt: body.sdt,
+        email: body.email,
+        ngaySinh: body.ngaySinh,
+        diaChi: body.diaChi,
+        bienSoXe: body.bienSoXe,
+
+        nhaTroId: body.nhaTroId,
+        tangSo: body.tangSo,
+        phongId: body.phongId,
+        giuongId: body.giuongId,
+
+        tienDatCoc: Number(body.tienDatCoc),
+
+        ngayBatDau: body.ngayBatDau,
+        ngayKetThuc: body.ngayKetThuc,
+
+        benBDaKy,
+        dongYHopDong,
+      },
+
+      cccdMatTruoc: cccdMatTruoc.buffer,
+
+      cccdMatSau: cccdMatSau.buffer,
+
+      cccdMatTruocMimeType: cccdMatTruoc.mimetype,
+
+      cccdMatSauMimeType: cccdMatSau.mimetype,
+    });
+
+    const saved = await this.hopDongXacNhanRepository.save(pendingContract);
+
+    await this.emailService.sendContractVerificationCode(
+      body.email.trim(),
+      body.hoTen.trim(),
+      verificationCode,
+      benBDaKy,
+    );
+
+    return {
+      success: true,
+
+      verificationId: saved.id,
+
+      message: 'Mã xác nhận đã được gửi đến email của Bên B.',
+    };
+  }
+
+  async verifyContract(verificationId: string, code: string) {
+    const pending = await this.hopDongXacNhanRepository.findOne({
+      where: {
+        id: verificationId,
+      },
+    });
+
+    if (!pending) {
+      throw new NotFoundException('Không tìm thấy yêu cầu xác nhận hợp đồng.');
+    }
+
+    if (pending.verified) {
+      throw new BadRequestException('Mã xác nhận này đã được sử dụng.');
+    }
+
+    if (new Date() > new Date(pending.expiresAt)) {
+      throw new BadRequestException(
+        'Mã xác nhận đã hết hạn. Vui lòng yêu cầu mã mới.',
+      );
+    }
+
+    if (pending.attemptCount >= 5) {
+      throw new BadRequestException('Bạn đã nhập sai mã quá số lần cho phép.');
+    }
+
+    if (String(code).trim() !== String(pending.verificationCode)) {
+      pending.attemptCount += 1;
+
+      await this.hopDongXacNhanRepository.save(pending);
+
+      throw new BadRequestException(
+        'Mã xác nhận không đúng. Vui lòng kiểm tra lại.',
+      );
+    }
+
+    const body = pending.contractData;
+
+    const phong = await this.phongRepository.findOne({
+      where: {
+        id: body.phongId,
+      },
+      relations: {
+        nhaTro: true,
+      },
+    });
+
+    if (!phong) {
+      throw new NotFoundException('Không tìm thấy phòng.');
+    }
+
+    const giuong = await this.giuongRepository.findOne({
+      where: {
+        id: body.giuongId,
+      },
+      relations: {
+        phong: {
+          nhaTro: true,
+        },
+      },
+    });
+
+    if (!giuong) {
+      throw new NotFoundException('Không tìm thấy giường.');
+    }
+
+    const pdfBuffer = await this.pdfService.generate({
+      benA: {
+        hoTen: 'Nguyễn Thị Chi',
+        cccd: '0909889908098',
+        ngayCap: '12/13/2026',
+        noiCap: 'Bộ công an',
+        sdt: '098989898',
+        nganHang: 'Viettin bank',
+        soTaiKhoan: '09453242344',
+        chuTaiKhoan: 'Nguyễn Thị Chi',
+        diaChi: 'Cầu Giấy',
+      },
+
+      hoTen: body.hoTen,
+      cccd: body.cccd,
+      sdt: body.sdt,
+      email: body.email,
+      ngaySinh: body.ngaySinh,
+      diaChi: body.diaChi,
+      bienSoXe: body.bienSoXe,
+
+      cccdMatTruoc: pending.cccdMatTruoc,
+
+      cccdMatSau: pending.cccdMatSau,
+
+      tenNhaTro: phong.nhaTro?.tenNhaTro ?? '',
+
+      diaChiNhaTro: phong.nhaTro?.diaChi ?? '',
+
+      tangSo: phong.tangSo,
+
+      maPhong: phong.maPhong,
+
+      giuongSo: giuong.giuongSo,
+
+      tienDatCoc: Number(body.tienDatCoc),
+
+      tienThue: Number(giuong.giaGiuong),
+
+      ngayBatDau: body.ngayBatDau,
+
+      ngayKetThuc: body.ngayKetThuc,
+
+      benBDaKy: body.benBDaKy,
+
+      dongYHopDong: body.dongYHopDong,
+    });
+
+    const fileName =
+      `Hop-Dong-Thue-Tro-${body.hoTen}`.replace(/[^a-zA-Z0-9À-ỹ0-9-_]/g, '-') +
+      '.pdf';
+
+    await this.emailService.sendContractPdf(
+      [body.email, 'nguyenchihau@gmail.com'],
+      fileName,
+      pdfBuffer,
+      body.hoTen,
+    );
+
+    pending.verified = true;
+
+    await this.hopDongXacNhanRepository.save(pending);
+
+    return {
+      success: true,
+
+      message: 'Xác nhận thành công. Hợp đồng đã được gửi đến email của bạn.',
     };
   }
 }

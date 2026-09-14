@@ -57,6 +57,18 @@ interface BenA {
 
 const loading = ref(true);
 const submitting = ref(false);
+const verificationStep = ref(false);
+
+const verificationCode = ref("");
+
+const verificationId = ref("");
+
+const verificationEmail = ref("");
+
+const verificationLoading = ref(false);
+
+const verificationMessage = ref("");
+const verificationSigningStatus = ref(false);
 
 const errorMessage = ref("");
 const successMessage = ref("");
@@ -99,11 +111,10 @@ const benA = ref<BenA>({
  * ======================================================= */
 
 const form = ref({
-  // =========================
-  // Bên B
-  // =========================
   hoTen: "",
   cccd: "",
+  cccdMatTruoc: null as File | null,
+  cccdMatSau: null as File | null,
   sdt: "",
   email: "",
   ngaySinh: "",
@@ -136,6 +147,46 @@ const form = ref({
   dongYHopDong: false,
 });
 
+const cccdMatTruocPreview = ref("");
+const cccdMatSauPreview = ref("");
+
+function handleCccdMatTruocChange(event: Event) {
+  const input = event.target as HTMLInputElement;
+
+  const file = input.files?.[0] ?? null;
+
+  form.value.cccdMatTruoc = file;
+
+  if (cccdMatTruocPreview.value) {
+    URL.revokeObjectURL(cccdMatTruocPreview.value);
+  }
+
+  cccdMatTruocPreview.value = file ? URL.createObjectURL(file) : "";
+}
+
+function handleCccdMatSauChange(event: Event) {
+  const input = event.target as HTMLInputElement;
+
+  const file = input.files?.[0] ?? null;
+
+  form.value.cccdMatSau = file;
+
+  if (cccdMatSauPreview.value) {
+    URL.revokeObjectURL(cccdMatSauPreview.value);
+  }
+
+  cccdMatSauPreview.value = file ? URL.createObjectURL(file) : "";
+}
+
+function isValidImage(file: File | null) {
+  if (!file) {
+    return false;
+  }
+
+  return ["image/jpeg", "image/jpg", "image/png", "image/webp"].includes(
+    file.type,
+  );
+}
 /* =========================================================
  * DISPLAY MONEY
  * ======================================================= */
@@ -343,6 +394,17 @@ function validateForm() {
     return false;
   }
 
+  if (!form.value.sdt.trim()) {
+    errorMessage.value = "Vui lòng nhập số điện thoại.";
+    return false;
+  }
+
+  if (!/^0\d{9}$/.test(form.value.sdt)) {
+    errorMessage.value =
+      "Số điện thoại phải có đúng 10 chữ số và bắt đầu bằng 0.";
+    return false;
+  }
+
   if (!form.value.cccd.trim()) {
     errorMessage.value = "Vui lòng nhập số CCCD.";
     return false;
@@ -353,14 +415,25 @@ function validateForm() {
     return false;
   }
 
-  if (!form.value.sdt.trim()) {
-    errorMessage.value = "Vui lòng nhập số điện thoại.";
+  if (!form.value.cccdMatTruoc) {
+    errorMessage.value = "Vui lòng chọn ảnh CCCD mặt trước.";
     return false;
   }
 
-  if (!/^0\d{9}$/.test(form.value.sdt)) {
+  if (!isValidImage(form.value.cccdMatTruoc)) {
     errorMessage.value =
-      "Số điện thoại phải có đúng 10 chữ số và bắt đầu bằng 0.";
+      "Ảnh CCCD mặt trước phải có định dạng JPG, JPEG, PNG hoặc WEBP.";
+    return false;
+  }
+
+  if (!form.value.cccdMatSau) {
+    errorMessage.value = "Vui lòng chọn ảnh CCCD mặt sau.";
+    return false;
+  }
+
+  if (!isValidImage(form.value.cccdMatSau)) {
+    errorMessage.value =
+      "Ảnh CCCD mặt sau phải có định dạng JPG, JPEG, PNG hoặc WEBP.";
     return false;
   }
 
@@ -429,15 +502,15 @@ function validateForm() {
     return false;
   }
 
-  if (!form.value.bienSoXe.trim()) {
-    errorMessage.value = "Vui lòng nhập biển số xe.";
-    return false;
-  }
+  // if (!form.value.bienSoXe.trim()) {
+  //   errorMessage.value = "Vui lòng nhập biển số xe.";
+  //   return false;
+  // }
 
-  if (form.value.tienDatCoc <= 0) {
-    errorMessage.value = "Vui lòng nhập tiền đặt cọc.";
-    return false;
-  }
+  // if (form.value.tienDatCoc <= 0) {
+  //   errorMessage.value = "Vui lòng nhập tiền đặt cọc.";
+  //   return false;
+  // }
 
   return true;
 }
@@ -477,6 +550,7 @@ async function loadData() {
 
 async function submitContract() {
   successMessage.value = "";
+  errorMessage.value = "";
 
   if (!validateForm()) {
     window.scrollTo({
@@ -486,62 +560,81 @@ async function submitContract() {
 
     return;
   }
-  const response = await api.post("/public/hop-dong/submit", {
-    ...form.value,
-  });
-  successMessage.value =
-    response.data?.message ??
-    "Hợp đồng đã được tạo và gửi qua email thành công.";
+
   submitting.value = true;
-  errorMessage.value = "";
 
   try {
-    const token = new URLSearchParams(window.location.search).get("token");
+    const formData = new FormData();
 
-    /*
-     * Không gửi tenantId, nhaTroId, phongId,
-     * giuongId từ frontend để backend tự tin tưởng.
-     *
-     * Backend phải lấy các dữ liệu này từ token.
-     */
+    // =========================
+    // THÔNG TIN NGƯỜI THUÊ
+    // =========================
+    formData.append("hoTen", form.value.hoTen.trim());
+    formData.append("cccd", form.value.cccd.trim());
+    formData.append("sdt", form.value.sdt.trim());
+    formData.append("email", form.value.email.trim());
+    formData.append("ngaySinh", form.value.ngaySinh || "");
+    formData.append("diaChi", form.value.diaChi.trim());
+    formData.append("bienSoXe", form.value.bienSoXe.trim());
 
-    const payload = {
-      hoTen: form.value.hoTen.trim(),
-      cccd: form.value.cccd.trim(),
-      sdt: form.value.sdt.trim(),
-      email: form.value.email.trim(),
-      ngaySinh: form.value.ngaySinh || null,
-      diaChi: form.value.diaChi.trim(),
-      bienSoXe: form.value.bienSoXe.trim(),
+    // =========================
+    // VỊ TRÍ THUÊ
+    // =========================
+    formData.append("nhaTroId", String(form.value.nhaTroId));
+    formData.append("tangSo", String(form.value.tangSo));
+    formData.append("phongId", String(form.value.phongId));
+    formData.append("giuongId", String(form.value.giuongId));
 
-      tienDatCoc: form.value.tienDatCoc,
+    // =========================
+    // HỢP ĐỒNG
+    // =========================
+    formData.append("tienDatCoc", String(form.value.tienDatCoc));
 
-      ngayBatDau: form.value.ngayBatDau,
+    formData.append("ngayBatDau", form.value.ngayBatDau);
 
-      ngayKetThuc: form.value.ngayKetThuc,
+    formData.append("ngayKetThuc", form.value.ngayKetThuc);
 
-      benBDaKy: form.value.benBDaKy,
+    formData.append("benBDaKy", String(form.value.benBDaKy));
 
-      dongYHopDong: form.value.dongYHopDong,
-    };
+    formData.append("dongYHopDong", String(form.value.dongYHopDong));
 
-    if (!token) {
-      /*
-       * Chưa có public API/token.
-       *
-       * Tạm thời báo rõ để tránh tạo nhầm
-       * hợp đồng bằng API quản trị.
-       */
-      errorMessage.value =
-        "Đường dẫn hợp đồng chưa có token. Vui lòng mở hợp đồng bằng đường dẫn được cấp.";
-
-      return;
+    // =========================
+    // ẢNH CCCD
+    // =========================
+    if (form.value.cccdMatTruoc) {
+      formData.append("cccdMatTruoc", form.value.cccdMatTruoc);
     }
 
-    await api.post(`/public/hop-dong/${encodeURIComponent(token)}`, payload);
+    if (form.value.cccdMatSau) {
+      formData.append("cccdMatSau", form.value.cccdMatSau);
+    }
+
+    // =========================
+    // GỬI HỢP ĐỒNG
+    // =========================
+    const response = await api.post(
+      "/public/hop-dong/request-verification",
+      formData,
+    );
+
+    verificationId.value = response.data?.verificationId ?? "";
+
+    verificationEmail.value = form.value.email.trim();
+
+    // Lưu lại trạng thái ký của Bên B trước khi chuyển sang màn hình xác nhận
+    verificationSigningStatus.value = form.value.benBDaKy;
+
+    verificationMessage.value = "";
+
+    verificationCode.value = "";
+
+    verificationStep.value = true;
+
+    successMessage.value = "";
 
     successMessage.value =
-      "Hoàn thành hợp đồng. Thông tin đã được gửi thành công.";
+      response.data?.message ??
+      "Hợp đồng đã được tạo và gửi qua email thành công.";
 
     window.scrollTo({
       top: 0,
@@ -553,11 +646,66 @@ async function submitContract() {
     errorMessage.value =
       error?.response?.data?.message ??
       "Không thể hoàn thành hợp đồng. Vui lòng thử lại.";
+
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
   } finally {
     submitting.value = false;
   }
 }
 
+async function verifyContract() {
+  errorMessage.value = "";
+  successMessage.value = "";
+  verificationMessage.value = "";
+
+  const code = verificationCode.value.trim();
+
+  if (!code) {
+    verificationMessage.value = "Vui lòng nhập mã xác nhận.";
+
+    return;
+  }
+
+  if (!/^\d{6}$/.test(code)) {
+    verificationMessage.value = "Mã xác nhận phải gồm 6 chữ số.";
+
+    return;
+  }
+
+  verificationLoading.value = true;
+
+  try {
+    const response = await api.post("/public/hop-dong/verify", {
+      verificationId: verificationId.value,
+
+      code,
+    });
+
+    successMessage.value =
+      response.data?.message ??
+      "Xác nhận thành công. Hợp đồng đã được gửi đến email.";
+
+    verificationStep.value = false;
+
+    verificationCode.value = "";
+
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+  } catch (error: any) {
+    console.error("Không thể xác nhận OTP:", error);
+
+    verificationMessage.value =
+      error?.response?.data?.message ??
+      "Mã xác nhận không đúng. Vui lòng thử lại.";
+  } finally {
+    verificationLoading.value = false;
+  }
+}
 /* =========================================================
  * INIT
  * ======================================================= */
@@ -570,25 +718,81 @@ onMounted(() => {
 <template>
   <div class="contract-page">
     <div class="contract-paper">
-      <!-- =================================================
-           HEADER
-      ================================================== -->
+      <template v-if="verificationStep">
+        <div class="verification-box">
+          <h2>XÁC NHẬN HỢP ĐỒNG</h2>
 
-      <header class="contract-header">
-        <div class="national-title">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
+          <div class="verification-signing-status">
+            <p v-if="verificationSigningStatus" class="signing-agreed">
+              Bạn đã đồng ý và xác nhận đã ký
+            </p>
 
-        <div class="national-subtitle">Độc lập - Tự do - Hạnh phúc</div>
+            <p v-else class="signing-not-agreed">
+              Bạn đã không đồng ý và không ký
+            </p>
+          </div>
 
-        <div class="header-line"></div>
+          <p class="verification-note">
+            Mã xác nhận đã được gửi đến email của bạn.
+          </p>
 
-        <h1>HỢP ĐỒNG THUÊ TRỌ</h1>
+          <strong class="verification-email">
+            {{ verificationEmail }}
+          </strong>
 
-        <p class="legal-basis">
-          Căn cứ Bộ luật Dân sự 2015 và Luật Nhà ở 2023, hai bên tự nguyện thỏa
-          thuận các điều khoản của hợp đồng như sau:
-        </p>
-      </header>
+          <p class="verification-note">
+            Vui lòng kiểm tra email và nhập mã xác nhận gồm 6 chữ số.
+          </p>
 
+          <div v-if="verificationMessage" class="message message-error">
+            {{ verificationMessage }}
+          </div>
+
+          <div class="verification-input">
+            <label>Mã xác nhận</label>
+
+            <input
+              v-model="verificationCode"
+              type="text"
+              inputmode="numeric"
+              maxlength="6"
+              autocomplete="one-time-code"
+              placeholder="Nhập mã 6 chữ số"
+            />
+          </div>
+
+          <button
+            type="button"
+            class="submit-button"
+            :disabled="verificationLoading"
+            @click="verifyContract"
+          >
+            <span v-if="verificationLoading"> Đang xác nhận... </span>
+
+            <span v-else> Xác nhận mã </span>
+          </button>
+
+          <p class="verification-expire">
+            Mã xác nhận có hiệu lực trong 10 phút.
+          </p>
+        </div>
+      </template>
+      <template v-else>
+        <header class="contract-header">
+          <div class="national-title">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
+
+          <div class="national-subtitle">Độc lập - Tự do - Hạnh phúc</div>
+
+          <div class="header-line"></div>
+
+          <h1>HỢP ĐỒNG THUÊ TRỌ</h1>
+
+          <p class="legal-basis">
+            Căn cứ Bộ luật Dân sự 2015 và Luật Nhà ở 2023, hai bên tự nguyện
+            thỏa thuận các điều khoản của hợp đồng như sau:
+          </p>
+        </header>
+      </template>
       <!-- =================================================
            LOADING
       ================================================== -->
@@ -613,7 +817,7 @@ onMounted(() => {
         {{ successMessage }}
       </div>
 
-      <template v-if="!loading">
+      <template v-if="!loading && !verificationStep">
         <!-- =================================================
              BÊN A
         ================================================== -->
@@ -708,18 +912,6 @@ onMounted(() => {
 
             <div class="form-grid-2">
               <div class="form-group">
-                <label> CCCD <span>*</span> </label>
-
-                <input
-                  v-model="form.cccd"
-                  type="text"
-                  inputmode="numeric"
-                  maxlength="12"
-                  placeholder="Nhập số CCCD"
-                />
-              </div>
-
-              <div class="form-group">
                 <label> Số điện thoại <span>*</span> </label>
 
                 <input
@@ -730,8 +922,58 @@ onMounted(() => {
                   placeholder="Nhập số điện thoại"
                 />
               </div>
-            </div>
 
+              <div class="form-group">
+                <label> CCCD <span>*</span> </label>
+
+                <input
+                  v-model="form.cccd"
+                  type="text"
+                  inputmode="numeric"
+                  maxlength="12"
+                  placeholder="Nhập số CCCD"
+                />
+              </div>
+            </div>
+            <div class="form-grid-2 cccd-image-grid">
+              <!-- CCCD MẶT TRƯỚC -->
+              <div class="form-group">
+                <label> Ảnh CCCD mặt trước <span>*</span> </label>
+
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  @change="handleCccdMatTruocChange"
+                />
+
+                <div v-if="cccdMatTruocPreview" class="cccd-preview">
+                  <img :src="cccdMatTruocPreview" alt="Ảnh CCCD mặt trước" />
+                </div>
+
+                <div v-if="form.cccdMatTruoc" class="file-selected">
+                  {{ form.cccdMatTruoc.name }}
+                </div>
+              </div>
+
+              <!-- CCCD MẶT SAU -->
+              <div class="form-group">
+                <label> Ảnh CCCD mặt sau <span>*</span> </label>
+
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  @change="handleCccdMatSauChange"
+                />
+
+                <div v-if="cccdMatSauPreview" class="cccd-preview">
+                  <img :src="cccdMatSauPreview" alt="Ảnh CCCD mặt sau" />
+                </div>
+
+                <div v-if="form.cccdMatSau" class="file-selected">
+                  {{ form.cccdMatSau.name }}
+                </div>
+              </div>
+            </div>
             <div class="form-grid-2">
               <div class="form-group">
                 <label> Gmail <span>*</span> </label>
@@ -751,7 +993,7 @@ onMounted(() => {
             </div>
 
             <div class="form-row">
-              <label>Địa chỉ <span>*</span></label>
+              <label>Địa chỉ thường trú <span>*</span></label>
 
               <input
                 v-model="form.diaChi"
@@ -761,7 +1003,7 @@ onMounted(() => {
             </div>
 
             <div class="form-row">
-              <label>Biển số xe <span>*</span></label>
+              <label>Biển số xe </label>
 
               <input
                 v-model="form.bienSoXe"
@@ -881,7 +1123,7 @@ onMounted(() => {
               </div>
 
               <div class="form-group">
-                <label> Tiền đặt cọc <span>*</span> </label>
+                <label> Tiền đặt cọc </label>
 
                 <div class="money-input">
                   <input
@@ -1075,15 +1317,15 @@ onMounted(() => {
 
               <div class="signature-space"></div>
 
-              <div class="signature-name">
-                {{ benA.hoTen || "Bên A" }}
-              </div>
-
               <label class="signature-checkbox">
                 <input type="checkbox" checked disabled />
 
                 <span>Đã ký</span>
               </label>
+
+              <div class="signature-name">
+                {{ benA.hoTen || "Bên A" }}
+              </div>
             </div>
 
             <!-- BÊN B -->
@@ -1096,16 +1338,14 @@ onMounted(() => {
               <p class="signature-note">(Xác nhận ký, ghi rõ họ tên)</p>
 
               <div class="signature-space"></div>
-
-              <div class="signature-name">
-                {{ form.hoTen || "........................" }}
-              </div>
-
               <label class="signature-checkbox">
                 <input v-model="form.benBDaKy" type="checkbox" />
 
-                <span>Tôi xác nhận đã ký</span>
+                <span>Tôi đồng ý và xác nhận đã ký</span>
               </label>
+              <div class="signature-name">
+                {{ form.hoTen || "........................" }}
+              </div>
             </div>
           </div>
 
@@ -1613,5 +1853,154 @@ select:disabled {
     background: transparent;
     box-shadow: none;
   }
+}
+
+.cccd-image-grid {
+  margin-top: 18px;
+}
+
+.cccd-image-grid input[type="file"] {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: #ffffff;
+  box-sizing: border-box;
+}
+
+.file-selected {
+  margin-top: 6px;
+  font-size: 13px;
+  color: #475569;
+  word-break: break-all;
+}
+
+.cccd-preview {
+  margin-top: 12px;
+  width: 100%;
+  max-width: 360px;
+  border: 1px solid #d9d9d9;
+  border-radius: 8px;
+  padding: 6px;
+  background: #f8f8f8;
+  overflow: hidden;
+}
+
+.cccd-preview img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 220px;
+  object-fit: contain;
+  border-radius: 6px;
+}
+
+.file-selected {
+  margin-top: 8px;
+  font-size: 13px;
+  color: #666;
+  word-break: break-all;
+}
+
+.verification-box {
+  max-width: 560px;
+  margin: 40px auto;
+  padding: 32px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  background: #f8fafc;
+  text-align: center;
+}
+
+.verification-box h2 {
+  margin: 0 0 20px;
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.verification-box p {
+  margin: 8px 0;
+  line-height: 1.6;
+}
+
+.verification-box strong {
+  display: block;
+  margin: 8px 0 18px;
+  color: #2563eb;
+}
+
+.verification-note {
+  color: #475569;
+  font-size: 14px;
+}
+
+.verification-input {
+  margin: 24px 0;
+  text-align: left;
+}
+
+.verification-input label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 650;
+}
+
+.verification-input input {
+  width: 100%;
+  min-height: 48px;
+  text-align: center;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 8px;
+}
+
+.verification-expire {
+  margin-top: 16px;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.verification-signing-message {
+  margin: 20px 0 16px;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.verification-email {
+  display: block;
+  margin: 12px 0 20px;
+  color: #2563eb;
+  font-size: 16px;
+  text-align: center;
+}
+
+.verification-signing-status {
+  margin: 24px 0;
+  text-align: center;
+}
+
+.signing-agreed,
+.signing-not-agreed {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.signing-agreed {
+  color: #15803d;
+}
+
+.signing-not-agreed {
+  color: #dc2626;
+}
+
+.verification-email {
+  display: block;
+  margin: 12px 0 20px;
+  text-align: center;
+  font-size: 16px;
 }
 </style>

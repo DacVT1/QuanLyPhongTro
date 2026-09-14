@@ -10,10 +10,11 @@ import { HopDongPublicController } from './hop-dong-public.controller';
 import { HopDongPublicService } from './hop-dong-public.service';
 import { EmailModule } from '../email/email.module';
 import { HopDongPublicPdfService } from './hop-dong-public-pdf.service';
+import { HopDongXacNhan } from '../../entities/hop-dong-xac-nhan.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([TaiKhoan, NhaTro, Phong, Giuong]),
+    TypeOrmModule.forFeature([TaiKhoan, NhaTro, Phong, Giuong, HopDongXacNhan]),
     EmailModule,
   ],
 

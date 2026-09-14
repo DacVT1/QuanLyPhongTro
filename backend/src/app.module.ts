@@ -25,6 +25,7 @@ import { Subscription } from './entities/subscription.entity';
 import { SubscriptionModule } from './modules/subscription/subscription.module';
 import { GoiDichVuModule } from './modules/goi-dich-vu/goi-dich-vu.module';
 import { HopDongPublicModule } from './modules/hop-dong-public/hop-dong-public.module';
+import { HopDongXacNhan } from './entities/hop-dong-xac-nhan.entity';
 
 @Module({
   imports: [
@@ -44,6 +45,7 @@ import { HopDongPublicModule } from './modules/hop-dong-public/hop-dong-public.m
         Tenant,
         GoiDichVu,
         Subscription,
+        HopDongXacNhan,
       ],
 
       synchronize: true,

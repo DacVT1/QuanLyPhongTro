@@ -28,6 +28,8 @@ interface ContractPdfData {
   ngaySinh: string;
   diaChi: string;
   bienSoXe: string;
+  cccdMatTruoc: Buffer;
+  cccdMatSau: Buffer;
 
   // =========================
   // ĐIỀU 1
@@ -275,7 +277,63 @@ export class HopDongPublicPdfService {
 
       doc.moveDown(0.5);
 
-      addParagraph('Hai bên thống nhất các điều khoản sau:');
+      // =====================================================
+      // CCCD BÊN B
+      // =====================================================
+
+      addSectionTitle('ẢNH CCCD BÊN THUÊ');
+
+      const imageWidth = 220;
+      const imageHeight = 140;
+      const imageGap = 30;
+
+      const imageStartX = 50;
+      const imageStartY = doc.y;
+
+      // Mặt trước
+      doc
+        .font('Vietnamese')
+        .fontSize(10)
+        .text('Mặt trước CCCD', imageStartX, imageStartY, {
+          width: imageWidth,
+          align: 'center',
+        });
+
+      doc.image(data.cccdMatTruoc, imageStartX, imageStartY + 20, {
+        fit: [imageWidth, imageHeight],
+        align: 'center',
+        valign: 'center',
+      });
+
+      // Mặt sau
+      const imageBackX = imageStartX + imageWidth + imageGap;
+
+      doc
+        .font('Vietnamese')
+        .fontSize(10)
+        .text('Mặt sau CCCD', imageBackX, imageStartY, {
+          width: imageWidth,
+          align: 'center',
+        });
+
+      doc.image(data.cccdMatSau, imageBackX, imageStartY + 20, {
+        fit: [imageWidth, imageHeight],
+        align: 'center',
+        valign: 'center',
+      });
+
+      doc.y = imageStartY + imageHeight + 40;
+
+      doc
+        .font('Vietnamese')
+        .fontSize(11)
+        .text('Hai bên thống nhất các điều khoản sau:', 50, doc.y, {
+          width: 495,
+          align: 'left',
+          lineGap: 3,
+        });
+
+      doc.moveDown(0.4);
 
       // =====================================================
       // ĐIỀU 1
@@ -484,7 +542,9 @@ export class HopDongPublicPdfService {
         .font('Vietnamese')
         .fontSize(9)
         .text(
-          data.benBDaKy ? 'Tôi xác nhận đã ký' : 'Chưa xác nhận ký',
+          data.benBDaKy
+            ? 'Đã đồng ý và xác nhận đã ký'
+            : 'Không đồng ý và không ký',
           325,
           signatureY + 125,
           {
