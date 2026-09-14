@@ -335,7 +335,9 @@ export class HopDongPublicService {
         id: body.phongId,
       },
       relations: {
-        nhaTro: true,
+        nhaTro: {
+          tenant: true,
+        },
       },
     });
 
