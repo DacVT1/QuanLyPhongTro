@@ -150,11 +150,6 @@ export class NguoiThueService {
     // Xóa các file ảnh CCCD vật lý tương ứng.
     const storageDir =
       process.env.STORAGE_DIR || join(process.cwd(), 'uploads');
-    console.log('=================================');
-    console.log('process.cwd():', process.cwd());
-    console.log('STORAGE_DIR:', process.env.STORAGE_DIR);
-    console.log('Upload storage:', storageDir);
-    console.log('=================================');
     const nguoiThueUploadDir = join(storageDir, 'nguoi-thue');
 
     const deleteImage = async (imagePath?: string | null) => {
