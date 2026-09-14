@@ -779,13 +779,19 @@ export class HopDongPublicService {
     }
 
     const maHopDong = await this.generateMaHopDong(phong, giuong);
+    if (!body.ngayBatDau) {
+      throw new BadRequestException('Ngày bắt đầu không được để trống.');
+    }
 
-    const hopDong = this.hopDongRepository.create({
+    if (!body.ngayKetThuc) {
+      throw new BadRequestException('Ngày kết thúc không được để trống.');
+    }
+    const hopDong: HopDong = this.hopDongRepository.create({
       maHopDong,
 
       ngayBatDau: new Date(body.ngayBatDau),
 
-      ngayKetThuc: body.ngayKetThuc ? new Date(body.ngayKetThuc) : null,
+      ngayKetThuc: new Date(body.ngayKetThuc),
 
       tienThue: Number(giuong.giaGiuong ?? 0),
 
@@ -810,6 +816,6 @@ export class HopDongPublicService {
       tenant,
     });
 
-    return this.hopDongRepository.save(hopDong);
+    return await this.hopDongRepository.save(hopDong);
   }
 }
