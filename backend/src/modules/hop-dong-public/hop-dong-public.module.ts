@@ -6,7 +6,7 @@ import { NhaTro } from '../../entities/nha-tro.entity';
 import { Phong } from '../../entities/phong.entity';
 import { Giuong } from '../../entities/giuong.entity';
 import { NguoiThue } from '../../entities/nguoi-thue.entity';
-
+import { HopDong } from '../../entities/hop-dong.entity';
 import { HopDongPublicController } from './hop-dong-public.controller';
 import { HopDongPublicService } from './hop-dong-public.service';
 import { EmailModule } from '../email/email.module';
@@ -22,6 +22,7 @@ import { HopDongXacNhan } from '../../entities/hop-dong-xac-nhan.entity';
       Giuong,
       HopDongXacNhan,
       NguoiThue,
+      HopDong,
     ]),
     EmailModule,
   ],

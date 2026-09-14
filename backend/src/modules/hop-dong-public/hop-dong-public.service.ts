@@ -17,6 +17,7 @@ import { HopDongPublicPdfService } from './hop-dong-public-pdf.service';
 import { EmailService } from '../email/email.service';
 import { HopDongXacNhan } from 'src/entities/hop-dong-xac-nhan.entity';
 import { NguoiThue } from '../../entities/nguoi-thue.entity';
+import { HopDong } from '../../entities/hop-dong.entity';
 
 @Injectable()
 export class HopDongPublicService {
@@ -45,8 +46,12 @@ export class HopDongPublicService {
     private readonly hopDongXacNhanRepository: Repository<HopDongXacNhan>,
     private readonly emailService: EmailService,
     private readonly pdfService: HopDongPublicPdfService,
+
     @InjectRepository(NguoiThue)
     private readonly nguoiThueRepository: Repository<NguoiThue>,
+
+    @InjectRepository(HopDong)
+    private readonly hopDongRepository: Repository<HopDong>,
   ) {}
 
   async submitContract(
@@ -528,6 +533,27 @@ export class HopDongPublicService {
       giuong.phong,
     );
 
+    if (!nguoiThue) {
+      throw new BadRequestException(
+        'Không thể xác định người thuê để tạo hợp đồng.',
+      );
+    }
+
+    const hopDong = await this.createHopDongFromContract(
+      pending,
+      phong,
+      giuong,
+      nguoiThue,
+    );
+
+    if (!hopDong) {
+      throw new BadRequestException('Không thể tạo hợp đồng.');
+    }
+
+    giuong.trangThai = 'da_thue';
+
+    await this.giuongRepository.save(giuong);
+
     const pdfBuffer = await this.pdfService.generate({
       benA: {
         hoTen: 'Nguyễn Thị Chi',
@@ -643,9 +669,9 @@ export class HopDongPublicService {
       body.benBDaKy === '1';
 
     // Không ký thì không tạo người thuê
-    if (!benBDaKy) {
-      return null;
-    }
+    // if (!benBDaKy) {
+    //   return null;
+    // }
 
     const tenant = phong.nhaTro?.tenant;
 
@@ -692,5 +718,98 @@ export class HopDongPublicService {
     });
 
     return this.nguoiThueRepository.save(nguoiThue);
+  }
+
+  private async generateMaHopDong(
+    phong: Phong,
+    giuong: Giuong,
+  ): Promise<string> {
+    const nhaTroCode =
+      phong.nhaTro?.maNhaTro || phong.nhaTro?.tenNhaTro || 'NHA-TRO';
+
+    const phongCode = phong.maPhong || `P${phong.id}`;
+
+    const giuongCode = String(giuong.giuongSo ?? `G${giuong.id}`);
+
+    const prefix = `${nhaTroCode}_${phongCode}_${giuongCode}`;
+
+    const existingContracts = await this.hopDongRepository
+      .createQueryBuilder('hopDong')
+      .where('hopDong.maHopDong LIKE :prefix', {
+        prefix: `${prefix}_%`,
+      })
+      .getMany();
+
+    let sequence = existingContracts.length + 1;
+
+    let maHopDong = `${prefix}_${sequence}`;
+
+    while (
+      await this.hopDongRepository.findOne({
+        where: {
+          maHopDong,
+        },
+      })
+    ) {
+      sequence += 1;
+      maHopDong = `${prefix}_${sequence}`;
+    }
+
+    return maHopDong;
+  }
+
+  private async createHopDongFromContract(
+    pending: HopDongXacNhan,
+    phong: Phong,
+    giuong: Giuong,
+    nguoiThue: NguoiThue,
+  ): Promise<HopDong> {
+    const body = pending.contractData;
+
+    if (!nguoiThue) {
+      throw new BadRequestException(
+        'Không xác định được người thuê để tạo hợp đồng.',
+      );
+    }
+
+    const tenant = phong.nhaTro?.tenant;
+
+    if (!tenant) {
+      throw new NotFoundException('Không xác định được tenant của nhà trọ.');
+    }
+
+    const maHopDong = await this.generateMaHopDong(phong, giuong);
+
+    const hopDong = this.hopDongRepository.create({
+      maHopDong,
+
+      ngayBatDau: new Date(body.ngayBatDau),
+
+      ngayKetThuc: body.ngayKetThuc ? new Date(body.ngayKetThuc) : null,
+
+      tienThue: Number(giuong.giaGiuong ?? 0),
+
+      chuKyThanhToan: 1,
+
+      tienDatCoc: Number(body.tienDatCoc ?? 0),
+
+      tienDien: 0,
+
+      tienNuoc: 0,
+
+      tienDichVu: 0,
+
+      trangThai: 'active',
+
+      ghiChu: 'Hợp đồng được tạo từ Form HỢP ĐỒNG THUÊ TRỌ public.',
+
+      giuong,
+
+      nguoiThue,
+
+      tenant,
+    });
+
+    return this.hopDongRepository.save(hopDong);
   }
 }
