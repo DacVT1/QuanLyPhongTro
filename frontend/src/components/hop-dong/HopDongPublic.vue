@@ -857,7 +857,7 @@ onMounted(() => {
             </div>
 
             <div class="form-row">
-              <label>Địa chỉ <span>*</span></label>
+              <label>Địa chỉ thường trú <span>*</span></label>
 
               <input
                 v-model="form.diaChi"
