@@ -5,6 +5,9 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { mkdir, writeFile } from 'fs/promises';
+import { extname, join } from 'path';
+import { randomUUID } from 'crypto';
 
 import { TaiKhoan } from '../../entities/tai-khoan.entity';
 import { NhaTro } from '../../entities/nha-tro.entity';
@@ -13,6 +16,7 @@ import { Giuong } from '../../entities/giuong.entity';
 import { HopDongPublicPdfService } from './hop-dong-public-pdf.service';
 import { EmailService } from '../email/email.service';
 import { HopDongXacNhan } from 'src/entities/hop-dong-xac-nhan.entity';
+import { NguoiThue } from '../../entities/nguoi-thue.entity';
 
 @Injectable()
 export class HopDongPublicService {
@@ -41,6 +45,8 @@ export class HopDongPublicService {
     private readonly hopDongXacNhanRepository: Repository<HopDongXacNhan>,
     private readonly emailService: EmailService,
     private readonly pdfService: HopDongPublicPdfService,
+    @InjectRepository(NguoiThue)
+    private readonly nguoiThueRepository: Repository<NguoiThue>,
   ) {}
 
   async submitContract(
@@ -70,12 +76,24 @@ export class HopDongPublicService {
         id: body.phongId,
       },
       relations: {
-        nhaTro: true,
+        nhaTro: {
+          tenant: true,
+        },
       },
     });
 
     if (!phong) {
       throw new NotFoundException('Không tìm thấy phòng.');
+    }
+
+    if (!phong.nhaTro) {
+      throw new NotFoundException('Phòng chưa được liên kết với nhà trọ.');
+    }
+
+    const tenant = phong.nhaTro.tenant;
+
+    if (!tenant) {
+      throw new NotFoundException('Không xác định được tenant của nhà trọ.');
     }
 
     // 3. Tìm giường
@@ -468,7 +486,9 @@ export class HopDongPublicService {
         id: body.phongId,
       },
       relations: {
-        nhaTro: true,
+        nhaTro: {
+          tenant: true,
+        },
       },
     });
 
@@ -482,7 +502,9 @@ export class HopDongPublicService {
       },
       relations: {
         phong: {
-          nhaTro: true,
+          nhaTro: {
+            tenant: true,
+          },
         },
       },
     });
@@ -490,6 +512,21 @@ export class HopDongPublicService {
     if (!giuong) {
       throw new NotFoundException('Không tìm thấy giường.');
     }
+
+    const status = String(giuong.trangThai ?? '').toLowerCase();
+
+    if (['da_thue', 'đã thuê', 'occupied'].includes(status)) {
+      throw new BadRequestException('Giường này đã được thuê.');
+    }
+
+    if (giuong.phong?.id !== phong.id) {
+      throw new BadRequestException('Giường không thuộc phòng đã chọn.');
+    }
+
+    const nguoiThue = await this.createNguoiThueFromContract(
+      pending,
+      giuong.phong,
+    );
 
     const pdfBuffer = await this.pdfService.generate({
       benA: {
@@ -559,5 +596,101 @@ export class HopDongPublicService {
 
       message: 'Xác nhận thành công. Hợp đồng đã được gửi đến email của bạn.',
     };
+  }
+
+  private async saveNguoiThueImage(
+    buffer: Buffer,
+    mimeType: string | null,
+  ): Promise<string> {
+    const storageDir =
+      process.env.STORAGE_DIR || join(process.cwd(), 'uploads');
+
+    const uploadDir = join(storageDir, 'nguoi-thue');
+
+    await mkdir(uploadDir, {
+      recursive: true,
+    });
+
+    let extension = '.jpg';
+
+    if (mimeType === 'image/png') {
+      extension = '.png';
+    } else if (mimeType === 'image/webp') {
+      extension = '.webp';
+    } else if (mimeType === 'image/jpeg') {
+      extension = '.jpg';
+    }
+
+    const fileName = `${randomUUID()}${extension}`;
+
+    const filePath = join(uploadDir, fileName);
+
+    await writeFile(filePath, buffer);
+
+    return `/uploads/nguoi-thue/${fileName}`;
+  }
+
+  private async createNguoiThueFromContract(
+    pending: HopDongXacNhan,
+    phong: Phong,
+  ): Promise<NguoiThue | null> {
+    const body = pending.contractData;
+
+    const benBDaKy =
+      body.benBDaKy === true ||
+      body.benBDaKy === 'true' ||
+      body.benBDaKy === 1 ||
+      body.benBDaKy === '1';
+
+    // Không ký thì không tạo người thuê
+    if (!benBDaKy) {
+      return null;
+    }
+
+    const tenant = phong.nhaTro?.tenant;
+
+    if (!tenant) {
+      throw new NotFoundException('Không xác định được tenant của nhà trọ.');
+    }
+    // Kiểm tra Người thuê đã tồn tại theo CCCD trong cùng tenant
+    const existingNguoiThue = await this.nguoiThueRepository.findOne({
+      where: {
+        cccd: body.cccd?.trim(),
+        tenant: {
+          id: tenant.id,
+        },
+      },
+    });
+
+    if (existingNguoiThue) {
+      return existingNguoiThue;
+    }
+    // Lưu ảnh CCCD
+    const cccdMatTruoc = await this.saveNguoiThueImage(
+      pending.cccdMatTruoc,
+      pending.cccdMatTruocMimeType,
+    );
+
+    const cccdMatSau = await this.saveNguoiThueImage(
+      pending.cccdMatSau,
+      pending.cccdMatSauMimeType,
+    );
+
+    const nguoiThue = this.nguoiThueRepository.create({
+      hoTen: body.hoTen?.trim(),
+      cccd: body.cccd?.trim(),
+      sdt: body.sdt?.trim(),
+      email: body.email?.trim(),
+      diaChi: body.diaChi?.trim(),
+      ngaySinh: body.ngaySinh || null,
+      bienSoXe: body.bienSoXe?.trim() || null,
+
+      cccdMatTruoc,
+      cccdMatSau,
+
+      tenant,
+    });
+
+    return this.nguoiThueRepository.save(nguoiThue);
   }
 }
