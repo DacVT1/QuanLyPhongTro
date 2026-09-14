@@ -135,16 +135,35 @@ const form = ref({
   dongYHopDong: false,
 });
 
+const cccdMatTruocPreview = ref("");
+const cccdMatSauPreview = ref("");
+
 function handleCccdMatTruocChange(event: Event) {
   const input = event.target as HTMLInputElement;
 
-  form.value.cccdMatTruoc = input.files?.[0] ?? null;
+  const file = input.files?.[0] ?? null;
+
+  form.value.cccdMatTruoc = file;
+
+  if (cccdMatTruocPreview.value) {
+    URL.revokeObjectURL(cccdMatTruocPreview.value);
+  }
+
+  cccdMatTruocPreview.value = file ? URL.createObjectURL(file) : "";
 }
 
 function handleCccdMatSauChange(event: Event) {
   const input = event.target as HTMLInputElement;
 
-  form.value.cccdMatSau = input.files?.[0] ?? null;
+  const file = input.files?.[0] ?? null;
+
+  form.value.cccdMatSau = file;
+
+  if (cccdMatSauPreview.value) {
+    URL.revokeObjectURL(cccdMatSauPreview.value);
+  }
+
+  cccdMatSauPreview.value = file ? URL.createObjectURL(file) : "";
 }
 
 function isValidImage(file: File | null) {
@@ -785,6 +804,7 @@ onMounted(() => {
               </div>
             </div>
             <div class="form-grid-2 cccd-image-grid">
+              <!-- CCCD MẶT TRƯỚC -->
               <div class="form-group">
                 <label> Ảnh CCCD mặt trước <span>*</span> </label>
 
@@ -794,11 +814,16 @@ onMounted(() => {
                   @change="handleCccdMatTruocChange"
                 />
 
+                <div v-if="cccdMatTruocPreview" class="cccd-preview">
+                  <img :src="cccdMatTruocPreview" alt="Ảnh CCCD mặt trước" />
+                </div>
+
                 <div v-if="form.cccdMatTruoc" class="file-selected">
                   {{ form.cccdMatTruoc.name }}
                 </div>
               </div>
 
+              <!-- CCCD MẶT SAU -->
               <div class="form-group">
                 <label> Ảnh CCCD mặt sau <span>*</span> </label>
 
@@ -807,6 +832,10 @@ onMounted(() => {
                   accept="image/jpeg,image/png,image/webp"
                   @change="handleCccdMatSauChange"
                 />
+
+                <div v-if="cccdMatSauPreview" class="cccd-preview">
+                  <img :src="cccdMatSauPreview" alt="Ảnh CCCD mặt sau" />
+                </div>
 
                 <div v-if="form.cccdMatSau" class="file-selected">
                   {{ form.cccdMatSau.name }}
@@ -1713,6 +1742,33 @@ select:disabled {
   margin-top: 6px;
   font-size: 13px;
   color: #475569;
+  word-break: break-all;
+}
+
+.cccd-preview {
+  margin-top: 12px;
+  width: 100%;
+  max-width: 360px;
+  border: 1px solid #d9d9d9;
+  border-radius: 8px;
+  padding: 6px;
+  background: #f8f8f8;
+  overflow: hidden;
+}
+
+.cccd-preview img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 220px;
+  object-fit: contain;
+  border-radius: 6px;
+}
+
+.file-selected {
+  margin-top: 8px;
+  font-size: 13px;
+  color: #666;
   word-break: break-all;
 }
 </style>
