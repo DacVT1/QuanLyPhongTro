@@ -3453,7 +3453,21 @@ onMounted(() => {
                           giuongStatusFilterOpen = !giuongStatusFilterOpen
                         "
                       >
-                        <span class="giuong-filter-icon">☰</span>
+                        <svg
+                          class="giuong-filter-icon"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                          aria-hidden="true"
+                        >
+                          <path
+                            d="M4 5H20L14 12V18L10 20V12L4 5Z"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                          />
+                        </svg>
                       </button>
 
                       <div
@@ -7724,8 +7738,9 @@ tbody tr:hover {
 }
 
 .giuong-filter-icon {
-  font-size: 14px;
-  line-height: 1;
+  width: 16px;
+  height: 16px;
+  display: block;
 }
 
 .giuong-status-dropdown {
