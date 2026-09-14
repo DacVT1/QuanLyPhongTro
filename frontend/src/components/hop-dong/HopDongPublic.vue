@@ -1205,7 +1205,7 @@ onMounted(() => {
               <label class="signature-checkbox">
                 <input v-model="form.benBDaKy" type="checkbox" />
 
-                <span>Tôi xác nhận đã ký</span>
+                <span>Tôi đồng ý và xác nhận đã ký</span>
               </label>
               <div class="signature-name">
                 {{ form.hoTen || "........................" }}

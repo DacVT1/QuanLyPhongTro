@@ -542,7 +542,9 @@ export class HopDongPublicPdfService {
         .font('Vietnamese')
         .fontSize(9)
         .text(
-          data.benBDaKy ? 'Đã ký xác nhận' : 'Chưa ký xác nhận',
+          data.benBDaKy
+            ? 'Đã đồng ý và xác nhận đã ký'
+            : 'Không đồng ý và không ký',
           325,
           signatureY + 125,
           {

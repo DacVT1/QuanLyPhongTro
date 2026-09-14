@@ -158,8 +158,17 @@ export class HopDongPublicService {
       // =========================
       // XÁC NHẬN
       // =========================
-      benBDaKy: Boolean(body.benBDaKy),
-      dongYHopDong: Boolean(body.dongYHopDong),
+      benBDaKy:
+        body.benBDaKy === true ||
+        body.benBDaKy === 'true' ||
+        body.benBDaKy === 1 ||
+        body.benBDaKy === '1',
+
+      dongYHopDong:
+        body.dongYHopDong === true ||
+        body.dongYHopDong === 'true' ||
+        body.dongYHopDong === 1 ||
+        body.dongYHopDong === '1',
     });
 
     // 7. Tạo tên file
