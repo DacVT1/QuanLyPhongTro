@@ -312,9 +312,11 @@ export class HopDongPublicService {
       cccdMatSau?: Express.Multer.File[];
     },
   ) {
-    if (!body.email) {
+    if (!body.email || !body.email.trim()) {
       throw new BadRequestException('Email người thuê không được để trống.');
     }
+
+    body.email = body.email.trim().toLowerCase();
 
     const cccdMatTruoc = files?.cccdMatTruoc?.[0];
     const cccdMatSau = files?.cccdMatSau?.[0];
@@ -333,13 +335,23 @@ export class HopDongPublicService {
         id: body.phongId,
       },
       relations: {
-        nhaTro: true,
+        nhaTro: {
+          tenant: true,
+        },
       },
     });
 
     if (!phong) {
       throw new NotFoundException('Không tìm thấy phòng.');
     }
+
+    const tenant = phong.nhaTro?.tenant;
+
+    if (!tenant) {
+      throw new NotFoundException('Không xác định được tenant của nhà trọ.');
+    }
+
+    await this.checkDuplicateNguoiThueEmail(body.email, tenant.id);
 
     // Tìm giường
     const giuong = await this.giuongRepository.findOne({
@@ -500,6 +512,12 @@ export class HopDongPublicService {
     if (!phong) {
       throw new NotFoundException('Không tìm thấy phòng.');
     }
+    const tenant = phong.nhaTro?.tenant;
+    if (!tenant) {
+      throw new NotFoundException('Không xác định được tenant của nhà trọ.');
+    }
+
+    await this.checkDuplicateNguoiThueEmail(body.email, tenant.id);
 
     const giuong = await this.giuongRepository.findOne({
       where: {
@@ -527,33 +545,38 @@ export class HopDongPublicService {
     if (giuong.phong?.id !== phong.id) {
       throw new BadRequestException('Giường không thuộc phòng đã chọn.');
     }
-
-    const nguoiThue = await this.createNguoiThueFromContract(
-      pending,
-      giuong.phong,
-    );
-
-    if (!nguoiThue) {
-      throw new BadRequestException(
-        'Không thể xác định người thuê để tạo hợp đồng.',
+    const daKy =
+      body.benBDaKy === true ||
+      body.benBDaKy === 'true' ||
+      body.benBDaKy === 1 ||
+      body.benBDaKy === '1';
+    if (daKy) {
+      const nguoiThue = await this.createNguoiThueFromContract(
+        pending,
+        giuong.phong,
       );
+
+      if (!nguoiThue) {
+        throw new BadRequestException(
+          'Không thể xác định người thuê để tạo hợp đồng.',
+        );
+      }
+
+      const hopDong = await this.createHopDongFromContract(
+        pending,
+        phong,
+        giuong,
+        nguoiThue,
+      );
+
+      if (!hopDong) {
+        throw new BadRequestException('Không thể tạo hợp đồng.');
+      }
+
+      giuong.trangThai = 'da_thue';
+
+      await this.giuongRepository.save(giuong);
     }
-
-    const hopDong = await this.createHopDongFromContract(
-      pending,
-      phong,
-      giuong,
-      nguoiThue,
-    );
-
-    if (!hopDong) {
-      throw new BadRequestException('Không thể tạo hợp đồng.');
-    }
-
-    giuong.trangThai = 'da_thue';
-
-    await this.giuongRepository.save(giuong);
-
     const pdfBuffer = await this.pdfService.generate({
       benA: {
         hoTen: 'Nguyễn Thị Chi',
@@ -797,5 +820,32 @@ export class HopDongPublicService {
     });
 
     return await this.hopDongRepository.save(hopDong);
+  }
+
+  private async checkDuplicateNguoiThueEmail(
+    email: string,
+    tenantId: string,
+  ): Promise<void> {
+    const normalizedEmail = email.trim().toLowerCase();
+
+    if (!normalizedEmail) {
+      throw new BadRequestException('Email người thuê không được để trống.');
+    }
+
+    const existingNguoiThue = await this.nguoiThueRepository
+      .createQueryBuilder('nguoiThue')
+      .where('LOWER(TRIM(nguoiThue.email)) = :email', {
+        email: normalizedEmail,
+      })
+      .andWhere('nguoiThue.tenant_id = :tenantId', {
+        tenantId,
+      })
+      .getOne();
+
+    if (existingNguoiThue) {
+      throw new BadRequestException(
+        'Gmail này đã tồn tại trong danh sách người thuê. Vui lòng sử dụng Gmail khác.',
+      );
+    }
   }
 }
