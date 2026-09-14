@@ -70,6 +70,8 @@ export class HopDongPublicPdfService {
         'DejaVuSans.ttf',
       );
 
+      const qrPath = path.resolve(process.cwd(), 'assets', 'images', 'QR.png');
+
       const doc = new PDFDocument({
         size: 'A4',
         margin: 50,
@@ -254,7 +256,24 @@ export class HopDongPublicPdfService {
       addLabelValue('Địa chỉ thường trú', data.benA.diaChi);
 
       doc.moveDown(0.5);
+      // =====================================================
+      // MÃ QR THANH TOÁN BÊN A
+      // =====================================================
 
+      doc.font('Vietnamese').fontSize(11).text('MÃ QR THANH TOÁN', {
+        align: 'center',
+        width: 495,
+      });
+
+      doc.moveDown(0.3);
+
+      doc.image(qrPath, {
+        fit: [150, 150],
+        align: 'center',
+        valign: 'center',
+      });
+
+      doc.moveDown(0.8);
       // =====================================================
       // BÊN B
       // =====================================================
