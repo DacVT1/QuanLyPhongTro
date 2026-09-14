@@ -648,6 +648,8 @@ const nguoiThues = ref<any[]>([]);
 const nguoiThueSearch = ref("");
 const hopDongSearch = ref("");
 const hoaDonSearch = ref("");
+const hoaDonStatusFilter = ref("all");
+const hoaDonStatusFilterOpen = ref(false);
 
 const hopDongs = ref<any[]>([]);
 const hoaDons = ref<any[]>([]);
@@ -687,37 +689,92 @@ const filteredNguoiThues = computed(() => {
 
 const filteredHopDongs = computed(() => {
   const keyword = normalizeSearchText(hopDongSearch.value);
-
-  // Không nhập gì -> hiển thị toàn bộ hợp đồng
-  if (!keyword) {
-    return hopDongs.value;
-  }
+  const statusFilter = hopDongStatusFilter.value;
 
   return hopDongs.value.filter((item: any) => {
+    // ==============================
+    // 1. Lọc theo Tên / Mã hợp đồng
+    // ==============================
     const hoTen = normalizeSearchText(item.nguoiThue?.hoTen ?? "");
-
     const maHopDong = normalizeSearchText(item.maHopDong ?? "");
 
-    // Tìm theo Họ tên hoặc Mã hợp đồng
-    return hoTen.includes(keyword) || maHopDong.includes(keyword);
+    const matchKeyword =
+      !keyword || hoTen.includes(keyword) || maHopDong.includes(keyword);
+
+    // ==============================
+    // 2. Lọc theo trạng thái hợp đồng
+    // ==============================
+    let matchStatus = true;
+
+    if (statusFilter !== "all") {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const startDate = item.ngayBatDau
+        ? new Date(`${item.ngayBatDau}T00:00:00`)
+        : null;
+
+      const endDate = item.ngayKetThuc
+        ? new Date(`${item.ngayKetThuc}T00:00:00`)
+        : null;
+
+      if (startDate) {
+        startDate.setHours(0, 0, 0, 0);
+      }
+
+      if (endDate) {
+        endDate.setHours(0, 0, 0, 0);
+      }
+
+      if (statusFilter === "chua_hieu_luc") {
+        matchStatus = !!startDate && startDate > today;
+      } else if (statusFilter === "active") {
+        if (!startDate || !endDate) {
+          matchStatus = false;
+        } else {
+          const daysRemaining = Math.ceil(
+            (endDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
+          );
+
+          matchStatus =
+            startDate <= today && endDate > today && daysRemaining >= 30;
+        }
+      } else if (statusFilter === "sap_het_han") {
+        if (!startDate || !endDate) {
+          matchStatus = false;
+        } else {
+          const daysRemaining = Math.ceil(
+            (endDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
+          );
+
+          matchStatus =
+            startDate <= today && endDate > today && daysRemaining < 30;
+        }
+      } else if (statusFilter === "expired") {
+        matchStatus = !!endDate && endDate <= today;
+      }
+    }
+
+    return matchKeyword && matchStatus;
   });
 });
 
 const filteredHoaDons = computed(() => {
   const keyword = normalizeSearchText(hoaDonSearch.value);
-
-  // Không nhập gì -> hiển thị toàn bộ hóa đơn
-  if (!keyword) {
-    return hoaDons.value;
-  }
+  const statusFilter = hoaDonStatusFilter.value;
 
   return hoaDons.value.filter((item: any) => {
     const hoTen = normalizeSearchText(item.hopDong?.nguoiThue?.hoTen ?? "");
 
     const maHopDong = normalizeSearchText(item.hopDong?.maHopDong ?? "");
 
-    // Tìm theo Họ tên hoặc Mã hợp đồng
-    return hoTen.includes(keyword) || maHopDong.includes(keyword);
+    const matchKeyword =
+      !keyword || hoTen.includes(keyword) || maHopDong.includes(keyword);
+
+    const matchStatus =
+      statusFilter === "all" || item.trangThai === statusFilter;
+
+    return matchKeyword && matchStatus;
   });
 });
 
@@ -1111,6 +1168,8 @@ const showGiuongForm = ref(false);
 const giuongSearch = ref("");
 const giuongStatusFilter = ref("all");
 const giuongStatusFilterOpen = ref(false);
+const hopDongStatusFilter = ref("all");
+const hopDongStatusFilterOpen = ref(false);
 
 const editingNguoiThueId = ref<string | null>(null);
 
@@ -4094,7 +4153,101 @@ onMounted(() => {
                   <th>Ngày bắt đầu</th>
                   <th>Ngày kết thúc</th>
                   <th>Giá thuê</th>
-                  <th>Trạng thái</th>
+                  <th class="hop-dong-status-header">
+                    <div class="hop-dong-status-filter">
+                      <span>Trạng thái</span>
+
+                      <button
+                        type="button"
+                        class="hop-dong-filter-button"
+                        title="Lọc trạng thái"
+                        @click.stop="
+                          hopDongStatusFilterOpen = !hopDongStatusFilterOpen
+                        "
+                      >
+                        <svg
+                          class="hop-dong-filter-icon"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                          aria-hidden="true"
+                        >
+                          <path
+                            d="M4 5H20L14 12V18L10 20V12L4 5Z"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                          />
+                        </svg>
+                      </button>
+
+                      <div
+                        v-if="hopDongStatusFilterOpen"
+                        class="hop-dong-status-dropdown"
+                        @click.stop
+                      >
+                        <button
+                          type="button"
+                          :class="{ active: hopDongStatusFilter === 'all' }"
+                          @click="
+                            hopDongStatusFilter = 'all';
+                            hopDongStatusFilterOpen = false;
+                          "
+                        >
+                          Tất cả
+                        </button>
+
+                        <button
+                          type="button"
+                          :class="{
+                            active: hopDongStatusFilter === 'chua_hieu_luc',
+                          }"
+                          @click="
+                            hopDongStatusFilter = 'chua_hieu_luc';
+                            hopDongStatusFilterOpen = false;
+                          "
+                        >
+                          Chưa hiệu lực
+                        </button>
+
+                        <button
+                          type="button"
+                          :class="{ active: hopDongStatusFilter === 'active' }"
+                          @click="
+                            hopDongStatusFilter = 'active';
+                            hopDongStatusFilterOpen = false;
+                          "
+                        >
+                          Còn hiệu lực
+                        </button>
+
+                        <button
+                          type="button"
+                          :class="{
+                            active: hopDongStatusFilter === 'sap_het_han',
+                          }"
+                          @click="
+                            hopDongStatusFilter = 'sap_het_han';
+                            hopDongStatusFilterOpen = false;
+                          "
+                        >
+                          Sắp hết hiệu lực
+                        </button>
+
+                        <button
+                          type="button"
+                          :class="{ active: hopDongStatusFilter === 'expired' }"
+                          @click="
+                            hopDongStatusFilter = 'expired';
+                            hopDongStatusFilterOpen = false;
+                          "
+                        >
+                          Hết hiệu lực
+                        </button>
+                      </div>
+                    </div>
+                  </th>
                   <th>Hành động</th>
                 </tr>
               </thead>
@@ -4394,7 +4547,79 @@ onMounted(() => {
                   <th>Mã HĐ(Giường)</th>
                   <th>Người thuê</th>
                   <th>Tổng tiền</th>
-                  <th>Trạng thái</th>
+                  <th class="hoa-don-status-header">
+                    <div class="hoa-don-status-filter">
+                      <span>Trạng thái</span>
+
+                      <button
+                        type="button"
+                        class="hoa-don-filter-button"
+                        title="Lọc trạng thái"
+                        @click.stop="
+                          hoaDonStatusFilterOpen = !hoaDonStatusFilterOpen
+                        "
+                      >
+                        <svg
+                          class="hoa-don-filter-icon"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                          aria-hidden="true"
+                        >
+                          <path
+                            d="M4 5H20L14 12V18L10 20V12L4 5Z"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                          />
+                        </svg>
+                      </button>
+
+                      <div
+                        v-if="hoaDonStatusFilterOpen"
+                        class="hoa-don-status-dropdown"
+                        @click.stop
+                      >
+                        <button
+                          type="button"
+                          :class="{ active: hoaDonStatusFilter === 'all' }"
+                          @click="
+                            hoaDonStatusFilter = 'all';
+                            hoaDonStatusFilterOpen = false;
+                          "
+                        >
+                          Tất cả
+                        </button>
+
+                        <button
+                          type="button"
+                          :class="{
+                            active: hoaDonStatusFilter === 'chua_thanh_toan',
+                          }"
+                          @click="
+                            hoaDonStatusFilter = 'chua_thanh_toan';
+                            hoaDonStatusFilterOpen = false;
+                          "
+                        >
+                          Chưa thanh toán
+                        </button>
+
+                        <button
+                          type="button"
+                          :class="{
+                            active: hoaDonStatusFilter === 'da_thanh_toan',
+                          }"
+                          @click="
+                            hoaDonStatusFilter = 'da_thanh_toan';
+                            hoaDonStatusFilterOpen = false;
+                          "
+                        >
+                          Đã thanh toán
+                        </button>
+                      </div>
+                    </div>
+                  </th>
                   <th>Ngày nộp</th>
                   <th>Hành động</th>
                 </tr>
@@ -4455,7 +4680,7 @@ onMounted(() => {
                 </tr>
 
                 <tr v-if="filteredHoaDons.length === 0">
-                  <td colspan="7" style="text-align: center">
+                  <td colspan="6" style="text-align: center">
                     {{
                       hoaDonSearch
                         ? "Không tìm thấy hóa đơn phù hợp."
@@ -7774,6 +7999,150 @@ tbody tr:hover {
 }
 
 .giuong-status-dropdown button.active {
+  background: #e2e8f0;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.hoa-don-status-header {
+  position: relative;
+}
+
+.hoa-don-status-filter {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.hoa-don-filter-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: #475569;
+  border-radius: 4px;
+}
+
+.hoa-don-filter-button:hover {
+  background: #f1f5f9;
+  color: #2563eb;
+}
+
+.hoa-don-filter-icon {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+
+.hoa-don-status-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 1000;
+  min-width: 170px;
+  padding: 6px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.15);
+}
+
+.hoa-don-status-dropdown button {
+  display: block;
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  background: transparent;
+  text-align: left;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.hoa-don-status-dropdown button:hover {
+  background: #f1f5f9;
+}
+
+.hoa-don-status-dropdown button.active {
+  background: #eff6ff;
+  color: #2563eb;
+  font-weight: 600;
+}
+
+.hop-dong-status-header {
+  min-width: 150px;
+}
+
+.hop-dong-status-filter {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.hop-dong-filter-button {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid #cbd5e1;
+  border-radius: 5px;
+  background: #ffffff;
+  color: #475569;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hop-dong-filter-button:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.hop-dong-filter-icon {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+
+.hop-dong-status-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 1000;
+  min-width: 180px;
+  padding: 5px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.hop-dong-status-dropdown button {
+  display: block;
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: #334155;
+  text-align: left;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.hop-dong-status-dropdown button:hover {
+  background: #f1f5f9;
+}
+
+.hop-dong-status-dropdown button.active {
   background: #e2e8f0;
   font-weight: 600;
   color: #0f172a;
