@@ -724,38 +724,18 @@ export class HopDongPublicService {
     phong: Phong,
     giuong: Giuong,
   ): Promise<string> {
-    const nhaTroCode =
-      phong.nhaTro?.maNhaTro || phong.nhaTro?.tenNhaTro || 'NHA-TRO';
-
-    const phongCode = phong.maPhong || `P${phong.id}`;
-
-    const giuongCode = String(giuong.giuongSo ?? `G${giuong.id}`);
-
-    const prefix = `${nhaTroCode}_${phongCode}_${giuongCode}`;
-
-    const existingContracts = await this.hopDongRepository
-      .createQueryBuilder('hopDong')
-      .where('hopDong.maHopDong LIKE :prefix', {
-        prefix: `${prefix}_%`,
-      })
-      .getMany();
-
-    let sequence = existingContracts.length + 1;
-
-    let maHopDong = `${prefix}_${sequence}`;
-
-    while (
-      await this.hopDongRepository.findOne({
-        where: {
-          maHopDong,
-        },
-      })
-    ) {
-      sequence += 1;
-      maHopDong = `${prefix}_${sequence}`;
+    if (!giuong.maGiuong) {
+      throw new BadRequestException(
+        'Giường chưa có mã giường để tạo mã hợp đồng.',
+      );
     }
 
-    return maHopDong;
+    // Mã hợp đồng sử dụng chính mã giường.
+    // Ví dụ:
+    // Phòng: CG_T101
+    // Giường: CG_T101_G2
+    // => Mã hợp đồng: CG_T101_G2
+    return giuong.maGiuong;
   }
 
   private async createHopDongFromContract(

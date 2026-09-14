@@ -851,7 +851,11 @@ onMounted(() => {
                 <input type="text" :value="benA.noiCap" readonly />
               </div>
             </div>
+            <div class="form-row">
+              <label>Địa chỉ thường trú</label>
 
+              <input type="text" :value="benA.diaChi" readonly />
+            </div>
             <div class="form-grid-2">
               <div class="form-group">
                 <label>Điện thoại</label>
@@ -879,11 +883,14 @@ onMounted(() => {
                 <input type="text" :value="benA.chuTaiKhoan" readonly />
               </div>
             </div>
+            <div class="qr-payment">
+              <div class="qr-payment-title">Mã QR thanh toán</div>
 
-            <div class="form-row">
-              <label>Địa chỉ thường trú</label>
-
-              <input type="text" :value="benA.diaChi" readonly />
+              <img
+                src="/images/QR.png"
+                alt="Mã QR thanh toán của Bên A"
+                class="qr-payment-image"
+              />
             </div>
           </div>
         </section>
@@ -2002,5 +2009,28 @@ select:disabled {
   margin: 12px 0 20px;
   text-align: center;
   font-size: 16px;
+}
+
+.qr-payment {
+  margin-top: 20px;
+  text-align: center;
+}
+
+.qr-payment-title {
+  margin-bottom: 10px;
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.qr-payment-image {
+  display: block;
+  width: 180px;
+  height: 180px;
+  object-fit: contain;
+  margin: 0 auto;
+  border: 1px solid #ddd;
+  padding: 6px;
+  background: #fff;
+  border-radius: 8px;
 }
 </style>
