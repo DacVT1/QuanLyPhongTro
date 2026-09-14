@@ -545,12 +545,12 @@ export class HopDongPublicService {
     if (giuong.phong?.id !== phong.id) {
       throw new BadRequestException('Giường không thuộc phòng đã chọn.');
     }
-    const daDongY =
-      body.dongYHopDong === true ||
-      body.dongYHopDong === 'true' ||
-      body.dongYHopDong === 1 ||
-      body.dongYHopDong === '1';
-    if (daDongY) {
+    const daKy =
+      body.benBDaKy === true ||
+      body.benBDaKy === 'true' ||
+      body.benBDaKy === 1 ||
+      body.benBDaKy === '1';
+    if (daKy) {
       const nguoiThue = await this.createNguoiThueFromContract(
         pending,
         giuong.phong,
