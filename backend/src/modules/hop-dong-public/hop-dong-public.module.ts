@@ -14,9 +14,8 @@ import { HopDongXacNhan } from '../../entities/hop-dong-xac-nhan.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([TaiKhoan, NhaTro, Phong, Giuong]),
+    TypeOrmModule.forFeature([TaiKhoan, NhaTro, Phong, Giuong, HopDongXacNhan]),
     EmailModule,
-    HopDongXacNhan,
   ],
 
   controllers: [HopDongPublicController],
