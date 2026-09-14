@@ -495,10 +495,10 @@ function validateForm() {
   //   return false;
   // }
 
-  if (form.value.tienDatCoc <= 0) {
-    errorMessage.value = "Vui lòng nhập tiền đặt cọc.";
-    return false;
-  }
+  // if (form.value.tienDatCoc <= 0) {
+  //   errorMessage.value = "Vui lòng nhập tiền đặt cọc.";
+  //   return false;
+  // }
 
   return true;
 }

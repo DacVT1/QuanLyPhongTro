@@ -324,7 +324,9 @@ export class HopDongPublicPdfService {
 
       doc.y = imageStartY + imageHeight + 40;
 
-      addParagraph('Hai bên thống nhất các điều khoản sau:');
+      addParagraph('Hai bên thống nhất các điều khoản sau:', {
+        align: 'left',
+      });
 
       // =====================================================
       // ĐIỀU 1
