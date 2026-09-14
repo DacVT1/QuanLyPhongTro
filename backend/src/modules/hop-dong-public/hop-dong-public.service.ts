@@ -96,14 +96,6 @@ export class HopDongPublicService {
       throw new NotFoundException('Không xác định được tenant của nhà trọ.');
     }
 
-    if (!tenant) {
-      throw new NotFoundException('Không xác định được tenant của nhà trọ.');
-    }
-
-    if (!phong) {
-      throw new NotFoundException('Không tìm thấy phòng.');
-    }
-
     // 3. Tìm giường
     const giuong = await this.giuongRepository.findOne({
       where: {
@@ -520,7 +512,13 @@ export class HopDongPublicService {
     if (!giuong) {
       throw new NotFoundException('Không tìm thấy giường.');
     }
+    if (['da_thue', 'đã thuê', 'occupied'].includes(status)) {
+      throw new BadRequestException('Giường này đã được thuê.');
+    }
 
+    if (giuong.phong?.id !== phong.id) {
+      throw new BadRequestException('Giường không thuộc phòng đã chọn.');
+    }
     if (giuong.phong?.id !== phong.id) {
       throw new BadRequestException('Giường không thuộc phòng đã chọn.');
     }
