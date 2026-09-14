@@ -99,11 +99,10 @@ const benA = ref<BenA>({
  * ======================================================= */
 
 const form = ref({
-  // =========================
-  // Bên B
-  // =========================
   hoTen: "",
   cccd: "",
+  cccdMatTruoc: null as File | null,
+  cccdMatSau: null as File | null,
   sdt: "",
   email: "",
   ngaySinh: "",
@@ -136,6 +135,27 @@ const form = ref({
   dongYHopDong: false,
 });
 
+function handleCccdMatTruocChange(event: Event) {
+  const input = event.target as HTMLInputElement;
+
+  form.value.cccdMatTruoc = input.files?.[0] ?? null;
+}
+
+function handleCccdMatSauChange(event: Event) {
+  const input = event.target as HTMLInputElement;
+
+  form.value.cccdMatSau = input.files?.[0] ?? null;
+}
+
+function isValidImage(file: File | null) {
+  if (!file) {
+    return false;
+  }
+
+  return ["image/jpeg", "image/jpg", "image/png", "image/webp"].includes(
+    file.type,
+  );
+}
 /* =========================================================
  * DISPLAY MONEY
  * ======================================================= */
@@ -343,6 +363,17 @@ function validateForm() {
     return false;
   }
 
+  if (!form.value.sdt.trim()) {
+    errorMessage.value = "Vui lòng nhập số điện thoại.";
+    return false;
+  }
+
+  if (!/^0\d{9}$/.test(form.value.sdt)) {
+    errorMessage.value =
+      "Số điện thoại phải có đúng 10 chữ số và bắt đầu bằng 0.";
+    return false;
+  }
+
   if (!form.value.cccd.trim()) {
     errorMessage.value = "Vui lòng nhập số CCCD.";
     return false;
@@ -353,14 +384,25 @@ function validateForm() {
     return false;
   }
 
-  if (!form.value.sdt.trim()) {
-    errorMessage.value = "Vui lòng nhập số điện thoại.";
+  if (!form.value.cccdMatTruoc) {
+    errorMessage.value = "Vui lòng chọn ảnh CCCD mặt trước.";
     return false;
   }
 
-  if (!/^0\d{9}$/.test(form.value.sdt)) {
+  if (!isValidImage(form.value.cccdMatTruoc)) {
     errorMessage.value =
-      "Số điện thoại phải có đúng 10 chữ số và bắt đầu bằng 0.";
+      "Ảnh CCCD mặt trước phải có định dạng JPG, JPEG, PNG hoặc WEBP.";
+    return false;
+  }
+
+  if (!form.value.cccdMatSau) {
+    errorMessage.value = "Vui lòng chọn ảnh CCCD mặt sau.";
+    return false;
+  }
+
+  if (!isValidImage(form.value.cccdMatSau)) {
+    errorMessage.value =
+      "Ảnh CCCD mặt sau phải có định dạng JPG, JPEG, PNG hoặc WEBP.";
     return false;
   }
 
@@ -505,25 +547,36 @@ async function submitContract() {
      * Backend phải lấy các dữ liệu này từ token.
      */
 
-    const payload = {
-      hoTen: form.value.hoTen.trim(),
-      cccd: form.value.cccd.trim(),
-      sdt: form.value.sdt.trim(),
-      email: form.value.email.trim(),
-      ngaySinh: form.value.ngaySinh || null,
-      diaChi: form.value.diaChi.trim(),
-      bienSoXe: form.value.bienSoXe.trim(),
+    const formData = new FormData();
 
-      tienDatCoc: form.value.tienDatCoc,
+    formData.append("hoTen", form.value.hoTen.trim());
+    formData.append("cccd", form.value.cccd.trim());
+    formData.append("sdt", form.value.sdt.trim());
+    formData.append("email", form.value.email.trim());
 
-      ngayBatDau: form.value.ngayBatDau,
+    formData.append("ngaySinh", form.value.ngaySinh || "");
 
-      ngayKetThuc: form.value.ngayKetThuc,
+    formData.append("diaChi", form.value.diaChi.trim());
 
-      benBDaKy: form.value.benBDaKy,
+    formData.append("bienSoXe", form.value.bienSoXe.trim());
 
-      dongYHopDong: form.value.dongYHopDong,
-    };
+    formData.append("tienDatCoc", String(form.value.tienDatCoc));
+
+    formData.append("ngayBatDau", form.value.ngayBatDau);
+
+    formData.append("ngayKetThuc", form.value.ngayKetThuc);
+
+    formData.append("benBDaKy", String(form.value.benBDaKy));
+
+    formData.append("dongYHopDong", String(form.value.dongYHopDong));
+
+    if (form.value.cccdMatTruoc) {
+      formData.append("cccdMatTruoc", form.value.cccdMatTruoc);
+    }
+
+    if (form.value.cccdMatSau) {
+      formData.append("cccdMatSau", form.value.cccdMatSau);
+    }
 
     if (!token) {
       /*
@@ -538,7 +591,7 @@ async function submitContract() {
       return;
     }
 
-    await api.post(`/public/hop-dong/${encodeURIComponent(token)}`, payload);
+    await api.post(`/public/hop-dong/${encodeURIComponent(token)}`, formData);
 
     successMessage.value =
       "Hoàn thành hợp đồng. Thông tin đã được gửi thành công.";
@@ -708,18 +761,6 @@ onMounted(() => {
 
             <div class="form-grid-2">
               <div class="form-group">
-                <label> CCCD <span>*</span> </label>
-
-                <input
-                  v-model="form.cccd"
-                  type="text"
-                  inputmode="numeric"
-                  maxlength="12"
-                  placeholder="Nhập số CCCD"
-                />
-              </div>
-
-              <div class="form-group">
                 <label> Số điện thoại <span>*</span> </label>
 
                 <input
@@ -730,8 +771,48 @@ onMounted(() => {
                   placeholder="Nhập số điện thoại"
                 />
               </div>
-            </div>
 
+              <div class="form-group">
+                <label> CCCD <span>*</span> </label>
+
+                <input
+                  v-model="form.cccd"
+                  type="text"
+                  inputmode="numeric"
+                  maxlength="12"
+                  placeholder="Nhập số CCCD"
+                />
+              </div>
+            </div>
+            <div class="form-grid-2 cccd-image-grid">
+              <div class="form-group">
+                <label> Ảnh CCCD mặt trước <span>*</span> </label>
+
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  @change="handleCccdMatTruocChange"
+                />
+
+                <div v-if="form.cccdMatTruoc" class="file-selected">
+                  {{ form.cccdMatTruoc.name }}
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label> Ảnh CCCD mặt sau <span>*</span> </label>
+
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  @change="handleCccdMatSauChange"
+                />
+
+                <div v-if="form.cccdMatSau" class="file-selected">
+                  {{ form.cccdMatSau.name }}
+                </div>
+              </div>
+            </div>
             <div class="form-grid-2">
               <div class="form-group">
                 <label> Gmail <span>*</span> </label>
@@ -1613,5 +1694,25 @@ select:disabled {
     background: transparent;
     box-shadow: none;
   }
+}
+
+.cccd-image-grid {
+  margin-top: 18px;
+}
+
+.cccd-image-grid input[type="file"] {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: #ffffff;
+  box-sizing: border-box;
+}
+
+.file-selected {
+  margin-top: 6px;
+  font-size: 13px;
+  color: #475569;
+  word-break: break-all;
 }
 </style>
