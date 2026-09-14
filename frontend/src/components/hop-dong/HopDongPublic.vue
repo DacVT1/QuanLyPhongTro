@@ -490,10 +490,10 @@ function validateForm() {
     return false;
   }
 
-  if (!form.value.bienSoXe.trim()) {
-    errorMessage.value = "Vui lòng nhập biển số xe.";
-    return false;
-  }
+  // if (!form.value.bienSoXe.trim()) {
+  //   errorMessage.value = "Vui lòng nhập biển số xe.";
+  //   return false;
+  // }
 
   if (form.value.tienDatCoc <= 0) {
     errorMessage.value = "Vui lòng nhập tiền đặt cọc.";
@@ -538,6 +538,7 @@ async function loadData() {
 
 async function submitContract() {
   successMessage.value = "";
+  errorMessage.value = "";
 
   if (!validateForm()) {
     window.scrollTo({
@@ -548,29 +549,33 @@ async function submitContract() {
     return;
   }
 
+  submitting.value = true;
+
   try {
-    const token = new URLSearchParams(window.location.search).get("token");
-
-    /*
-     * Không gửi tenantId, nhaTroId, phongId,
-     * giuongId từ frontend để backend tự tin tưởng.
-     *
-     * Backend phải lấy các dữ liệu này từ token.
-     */
-
     const formData = new FormData();
 
+    // =========================
+    // THÔNG TIN NGƯỜI THUÊ
+    // =========================
     formData.append("hoTen", form.value.hoTen.trim());
     formData.append("cccd", form.value.cccd.trim());
     formData.append("sdt", form.value.sdt.trim());
     formData.append("email", form.value.email.trim());
-
     formData.append("ngaySinh", form.value.ngaySinh || "");
-
     formData.append("diaChi", form.value.diaChi.trim());
-
     formData.append("bienSoXe", form.value.bienSoXe.trim());
 
+    // =========================
+    // VỊ TRÍ THUÊ
+    // =========================
+    formData.append("nhaTroId", String(form.value.nhaTroId));
+    formData.append("tangSo", String(form.value.tangSo));
+    formData.append("phongId", String(form.value.phongId));
+    formData.append("giuongId", String(form.value.giuongId));
+
+    // =========================
+    // HỢP ĐỒNG
+    // =========================
     formData.append("tienDatCoc", String(form.value.tienDatCoc));
 
     formData.append("ngayBatDau", form.value.ngayBatDau);
@@ -580,9 +585,10 @@ async function submitContract() {
     formData.append("benBDaKy", String(form.value.benBDaKy));
 
     formData.append("dongYHopDong", String(form.value.dongYHopDong));
-    formData.append("phongId", String(form.value.phongId));
-    formData.append("giuongId", String(form.value.giuongId));
 
+    // =========================
+    // ẢNH CCCD
+    // =========================
     if (form.value.cccdMatTruoc) {
       formData.append("cccdMatTruoc", form.value.cccdMatTruoc);
     }
@@ -591,23 +597,14 @@ async function submitContract() {
       formData.append("cccdMatSau", form.value.cccdMatSau);
     }
 
-    if (!token) {
-      /*
-       * Chưa có public API/token.
-       *
-       * Tạm thời báo rõ để tránh tạo nhầm
-       * hợp đồng bằng API quản trị.
-       */
-      errorMessage.value =
-        "Đường dẫn hợp đồng chưa có token. Vui lòng mở hợp đồng bằng đường dẫn được cấp.";
-
-      return;
-    }
-
-    await api.post(`/public/hop-dong/${encodeURIComponent(token)}`, formData);
+    // =========================
+    // GỬI HỢP ĐỒNG
+    // =========================
+    const response = await api.post("/public/hop-dong/submit", formData);
 
     successMessage.value =
-      "Hoàn thành hợp đồng. Thông tin đã được gửi thành công.";
+      response.data?.message ??
+      "Hợp đồng đã được tạo và gửi qua email thành công.";
 
     window.scrollTo({
       top: 0,
@@ -619,6 +616,11 @@ async function submitContract() {
     errorMessage.value =
       error?.response?.data?.message ??
       "Không thể hoàn thành hợp đồng. Vui lòng thử lại.";
+
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
   } finally {
     submitting.value = false;
   }
@@ -865,7 +867,7 @@ onMounted(() => {
             </div>
 
             <div class="form-row">
-              <label>Biển số xe <span>*</span></label>
+              <label>Biển số xe </label>
 
               <input
                 v-model="form.bienSoXe"
@@ -985,7 +987,7 @@ onMounted(() => {
               </div>
 
               <div class="form-group">
-                <label> Tiền đặt cọc <span>*</span> </label>
+                <label> Tiền đặt cọc </label>
 
                 <div class="money-input">
                   <input
