@@ -28,6 +28,8 @@ interface ContractPdfData {
   ngaySinh: string;
   diaChi: string;
   bienSoXe: string;
+  cccdMatTruoc: Buffer;
+  cccdMatSau: Buffer;
 
   // =========================
   // ĐIỀU 1
@@ -274,6 +276,53 @@ export class HopDongPublicPdfService {
       addLabelValue('Biển số xe', data.bienSoXe);
 
       doc.moveDown(0.5);
+
+      // =====================================================
+      // CCCD BÊN B
+      // =====================================================
+
+      addSectionTitle('ẢNH CCCD BÊN THUÊ');
+
+      const imageWidth = 220;
+      const imageHeight = 140;
+      const imageGap = 30;
+
+      const imageStartX = 50;
+      const imageStartY = doc.y;
+
+      // Mặt trước
+      doc
+        .font('Vietnamese')
+        .fontSize(10)
+        .text('Mặt trước CCCD', imageStartX, imageStartY, {
+          width: imageWidth,
+          align: 'center',
+        });
+
+      doc.image(data.cccdMatTruoc, imageStartX, imageStartY + 20, {
+        fit: [imageWidth, imageHeight],
+        align: 'center',
+        valign: 'center',
+      });
+
+      // Mặt sau
+      const imageBackX = imageStartX + imageWidth + imageGap;
+
+      doc
+        .font('Vietnamese')
+        .fontSize(10)
+        .text('Mặt sau CCCD', imageBackX, imageStartY, {
+          width: imageWidth,
+          align: 'center',
+        });
+
+      doc.image(data.cccdMatSau, imageBackX, imageStartY + 20, {
+        fit: [imageWidth, imageHeight],
+        align: 'center',
+        valign: 'center',
+      });
+
+      doc.y = imageStartY + imageHeight + 40;
 
       addParagraph('Hai bên thống nhất các điều khoản sau:');
 

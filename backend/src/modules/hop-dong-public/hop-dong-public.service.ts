@@ -39,12 +39,27 @@ export class HopDongPublicService {
     private readonly pdfService: HopDongPublicPdfService,
   ) {}
 
-  async submitContract(body: any) {
+  async submitContract(
+    body: any,
+    files: {
+      cccdMatTruoc?: Express.Multer.File[];
+      cccdMatSau?: Express.Multer.File[];
+    },
+  ) {
     // 1. Validate dữ liệu
     if (!body.email) {
       throw new BadRequestException('Email người thuê không được để trống.');
     }
+    const cccdMatTruoc = files?.cccdMatTruoc?.[0];
+    const cccdMatSau = files?.cccdMatSau?.[0];
 
+    if (!cccdMatTruoc) {
+      throw new BadRequestException('Vui lòng cung cấp ảnh CCCD mặt trước.');
+    }
+
+    if (!cccdMatSau) {
+      throw new BadRequestException('Vui lòng cung cấp ảnh CCCD mặt sau.');
+    }
     // 2. Tìm phòng
     const phong = await this.phongRepository.findOne({
       where: {
@@ -116,6 +131,8 @@ export class HopDongPublicService {
       ngaySinh: body.ngaySinh,
       diaChi: body.diaChi,
       bienSoXe: body.bienSoXe,
+      cccdMatTruoc: cccdMatTruoc.buffer,
+      cccdMatSau: cccdMatSau.buffer,
 
       // =========================
       // ĐIỀU 1

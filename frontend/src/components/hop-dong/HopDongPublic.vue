@@ -588,6 +588,8 @@ async function submitContract() {
     formData.append("benBDaKy", String(form.value.benBDaKy));
 
     formData.append("dongYHopDong", String(form.value.dongYHopDong));
+    formData.append("phongId", String(form.value.phongId));
+    formData.append("giuongId", String(form.value.giuongId));
 
     if (form.value.cccdMatTruoc) {
       formData.append("cccdMatTruoc", form.value.cccdMatTruoc);
