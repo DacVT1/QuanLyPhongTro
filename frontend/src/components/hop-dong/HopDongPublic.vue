@@ -547,14 +547,6 @@ async function submitContract() {
 
     return;
   }
-  const response = await api.post("/public/hop-dong/submit", {
-    ...form.value,
-  });
-  successMessage.value =
-    response.data?.message ??
-    "Hợp đồng đã được tạo và gửi qua email thành công.";
-  submitting.value = true;
-  errorMessage.value = "";
 
   try {
     const token = new URLSearchParams(window.location.search).get("token");
