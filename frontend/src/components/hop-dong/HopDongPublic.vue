@@ -149,6 +149,8 @@ const form = ref({
 
 const cccdMatTruocPreview = ref("");
 const cccdMatSauPreview = ref("");
+const cccdMatTruocInput = ref<HTMLInputElement | null>(null);
+const cccdMatSauInput = ref<HTMLInputElement | null>(null);
 
 function handleCccdMatTruocChange(event: Event) {
   const input = event.target as HTMLInputElement;
@@ -176,6 +178,69 @@ function handleCccdMatSauChange(event: Event) {
   }
 
   cccdMatSauPreview.value = file ? URL.createObjectURL(file) : "";
+}
+
+function resetContractForm() {
+  // Giải phóng object URL của ảnh preview
+  if (cccdMatTruocPreview.value) {
+    URL.revokeObjectURL(cccdMatTruocPreview.value);
+  }
+
+  if (cccdMatSauPreview.value) {
+    URL.revokeObjectURL(cccdMatSauPreview.value);
+  }
+
+  // Reset toàn bộ dữ liệu form
+  form.value = {
+    hoTen: "",
+    cccd: "",
+    cccdMatTruoc: null,
+    cccdMatSau: null,
+    sdt: "",
+    email: "",
+    ngaySinh: "",
+    diaChi: "",
+    bienSoXe: "",
+
+    nhaTroId: "",
+    tangSo: "",
+    phongId: "",
+    giuongId: "",
+
+    tienDatCoc: 0,
+
+    ngayBatDau: "",
+    ngayKetThuc: "",
+
+    benBDaKy: false,
+    dongYHopDong: false,
+  };
+
+  // Reset ô hiển thị tiền đặt cọc
+  tienDatCocDisplay.value = "";
+
+  // Reset preview ảnh
+  cccdMatTruocPreview.value = "";
+  cccdMatSauPreview.value = "";
+
+  // Reset input file thật trong DOM
+  if (cccdMatTruocInput.value) {
+    cccdMatTruocInput.value.value = "";
+  }
+
+  if (cccdMatSauInput.value) {
+    cccdMatSauInput.value.value = "";
+  }
+
+  // Reset thông tin xác nhận OTP
+  verificationCode.value = "";
+  verificationId.value = "";
+  verificationEmail.value = "";
+  verificationMessage.value = "";
+  verificationSigningStatus.value = false;
+
+  // Reset thông báo lỗi
+  errorMessage.value = "";
 }
 
 function isValidImage(file: File | null) {
@@ -688,9 +753,11 @@ async function verifyContract() {
       response.data?.message ??
       "Xác nhận thành công. Hợp đồng đã được gửi đến email.";
 
+    // Quay lại form HỢP ĐỒNG THUÊ TRỌ
     verificationStep.value = false;
 
-    verificationCode.value = "";
+    // Reset toàn bộ dữ liệu người dùng vừa nhập
+    resetContractForm();
 
     window.scrollTo({
       top: 0,
@@ -948,6 +1015,7 @@ onMounted(() => {
                 <label> Ảnh CCCD mặt trước <span>*</span> </label>
 
                 <input
+                  ref="cccdMatTruocInput"
                   type="file"
                   accept="image/jpeg,image/png,image/webp"
                   @change="handleCccdMatTruocChange"
@@ -967,6 +1035,7 @@ onMounted(() => {
                 <label> Ảnh CCCD mặt sau <span>*</span> </label>
 
                 <input
+                  ref="cccdMatSauInput"
                   type="file"
                   accept="image/jpeg,image/png,image/webp"
                   @change="handleCccdMatSauChange"
