@@ -1319,7 +1319,7 @@ export class HoaDonService {
           font-size: 12px;
           color: #94a3b8;
         ">
-          QR thanh toán là ảnh được đính kèm ở trong email này.
+          QR để thanh toán là ảnh được đính kèm ở trong email này. 
         </div>
 
       </div>
