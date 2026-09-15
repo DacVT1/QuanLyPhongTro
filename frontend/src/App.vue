@@ -1795,18 +1795,6 @@ async function openHopDongPdf(item: any) {
   }
 }
 
-function closeHopDongPdf() {
-  showHopDongPdf.value = false;
-
-  if (hopDongPdfUrl.value) {
-    URL.revokeObjectURL(hopDongPdfUrl.value);
-
-    hopDongPdfUrl.value = "";
-  }
-
-  hopDongPdfError.value = "";
-}
-
 watch(showHopDongPdf, (visible) => {
   if (!visible) {
     if (hopDongPdfUrl.value) {
@@ -5570,12 +5558,13 @@ onMounted(() => {
       <Footer />
     </div>
   </div>
+  <HopDongPdfViewer
+    v-model:show="showHopDongPdf"
+    :pdf-url="hopDongPdfUrl"
+    title="HỢP ĐỒNG THUÊ TRỌ"
+  />
 </template>
-<HopDongPdfViewer
-  v-model:show="showHopDongPdf"
-  :pdf-url="hopDongPdfUrl"
-  title="HỢP ĐỒNG THUÊ TRỌ"
-/>
+
 <style scoped>
 /* =========================================================
    ẢNH CCCD - FORM THÊM / SỬA NGƯỜI THUÊ
