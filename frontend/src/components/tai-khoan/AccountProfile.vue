@@ -334,17 +334,30 @@ async function saveAccount() {
 
 <style scoped>
 .account-button {
-  border: 0;
+  height: 38px;
+  padding: 0 14px;
+  border: 1px solid #d1d5db;
   border-radius: 8px;
-  padding: 8px 14px;
-  cursor: pointer;
+  background: #ffffff;
+  color: #374151;
+  font-size: 14px;
   font-weight: 600;
-  background: #2563eb;
-  color: white;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  white-space: nowrap;
+  box-sizing: border-box;
+  margin: 0;
 }
 
 .account-button:hover {
-  opacity: 0.9;
+  background: #f3f4f6;
+}
+
+.account-button:active {
+  background: #e5e7eb;
 }
 
 .account-overlay {
@@ -370,7 +383,7 @@ async function saveAccount() {
 .account-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   padding: 20px 24px;
   border-bottom: 1px solid #e5e7eb;
 }
