@@ -16,6 +16,7 @@ import { getRowNumber } from "./utils/pagination";
 import AppNotification from "./components/common/AppNotification.vue";
 import AppConfirmModal from "./components/common/AppConfirmModal.vue";
 import HopDongPdfViewer from "./components/hop-dong/HopDongPdfViewer.vue";
+import HoaDonDetail from "./components/hoa-don/HoaDonDetail.vue";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 const cccdMatTruocPreviewUrl = ref("");
@@ -223,6 +224,20 @@ function getPhongChartData(house: any) {
       },
     ],
   };
+}
+
+function openHoaDonDetail(item: any) {
+  if (!item?.id) {
+    return;
+  }
+
+  selectedHoaDon.value = item;
+  showHoaDonDetail.value = true;
+}
+
+function closeHoaDonDetail() {
+  showHoaDonDetail.value = false;
+  selectedHoaDon.value = null;
 }
 
 function getGiuongChartData(house: any) {
@@ -1310,7 +1325,9 @@ const hopDongPdfLoading = ref(false);
 const hopDongPdfError = ref("");
 const editingHoaDonId = ref<string | null>(null);
 const showHoaDonForm = ref(false);
-
+const showHoaDonDetail = ref(false);
+const selectedHoaDon = ref<any | null>(null);
+const sendingHoaDonEmail = ref(false);
 const showDeleteHoaDonModal = ref(false);
 const showDeleteHopDongModal = ref(false);
 
@@ -1374,7 +1391,38 @@ const deleteHoaDonInfo = ref({
   id: "",
   maHoaDon: "",
 });
+async function sendHoaDonEmail() {
+  const id = selectedHoaDon.value?.id;
 
+  if (!id) {
+    return;
+  }
+
+  try {
+    sendingHoaDonEmail.value = true;
+
+    const response = await api.post(`/hoa-don/${id}/send-email`);
+
+    showNotification(
+      response.data?.message ?? "Hóa đơn đã được gửi qua email.",
+      "success",
+      "Gửi hóa đơn thành công",
+    );
+  } catch (error: any) {
+    console.error("Không thể gửi hóa đơn qua email:", error);
+
+    const message =
+      error?.response?.data?.message ?? "Không thể gửi hóa đơn qua email.";
+
+    showNotification(
+      Array.isArray(message) ? message.join("\n") : message,
+      "error",
+      "Gửi hóa đơn thất bại",
+    );
+  } finally {
+    sendingHoaDonEmail.value = false;
+  }
+}
 const deleteHoaDonErrorMessage = ref("");
 
 const deleteHopDongInfo = ref({
@@ -4975,7 +5023,13 @@ onMounted(() => {
                     {{ getRowNumber(index, hoaDonCurrentPage, PAGE_SIZE) }}
                   </td>
                   <td>
-                    {{ item.maHoaDon }}
+                    <button
+                      type="button"
+                      class="hoa-don-code-link"
+                      @click="openHoaDonDetail(item)"
+                    >
+                      {{ item.maHoaDon }}
+                    </button>
                   </td>
 
                   <td>
@@ -5564,6 +5618,13 @@ onMounted(() => {
     :pdf-url="hopDongPdfUrl"
     :hop-dong-id="selectedHopDongId"
     title="HỢP ĐỒNG THUÊ TRỌ"
+  />
+  <HoaDonDetail
+    v-if="showHoaDonDetail && selectedHoaDon"
+    :hoa-don="selectedHoaDon"
+    :sending-email="sendingHoaDonEmail"
+    @close="closeHoaDonDetail"
+    @send-email="sendHoaDonEmail"
   />
 </template>
 
@@ -8588,5 +8649,21 @@ tbody tr:hover {
   outline: 2px solid #93c5fd;
   outline-offset: 3px;
   border-radius: 3px;
+}
+
+.hoa-don-code-link {
+  border: none;
+  background: transparent;
+
+  padding: 0;
+
+  color: #2563eb;
+  font-weight: 600;
+
+  cursor: pointer;
+}
+
+.hoa-don-code-link:hover {
+  text-decoration: underline;
 }
 </style>
