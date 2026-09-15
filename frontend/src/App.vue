@@ -13,12 +13,17 @@ import RegisterVerification from "./components/auth/RegisterVerification.vue";
 import { usePagination } from "./composables/usePagination";
 import Pagination from "./components/common/Pagination.vue";
 import { getRowNumber } from "./utils/pagination";
+import AppNotification from "./components/common/AppNotification.vue";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 const cccdMatTruocPreviewUrl = ref("");
 const cccdMatSauPreviewUrl = ref("");
 const showHopDongHoaDonErrorModal = ref(false);
 const hopDongHoaDonErrorMessage = ref("");
+const showAppNotification = ref(false);
+const appNotificationTitle = ref("Thành công");
+const appNotificationMessage = ref("");
+
 const tabs = [
   "dashboard",
   "nhaTro",
@@ -44,6 +49,13 @@ const currentUser = ref<any | null>(
 const isAuthenticated = computed(() => {
   return !!accessToken.value && !!currentUser.value;
 });
+
+function showSuccessNotification(message: string, title = "Thành công") {
+  appNotificationTitle.value = title;
+  appNotificationMessage.value = message;
+  showAppNotification.value = true;
+}
+
 function handleUnauthorized() {
   console.warn("Phiên đăng nhập không còn hợp lệ.");
 
@@ -2826,6 +2838,11 @@ onMounted(() => {
 </script>
 
 <template>
+  <AppNotification
+    v-model:show="showAppNotification"
+    :title="appNotificationTitle"
+    :message="appNotificationMessage"
+  />
   <Login
     v-if="!isAuthenticated && authMode === 'login'"
     @login-success="handleLogin"
