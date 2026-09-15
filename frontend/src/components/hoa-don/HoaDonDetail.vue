@@ -71,6 +71,26 @@ function getKyTinh() {
   return `${formatDate(start)} – ${formatDate(end)}`;
 }
 
+function getPhongSo() {
+  const maPhong = props.hoaDon?.hopDong?.giuong?.phong?.maPhong;
+
+  if (!maPhong) {
+    return "";
+  }
+
+  // Mã phòng hiện tại có dạng:
+  // CG_T102
+  //     └─ Tầng 1
+  //        Phòng 02
+  const match = maPhong.match(/_T\d+(\d{2})$/);
+
+  if (match?.[1]) {
+    return String(Number(match[1]));
+  }
+
+  return maPhong;
+}
+
 const isPaid = () => props.hoaDon?.trangThai === "da_thanh_toan";
 </script>
 
@@ -111,14 +131,34 @@ const isPaid = () => props.hoaDon?.trangThai === "da_thanh_toan";
         </div>
 
         <div class="hoa-don-info-item">
+          <span>Tầng</span>
+
+          <strong>
+            {{
+              hoaDon.hopDong?.giuong?.phong?.tangSo
+                ? `Tầng ${hoaDon.hopDong.giuong.phong.tangSo}`
+                : ""
+            }}
+          </strong>
+        </div>
+
+        <div class="hoa-don-info-item">
           <span>Phòng</span>
 
           <strong>
-            {{ hoaDon.hopDong?.giuong?.phong?.maPhong || "" }}
+            {{ getPhongSo() ? `Phòng ${getPhongSo()}` : "" }}
+          </strong>
+        </div>
 
-            <template v-if="hoaDon.hopDong?.giuong?.phong?.tangSo">
-              — Tầng {{ hoaDon.hopDong.giuong.phong.tangSo }}
-            </template>
+        <div class="hoa-don-info-item">
+          <span>Giường</span>
+
+          <strong>
+            {{
+              hoaDon.hopDong?.giuong?.giuongSo
+                ? `Giường ${hoaDon.hopDong.giuong.giuongSo}`
+                : ""
+            }}
           </strong>
         </div>
 
@@ -232,6 +272,18 @@ const isPaid = () => props.hoaDon?.trangThai === "da_thanh_toan";
           <strong>
             {{ hoaDon.hopDong.nguoiThue.email }}
           </strong>
+        </div>
+        <div>
+          ✉️ Ngân hàng:
+          <strong> Viettin bank </strong>
+        </div>
+        <div>
+          ✉️ Số tài khoản:
+          <strong> 09453242344 </strong>
+        </div>
+        <div>
+          ✉️ Chủ tài khoản:
+          <strong> Nguyễn Thị Chi </strong>
         </div>
       </div>
 
