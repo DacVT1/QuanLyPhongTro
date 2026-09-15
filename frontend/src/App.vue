@@ -23,7 +23,7 @@ const hopDongHoaDonErrorMessage = ref("");
 type NotificationType = "success" | "error" | "warning" | "info";
 const showAppNotification = ref(false);
 const appNotificationType = ref<NotificationType>("success");
-const appNotificationTitle = ref("Thành công");
+const appNotificationTitle = ref("");
 const appNotificationMessage = ref("");
 
 const tabs = [
@@ -54,9 +54,6 @@ const isAuthenticated = computed(() => {
 
 function getDefaultNotificationTitle(type: NotificationType) {
   switch (type) {
-    case "success":
-      return "Thành công";
-
     case "error":
       return "Có lỗi xảy ra";
 
@@ -65,6 +62,10 @@ function getDefaultNotificationTitle(type: NotificationType) {
 
     case "info":
       return "Thông báo";
+
+    case "success":
+    default:
+      return "Thành công";
   }
 }
 
@@ -74,8 +75,11 @@ function showNotification(
   title?: string,
 ) {
   appNotificationType.value = type;
+
   appNotificationTitle.value = title ?? getDefaultNotificationTitle(type);
+
   appNotificationMessage.value = message;
+
   showAppNotification.value = true;
 }
 
@@ -690,7 +694,11 @@ function validateNgayHopDong() {
   const endDate = new Date(`${ngayKetThuc}T00:00:00`);
 
   if (startDate >= endDate) {
-    alert("Ngày bắt đầu phải nhỏ hơn ngày kết thúc.");
+    showNotification(
+      "Ngày bắt đầu phải nhỏ hơn ngày kết thúc.",
+      "error",
+      "Ngày hợp đồng không hợp lệ",
+    );
 
     hopDongForm.value.ngayKetThuc = "";
 
@@ -2079,11 +2087,7 @@ async function handleThemNhieuGiuong() {
       error?.response?.data?.message ??
       "Không thể thêm nhiều giường. Vui lòng thử lại.";
 
-    showNotification(
-      Array.isArray(message) ? message.join("\n") : message,
-      "error",
-      "Không thể thêm nhiều giường",
-    );
+    alert(Array.isArray(message) ? message.join("\n") : message);
   }
 }
 async function saveGiuong() {
@@ -2894,6 +2898,7 @@ onMounted(() => {
 <template>
   <AppNotification
     v-model:show="showAppNotification"
+    :type="appNotificationType"
     :title="appNotificationTitle"
     :message="appNotificationMessage"
   />
