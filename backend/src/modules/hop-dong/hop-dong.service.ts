@@ -508,27 +508,31 @@ export class HopDongService {
 
     const readImageBuffer = async (
       imagePath?: string | null,
-    ): Promise<Buffer> => {
+    ): Promise<Buffer | null> => {
       if (!imagePath) {
-        throw new BadRequestException('Người thuê chưa có ảnh CCCD.');
+        console.warn('Người thuê chưa có ảnh CCCD.');
+        return null;
       }
 
       const normalizedPath = imagePath
         .replace(/^\/+/, '')
         .replace(/^uploads[\\/]/, '');
 
-      const absolutePath = path.resolve(
-        process.cwd(),
-        'uploads',
-        normalizedPath,
-      );
+      const storageDir =
+        process.env.STORAGE_DIR || path.resolve(process.cwd(), 'uploads');
+
+      const absolutePath = path.resolve(storageDir, normalizedPath);
 
       try {
         return await fs.readFile(absolutePath);
-      } catch (error) {
-        console.error('Không thể đọc ảnh CCCD:', absolutePath, error);
+      } catch (error: any) {
+        if (error?.code === 'ENOENT') {
+          console.warn(`Ảnh CCCD không tồn tại, bỏ qua ảnh: ${absolutePath}`);
+        } else {
+          console.error(`Không thể đọc ảnh CCCD: ${absolutePath}`, error);
+        }
 
-        throw new BadRequestException('Không thể đọc ảnh CCCD của người thuê.');
+        return null;
       }
     };
 

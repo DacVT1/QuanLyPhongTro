@@ -28,8 +28,8 @@ interface ContractPdfData {
   ngaySinh: string;
   diaChi: string;
   bienSoXe: string;
-  cccdMatTruoc: Buffer;
-  cccdMatSau: Buffer;
+  cccdMatTruoc: Buffer | null;
+  cccdMatSau: Buffer | null;
 
   // =========================
   // ĐIỀU 1
@@ -318,11 +318,21 @@ export class HopDongPublicPdfService {
           align: 'center',
         });
 
-      doc.image(data.cccdMatTruoc, imageStartX, imageStartY + 20, {
-        fit: [imageWidth, imageHeight],
-        align: 'center',
-        valign: 'center',
-      });
+      if (data.cccdMatTruoc) {
+        doc.image(data.cccdMatTruoc, imageStartX, imageStartY + 20, {
+          fit: [imageWidth, imageHeight],
+          align: 'center',
+          valign: 'center',
+        });
+      } else {
+        doc
+          .font('Vietnamese')
+          .fontSize(9)
+          .text('Không có ảnh', imageStartX, imageStartY + 75, {
+            width: imageWidth,
+            align: 'center',
+          });
+      }
 
       // Mặt sau
       const imageBackX = imageStartX + imageWidth + imageGap;
@@ -335,11 +345,21 @@ export class HopDongPublicPdfService {
           align: 'center',
         });
 
-      doc.image(data.cccdMatSau, imageBackX, imageStartY + 20, {
-        fit: [imageWidth, imageHeight],
-        align: 'center',
-        valign: 'center',
-      });
+      if (data.cccdMatSau) {
+        doc.image(data.cccdMatSau, imageBackX, imageStartY + 20, {
+          fit: [imageWidth, imageHeight],
+          align: 'center',
+          valign: 'center',
+        });
+      } else {
+        doc
+          .font('Vietnamese')
+          .fontSize(9)
+          .text('Không có ảnh', imageBackX, imageStartY + 75, {
+            width: imageWidth,
+            align: 'center',
+          });
+      }
 
       doc.y = imageStartY + imageHeight + 40;
 
