@@ -17,6 +17,7 @@ import AppNotification from "./components/common/AppNotification.vue";
 import AppConfirmModal from "./components/common/AppConfirmModal.vue";
 import HopDongPdfViewer from "./components/hop-dong/HopDongPdfViewer.vue";
 import HoaDonDetail from "./components/hoa-don/HoaDonDetail.vue";
+import AccountProfile from "./components/tai-khoan/AccountProfile.vue";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 const cccdMatTruocPreviewUrl = ref("");
@@ -3199,6 +3200,7 @@ onMounted(() => {
             </h2>
           </div>
           <div class="header-actions"></div>
+          <AccountProfile />
           <button type="button" class="logout-button" @click="logout">
             Đăng xuất
           </button>
@@ -8665,5 +8667,11 @@ tbody tr:hover {
 
 .hoa-don-code-link:hover {
   text-decoration: underline;
+}
+
+.header-account-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 </style>
