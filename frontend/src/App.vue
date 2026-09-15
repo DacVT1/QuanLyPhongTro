@@ -3199,11 +3199,13 @@ onMounted(() => {
               {{ currentUser.tenHienThi || currentUser.username }}
             </h2>
           </div>
-          <div class="header-actions"></div>
-          <AccountProfile />
-          <button type="button" class="logout-button" @click="logout">
-            Đăng xuất
-          </button>
+          <div class="account-actions">
+            <AccountProfile />
+
+            <button type="button" class="logout-button" @click="logout">
+              Đăng xuất
+            </button>
+          </div>
         </header>
 
         <!-- ===================================================

@@ -443,7 +443,7 @@ async function saveAccount() {
 .account-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 10px;
+  gap: 20px;
   margin-top: 24px;
 }
 
