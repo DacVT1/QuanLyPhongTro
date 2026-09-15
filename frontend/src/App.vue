@@ -32,7 +32,7 @@ const soDienThoaiError = ref("");
 const authMode = ref<"login" | "register" | "registerVerification">("login");
 
 const registerIdentifier = ref("");
-
+const phongSearchKeyword = ref("");
 const accessToken = ref(localStorage.getItem("accessToken"));
 
 const currentUser = ref<any | null>(
@@ -591,7 +591,27 @@ const summary = ref({
   totalHopDong: 0,
   totalHoaDon: 0,
 });
+const filteredPhongs = computed(() => {
+  const keyword = phongSearchKeyword.value.trim().toLowerCase();
 
+  if (!keyword) {
+    return phongs.value;
+  }
+
+  return phongs.value.filter((phong: any) => {
+    const maPhong = String(phong.maPhong ?? "").toLowerCase();
+    const tenPhong = String(phong.tenPhong ?? "").toLowerCase();
+    const tenNhaTro = String(
+      phong.nhaTro?.tenNhaTro ?? phong.tenNhaTro ?? "",
+    ).toLowerCase();
+
+    return (
+      maPhong.includes(keyword) ||
+      tenPhong.includes(keyword) ||
+      tenNhaTro.includes(keyword)
+    );
+  });
+});
 const nhatroImg = ref("/images/nhatro.svg");
 
 const fallbackSvg = `<svg xmlns='http://www.w3.org/2000/svg' width='80' height='60' viewBox='0 0 80 60'><rect width='100%' height='100%' fill='%23e6f2ff'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' font-family='Arial, Helvetica, sans-serif' font-size='12' fill='%230f172a'>Nha tro</text></svg>`;
@@ -3293,7 +3313,13 @@ onMounted(() => {
           <div v-else class="panel">
             <div class="panel-header">
               <h3>Danh sách phòng</h3>
-
+              <div class="search-box">
+                <input
+                  v-model="phongSearchKeyword"
+                  type="text"
+                  placeholder="Tìm kiếm theo mã phòng hoặc tên nhà trọ..."
+                />
+              </div>
               <button type="button" class="primary" @click="openAddPhongForm">
                 Thêm phòng
               </button>
@@ -3312,7 +3338,7 @@ onMounted(() => {
               </thead>
 
               <tbody>
-                <tr v-for="item in phongs" :key="item.id">
+                <tr v-for="item in filteredPhongs" :key="item.id">
                   <td>
                     {{ item.maPhong }}
                   </td>
@@ -3345,6 +3371,11 @@ onMounted(() => {
                     >
                       Xóa
                     </button>
+                  </td>
+                </tr>
+                <tr v-if="filteredPhongs.length === 0">
+                  <td colspan="4" class="empty-state">
+                    Không tìm thấy phòng có mã phù hợp.
                   </td>
                 </tr>
               </tbody>
