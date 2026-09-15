@@ -3414,7 +3414,7 @@ onMounted(() => {
             <table>
               <thead>
                 <tr>
-                  <th>Số</th>
+                  <th class="stt-column">Số</th>
                   <th>Mã phòng</th>
                   <th>Nhà trọ</th>
                   <th>Tầng số</th>
@@ -3426,7 +3426,7 @@ onMounted(() => {
 
               <tbody>
                 <tr v-for="(item, index) in paginatedPhongs" :key="item.id">
-                  <td>
+                  <td class="stt-column">
                     {{ getRowNumber(index, phongCurrentPage, PAGE_SIZE) }}
                   </td>
                   <td>
@@ -3620,7 +3620,7 @@ onMounted(() => {
             <table>
               <thead>
                 <tr>
-                  <th>Số</th>
+                  <th class="stt-column">Số</th>
                   <th>Mã giường</th>
                   <!-- <th>Nhà trọ</th>
           <th>Phòng</th>
@@ -3704,7 +3704,7 @@ onMounted(() => {
 
               <tbody>
                 <tr v-for="(item, index) in paginatedGiuongs" :key="item.id">
-                  <td>
+                  <td class="stt-column">
                     {{ getRowNumber(index, giuongCurrentPage, PAGE_SIZE) }}
                   </td>
                   <td>{{ item.maGiuong }}</td>
@@ -3982,7 +3982,7 @@ onMounted(() => {
             <table>
               <thead>
                 <tr>
-                  <th>Số</th>
+                  <th class="stt-column">Số</th>
                   <th>Họ tên</th>
                   <th>CCCD</th>
                   <th>Số điện thoại</th>
@@ -3994,7 +3994,7 @@ onMounted(() => {
 
               <tbody>
                 <tr v-for="(item, index) in paginatedNguoiThues" :key="item.id">
-                  <td>
+                  <td class="stt-column">
                     {{ getRowNumber(index, nguoiThueCurrentPage, PAGE_SIZE) }}
                   </td>
                   <td>
@@ -4292,7 +4292,7 @@ onMounted(() => {
             <table>
               <thead>
                 <tr>
-                  <th>Số</th>
+                  <th class="stt-column">Số</th>
                   <th>Mã HĐ(Giường)</th>
                   <th>Người thuê</th>
                   <th>Ngày bắt đầu</th>
@@ -4399,7 +4399,7 @@ onMounted(() => {
 
               <tbody>
                 <tr v-for="(item, index) in paginatedHopDongs" :key="item.id">
-                  <td>
+                  <td class="stt-column">
                     {{ getRowNumber(index, hopDongCurrentPage, PAGE_SIZE) }}
                   </td>
                   <td>
@@ -4697,7 +4697,7 @@ onMounted(() => {
             <table>
               <thead>
                 <tr>
-                  <th>Số</th>
+                  <th class="stt-column">Số</th>
                   <th>Mã HĐ(Giường)</th>
                   <th>Người thuê</th>
                   <th>Tổng tiền</th>
@@ -4781,7 +4781,7 @@ onMounted(() => {
 
               <tbody>
                 <tr v-for="(item, index) in paginatedHoaDons" :key="item.id">
-                  <td>
+                  <td class="stt-column">
                     {{ getRowNumber(index, hoaDonCurrentPage, PAGE_SIZE) }}
                   </td>
                   <td>
@@ -8354,5 +8354,11 @@ tbody tr:hover {
 .pagination-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.stt-column {
+  width: 60px;
+  min-width: 60px;
+  text-align: center;
 }
 </style>
