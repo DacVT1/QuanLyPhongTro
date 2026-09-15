@@ -424,6 +424,8 @@ async function handleThemHoaDonChoCacGiuong() {
      */
     await loadData();
 
+    showSuccessNotification("Nhiều hóa đơn đã được thêm thành công.");
+
     // Chuyển sang module Hóa đơn
     currentTab.value = "hoaDon";
 
@@ -1763,8 +1765,10 @@ async function saveNhaTro() {
 
     if (editingNhaTroId.value) {
       await api.patch(`/nha-tro/${editingNhaTroId.value}`, payload);
+      showSuccessNotification("Nhà trọ đã được sửa thành công.");
     } else {
       await api.post("/nha-tro", payload);
+      showSuccessNotification("Nhà trọ đã được thêm thành công.");
     }
 
     resetNhaTroForm();
@@ -1797,8 +1801,10 @@ async function savePhong() {
 
     if (editingPhongId.value) {
       await api.patch(`/phong/${editingPhongId.value}`, payload);
+      showSuccessNotification("Phòng đã được sửa thành công.");
     } else {
       await api.post("/phong", payload);
+      showSuccessNotification("Phòng đã được thêm thành công.");
     }
 
     resetPhongForm();
@@ -2035,6 +2041,8 @@ async function handleThemNhieuGiuong() {
         `Đã bỏ qua: ${Number(result?.daBoQua ?? 0)} giường đã tồn tại`,
       ].join("\n"),
     );
+
+    showSuccessNotification("Nhiều giường đã được thêm thành công.");
   } catch (error: any) {
     console.error("Không thể thêm nhiều giường:", error);
 
@@ -2058,8 +2066,10 @@ async function saveGiuong() {
   try {
     if (editingGiuongId.value) {
       await api.patch(`/giuong/${editingGiuongId.value}`, payload);
+      showSuccessNotification("Giường đã được sửa thành công.");
     } else {
       await api.post("/giuong", payload);
+      showSuccessNotification("Giường đã được thêm thành công.");
     }
 
     resetGiuongForm();
@@ -2196,8 +2206,10 @@ async function saveNguoiThue() {
   try {
     if (editingNguoiThueId.value) {
       await api.patch(`/nguoi-thue/${editingNguoiThueId.value}`, formData);
+      showSuccessNotification("Người thuê đã được sửa thành công.");
     } else {
       await api.post("/nguoi-thue", formData);
+      showSuccessNotification("Người thuê đã được thêm thành công.");
     }
 
     // Lưu thành công -> clear toàn bộ form,
@@ -2280,8 +2292,10 @@ async function saveHopDong() {
 
   if (editingHopDongId.value) {
     await api.patch(`/hop-dong/${editingHopDongId.value}`, payload);
+    showSuccessNotification("Hợp đồng đã được sửa thành công.");
   } else {
     await api.post("/hop-dong", payload);
+    showSuccessNotification("Hợp đồng đã được thêm thành công.");
   }
 
   resetHopDongForm();
@@ -2367,8 +2381,10 @@ async function saveHoaDon() {
 
     if (editingHoaDonId.value) {
       await api.patch(`/hoa-don/${editingHoaDonId.value}`, payload);
+      showSuccessNotification("Hóa đơn đã được sửa thành công.");
     } else {
       await api.post("/hoa-don", payload);
+      showSuccessNotification("Hóa đơn đã được thêm thành công.");
     }
 
     resetHoaDonForm();
