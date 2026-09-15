@@ -10,6 +10,8 @@ import Login from "@/components/auth/Login.vue";
 import Register from "./components/auth/Register.vue";
 import Footer from "./components/Footer.vue";
 import RegisterVerification from "./components/auth/RegisterVerification.vue";
+import { usePagination } from "./composables/usePagination";
+import Pagination from "./components/common/Pagination.vue";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 const cccdMatTruocPreviewUrl = ref("");
@@ -1351,6 +1353,89 @@ const filteredGiuongs = computed(() => {
     return matchKeyword && matchStatus;
   });
 });
+
+// ======================================================
+// PHÂN TRANG DÙNG CHUNG
+// Mỗi trang: 10 bản ghi
+// ======================================================
+
+const PAGE_SIZE = 10;
+
+// Giường
+const {
+  currentPage: giuongCurrentPage,
+  totalPages: giuongTotalPages,
+  paginatedData: paginatedGiuongs,
+  goToPage: goToGiuongPage,
+  nextPage: nextGiuongPage,
+  previousPage: previousGiuongPage,
+  resetPage: resetGiuongPage,
+} = usePagination(filteredGiuongs, PAGE_SIZE);
+
+// Phòng
+const {
+  currentPage: phongCurrentPage,
+  totalPages: phongTotalPages,
+  paginatedData: paginatedPhongs,
+  goToPage: goToPhongPage,
+  nextPage: nextPhongPage,
+  previousPage: previousPhongPage,
+  resetPage: resetPhongPage,
+} = usePagination(filteredPhongs, PAGE_SIZE);
+
+// Người thuê
+const {
+  currentPage: nguoiThueCurrentPage,
+  totalPages: nguoiThueTotalPages,
+  paginatedData: paginatedNguoiThues,
+  goToPage: goToNguoiThuePage,
+  nextPage: nextNguoiThuePage,
+  previousPage: previousNguoiThuePage,
+  resetPage: resetNguoiThuePage,
+} = usePagination(filteredNguoiThues, PAGE_SIZE);
+
+// Hợp đồng
+const {
+  currentPage: hopDongCurrentPage,
+  totalPages: hopDongTotalPages,
+  paginatedData: paginatedHopDongs,
+  goToPage: goToHopDongPage,
+  nextPage: nextHopDongPage,
+  previousPage: previousHopDongPage,
+  resetPage: resetHopDongPage,
+} = usePagination(filteredHopDongs, PAGE_SIZE);
+
+// Hóa đơn
+const {
+  currentPage: hoaDonCurrentPage,
+  totalPages: hoaDonTotalPages,
+  paginatedData: paginatedHoaDons,
+  goToPage: goToHoaDonPage,
+  nextPage: nextHoaDonPage,
+  previousPage: previousHoaDonPage,
+  resetPage: resetHoaDonPage,
+} = usePagination(filteredHoaDons, PAGE_SIZE);
+
+watch([giuongSearch, giuongStatusFilter], () => {
+  resetGiuongPage();
+});
+
+watch(phongSearchKeyword, () => {
+  resetPhongPage();
+});
+
+watch(nguoiThueSearch, () => {
+  resetNguoiThuePage();
+});
+
+watch([hopDongSearch, hopDongStatusFilter], () => {
+  resetHopDongPage();
+});
+
+watch([hoaDonSearch, hoaDonStatusFilter], () => {
+  resetHoaDonPage();
+});
+
 const giuongOptions = computed(() => {
   // Danh sách tối đa 8 giường
   const allOptions = Array.from({ length: 8 }, (_, index) => String(index + 1));
@@ -3317,7 +3402,7 @@ onMounted(() => {
                 <input
                   v-model="phongSearchKeyword"
                   type="text"
-                  placeholder="Tìm kiếm theo mã phòng hoặc tên nhà trọ..."
+                  placeholder="Tìm kiếm theo Mã phòng"
                 />
               </div>
               <button type="button" class="primary" @click="openAddPhongForm">
@@ -3338,7 +3423,7 @@ onMounted(() => {
               </thead>
 
               <tbody>
-                <tr v-for="item in filteredPhongs" :key="item.id">
+                <tr v-for="item in paginatedPhongs" :key="item.id">
                   <td>
                     {{ item.maPhong }}
                   </td>
@@ -3380,6 +3465,11 @@ onMounted(() => {
                 </tr>
               </tbody>
             </table>
+            <Pagination
+              :current-page="phongCurrentPage"
+              :total-pages="phongTotalPages"
+              @update:current-page="goToPhongPage"
+            />
           </div>
         </section>
 
@@ -3607,7 +3697,7 @@ onMounted(() => {
               </thead>
 
               <tbody>
-                <tr v-for="item in filteredGiuongs" :key="item.id">
+                <tr v-for="item in paginatedGiuongs" :key="item.id">
                   <td>{{ item.maGiuong }}</td>
 
                   <!-- <td>
@@ -3677,6 +3767,11 @@ onMounted(() => {
                 </tr>
               </tbody>
             </table>
+            <Pagination
+              :current-page="giuongCurrentPage"
+              :total-pages="giuongTotalPages"
+              @update:current-page="goToGiuongPage"
+            />
           </div>
         </section>
 
@@ -3888,7 +3983,7 @@ onMounted(() => {
               </thead>
 
               <tbody>
-                <tr v-for="item in filteredNguoiThues" :key="item.id">
+                <tr v-for="item in paginatedNguoiThues" :key="item.id">
                   <td>
                     <button
                       type="button"
@@ -3932,6 +4027,11 @@ onMounted(() => {
                 </tr>
               </tbody>
             </table>
+            <Pagination
+              :current-page="nguoiThueCurrentPage"
+              :total-pages="nguoiThueTotalPages"
+              @update:current-page="goToNguoiThuePage"
+            />
           </div>
         </section>
 
@@ -4284,7 +4384,7 @@ onMounted(() => {
               </thead>
 
               <tbody>
-                <tr v-for="item in filteredHopDongs" :key="item.id">
+                <tr v-for="item in paginatedHopDongs" :key="item.id">
                   <td>
                     {{ item.maHopDong }}
                   </td>
@@ -4368,6 +4468,11 @@ onMounted(() => {
                 </tr>
               </tbody>
             </table>
+            <Pagination
+              :current-page="hopDongCurrentPage"
+              :total-pages="hopDongTotalPages"
+              @update:current-page="goToHopDongPage"
+            />
           </div>
         </section>
 
@@ -4657,7 +4762,7 @@ onMounted(() => {
               </thead>
 
               <tbody>
-                <tr v-for="item in filteredHoaDons" :key="item.id">
+                <tr v-for="item in paginatedHoaDons" :key="item.id">
                   <td>
                     {{ item.maHoaDon }}
                   </td>
@@ -4720,6 +4825,11 @@ onMounted(() => {
                   </td>
                 </tr>
               </tbody>
+              <Pagination
+                :current-page="hoaDonCurrentPage"
+                :total-pages="hoaDonTotalPages"
+                @update:current-page="goToHoaDonPage"
+              />
             </table>
           </div>
         </section>
@@ -8177,5 +8287,51 @@ tbody tr:hover {
   background: #e2e8f0;
   font-weight: 600;
   color: #0f172a;
+}
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin-top: 20px;
+  padding-bottom: 4px;
+  flex-wrap: wrap;
+}
+
+.pagination-btn {
+  min-width: 38px;
+  height: 38px;
+  padding: 0 12px;
+
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+
+  background: #ffffff;
+  color: #172033;
+
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background: #f3f4f6;
+}
+
+.pagination-btn.active {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.pagination-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 </style>
