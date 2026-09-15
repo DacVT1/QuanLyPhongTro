@@ -47,6 +47,11 @@ export class HopDongController {
     res.end(pdfBuffer);
   }
 
+  @Post(':id/send-email')
+  async sendEmail(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
+    return this.hopDongService.sendContractEmail(id, user.tenantId);
+  }
+
   @Post()
   create(@Body() payload: any, @CurrentUser() user: JwtPayload) {
     return this.hopDongService.create(payload, user.tenantId);

@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-
+import { Resend } from 'resend';
 import { HopDong } from '../../entities/hop-dong.entity';
 import { Giuong } from '../../entities/giuong.entity';
 import { Tenant } from 'src/entities/tenant.entity';
@@ -15,6 +15,7 @@ import { HopDongPublicPdfService } from '../hop-dong-public/hop-dong-public-pdf.
 
 @Injectable()
 export class HopDongService {
+  private readonly resend: Resend;
   constructor(
     @InjectRepository(HopDong)
     private readonly repository: Repository<HopDong>,
@@ -29,7 +30,15 @@ export class HopDongService {
     private readonly tenantRepository: Repository<Tenant>,
 
     private readonly pdfService: HopDongPublicPdfService,
-  ) {}
+  ) {
+    const apiKey = process.env.RESEND_API_KEY;
+
+    if (!apiKey) {
+      throw new Error('Thiếu RESEND_API_KEY.');
+    }
+
+    this.resend = new Resend(apiKey);
+  }
 
   async findAll(tenantId: string) {
     if (!tenantId) {
@@ -579,5 +588,111 @@ export class HopDongService {
     });
 
     return pdfBuffer;
+  }
+
+  async sendContractEmail(
+    id: string,
+    tenantId: string,
+  ): Promise<{
+    success: boolean;
+    message: string;
+  }> {
+    if (!tenantId) {
+      throw new BadRequestException('Không xác định được tenant.');
+    }
+
+    const hopDong = await this.repository.findOne({
+      where: {
+        id,
+        tenant: {
+          id: tenantId,
+        },
+      },
+      relations: {
+        nguoiThue: true,
+        giuong: {
+          phong: {
+            nhaTro: true,
+          },
+        },
+      },
+    });
+
+    if (!hopDong) {
+      throw new NotFoundException('Không tìm thấy hợp đồng.');
+    }
+
+    if (!hopDong.nguoiThue) {
+      throw new NotFoundException('Không tìm thấy người thuê của hợp đồng.');
+    }
+
+    const emailNguoiThue = hopDong.nguoiThue.email?.trim();
+
+    if (!emailNguoiThue) {
+      throw new BadRequestException('Người thuê chưa có email.');
+    }
+
+    const fromEmail = process.env.RESEND_FROM_EMAIL?.trim();
+
+    if (!fromEmail) {
+      throw new BadRequestException('Chưa cấu hình RESEND_FROM_EMAIL.');
+    }
+
+    // Tạo đúng PDF HỢP ĐỒNG THUÊ TRỌ
+    // đang được sử dụng trên màn hình.
+    const pdfBuffer = await this.generatePdf(id, tenantId);
+
+    // Hai người nhận:
+    // 1. Email cố định
+    // 2. Email người thuê
+    const recipients = Array.from(
+      new Set(['nguyenchihaucan@gmail.com', emailNguoiThue]),
+    );
+
+    const maHopDong = hopDong.maHopDong ?? id;
+
+    const { error } = await this.resend.emails.send({
+      from: fromEmail,
+
+      to: recipients,
+
+      subject: `Hợp đồng thuê trọ - ${maHopDong}`,
+
+      html: `
+        <p>Xin chào,</p>
+
+        <p>
+          Hợp đồng thuê trọ
+          <strong>${maHopDong}</strong>
+          được gửi kèm theo email này.
+        </p>
+
+        <p>
+          Vui lòng kiểm tra file PDF
+          đính kèm.
+        </p>
+
+        <p>Trân trọng.</p>
+      `,
+
+      attachments: [
+        {
+          filename: `HopDongThueTro-${maHopDong}.pdf`,
+
+          content: pdfBuffer.toString('base64'),
+        },
+      ],
+    });
+
+    if (error) {
+      console.error('Lỗi Resend khi gửi hợp đồng:', error);
+
+      throw new BadRequestException('Không thể gửi email hợp đồng.');
+    }
+
+    return {
+      success: true,
+      message: `Hợp đồng đã được gửi đến ${recipients.join(' và ')}.`,
+    };
   }
 }

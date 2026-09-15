@@ -1304,6 +1304,7 @@ const tienDatCocDisplay = ref("1,000,000");
 const editingHopDongId = ref<string | null>(null);
 const showHopDongForm = ref(false);
 const showHopDongPdf = ref(false);
+const selectedHopDongId = ref("");
 const hopDongPdfUrl = ref("");
 const hopDongPdfLoading = ref(false);
 const hopDongPdfError = ref("");
@@ -1748,7 +1749,7 @@ function handleGiuongChangeForHopDong() {
 
 async function openHopDongPdf(item: any) {
   const hopDongId = item?.id;
-
+  selectedHopDongId.value = hopDongId;
   if (!hopDongId) {
     showNotification(
       "Không xác định được hợp đồng.",
@@ -5561,6 +5562,7 @@ onMounted(() => {
   <HopDongPdfViewer
     v-model:show="showHopDongPdf"
     :pdf-url="hopDongPdfUrl"
+    :hop-dong-id="selectedHopDongId"
     title="HỢP ĐỒNG THUÊ TRỌ"
   />
 </template>

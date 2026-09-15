@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { onBeforeUnmount, ref, watch } from "vue";
+import api from "../../services/api";
 
 interface Props {
   show: boolean;
   pdfUrl: string;
   title?: string;
+  hopDongId: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -16,9 +18,33 @@ const emit = defineEmits<{
 }>();
 
 const loading = ref(false);
+const sending = ref(false);
 
 function close() {
   emit("update:show", false);
+}
+
+async function sendContract() {
+  if (!props.hopDongId) {
+    return;
+  }
+
+  try {
+    sending.value = true;
+
+    const response = await api.post(`/hop-dong/${props.hopDongId}/send-email`);
+
+    alert(response.data?.message ?? "Đã gửi hợp đồng thành công.");
+  } catch (error: any) {
+    console.error("Không thể gửi hợp đồng:", error);
+
+    const message =
+      error?.response?.data?.message ?? "Không thể gửi hợp đồng qua email.";
+
+    alert(Array.isArray(message) ? message.join("\n") : message);
+  } finally {
+    sending.value = false;
+  }
 }
 
 watch(
@@ -69,6 +95,15 @@ onBeforeUnmount(() => {
           </div>
 
           <div class="pdf-footer">
+            <button
+              type="button"
+              class="pdf-send-btn"
+              :disabled="sending"
+              @click="sendContract"
+            >
+              {{ sending ? "Đang gửi..." : "Gửi hợp đồng" }}
+            </button>
+
             <button type="button" class="pdf-btn" @click="close">Đóng</button>
           </div>
         </div>
@@ -203,11 +238,38 @@ onBeforeUnmount(() => {
 .pdf-footer {
   display: flex;
   justify-content: flex-end;
+  gap: 10px;
 
   padding: 12px 18px;
 
   border-top: 1px solid #e2e8f0;
   background: #ffffff;
+}
+
+.pdf-send-btn {
+  min-width: 130px;
+
+  padding: 9px 18px;
+
+  border: 1px solid #2563eb;
+  border-radius: 9px;
+
+  background: #2563eb;
+  color: #ffffff;
+
+  font-size: 14px;
+  font-weight: 600;
+
+  cursor: pointer;
+}
+
+.pdf-send-btn:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+
+.pdf-send-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .pdf-btn {
