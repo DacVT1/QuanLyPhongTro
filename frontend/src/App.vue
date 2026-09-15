@@ -13,12 +13,22 @@ import RegisterVerification from "./components/auth/RegisterVerification.vue";
 import { usePagination } from "./composables/usePagination";
 import Pagination from "./components/common/Pagination.vue";
 import { getRowNumber } from "./utils/pagination";
+import AppNotification from "./components/common/AppNotification.vue";
+import AppConfirmModal from "./components/common/AppConfirmModal.vue";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 const cccdMatTruocPreviewUrl = ref("");
 const cccdMatSauPreviewUrl = ref("");
 const showHopDongHoaDonErrorModal = ref(false);
 const hopDongHoaDonErrorMessage = ref("");
+type NotificationType = "success" | "error" | "warning" | "info";
+const showAppNotification = ref(false);
+const showCreateInvoicesConfirm = ref(false);
+const createInvoicesConfirmMessage = ref("");
+const appNotificationType = ref<NotificationType>("success");
+const appNotificationTitle = ref("");
+const appNotificationMessage = ref("");
+
 const tabs = [
   "dashboard",
   "nhaTro",
@@ -44,6 +54,38 @@ const currentUser = ref<any | null>(
 const isAuthenticated = computed(() => {
   return !!accessToken.value && !!currentUser.value;
 });
+
+function getDefaultNotificationTitle(type: NotificationType) {
+  switch (type) {
+    case "error":
+      return "Có lỗi xảy ra";
+
+    case "warning":
+      return "Cảnh báo";
+
+    case "info":
+      return "Thông báo";
+
+    case "success":
+    default:
+      return "Thành công";
+  }
+}
+
+function showNotification(
+  message: string,
+  type: NotificationType = "success",
+  title?: string,
+) {
+  appNotificationType.value = type;
+
+  appNotificationTitle.value = title ?? getDefaultNotificationTitle(type);
+
+  appNotificationMessage.value = message;
+
+  showAppNotification.value = true;
+}
+
 function handleUnauthorized() {
   console.warn("Phiên đăng nhập không còn hợp lệ.");
 
@@ -71,9 +113,6 @@ function handleUnauthorized() {
   currentTab.value = "dashboard";
   authMode.value = "login";
 }
-onMounted(() => {
-  window.addEventListener("auth:unauthorized", handleUnauthorized);
-});
 onMounted(() => {
   window.addEventListener("auth:unauthorized", handleUnauthorized);
 });
@@ -382,15 +421,13 @@ async function handleThemHoaDonChoCacGiuong() {
   /*
    * Xác nhận trước khi tạo hàng loạt.
    */
-  const confirmed = window.confirm(
-    `Bạn có chắc muốn tạo hóa đơn cho các giường đang có người thuê trong tháng ${formatMonthForDisplay(
-      thangThanhToan,
-    )} không?`,
-  );
+  createInvoicesConfirmMessage.value = `Bạn có chắc muốn tạo hóa đơn cho các giường đang có người thuê trong tháng ${formatMonthForDisplay(
+    thangThanhToan,
+  )} không?`;
 
-  if (!confirmed) {
-    return;
-  }
+  showCreateInvoicesConfirm.value = true;
+
+  return;
 
   try {
     /*
@@ -415,6 +452,8 @@ async function handleThemHoaDonChoCacGiuong() {
      */
     await loadData();
 
+    showNotification("Nhiều hóa đơn đã được thêm thành công.");
+
     // Chuyển sang module Hóa đơn
     currentTab.value = "hoaDon";
 
@@ -423,9 +462,6 @@ async function handleThemHoaDonChoCacGiuong() {
     resetHoaDonForm();
     showHoaDonForm.value = false;
 
-    // Chuyển sang tab Danh sách hóa đơn
-    currentTab.value = "hoaDon";
-
     const daTao = Number(result?.daTao ?? 0);
 
     const daBoQua = Number(result?.daBoQua ?? 0);
@@ -433,13 +469,15 @@ async function handleThemHoaDonChoCacGiuong() {
     /*
      * Hiển thị kết quả.
      */
-    alert(
+    showNotification(
       [
         result?.message ?? "Đã xử lý tạo hóa đơn.",
         `Tháng: ${formatMonthForDisplay(thangThanhToan)}`,
         `Đã tạo: ${daTao} hóa đơn`,
         `Đã bỏ qua: ${daBoQua} giường đã có hóa đơn`,
       ].join("\n"),
+      "success",
+      "Tạo hóa đơn thành công",
     );
   } catch (error: any) {
     console.error("Lỗi tạo hóa đơn cho các giường:", error);
@@ -447,7 +485,63 @@ async function handleThemHoaDonChoCacGiuong() {
     const message =
       error?.response?.data?.message ?? "Không thể tạo hóa đơn cho các giường.";
 
-    alert(Array.isArray(message) ? message.join("\n") : message);
+    showNotification(
+      Array.isArray(message) ? message.join("\n") : message,
+      "error",
+      "Không thể tạo hóa đơn",
+    );
+  }
+}
+
+async function executeThemHoaDonChoCacGiuong() {
+  showCreateInvoicesConfirm.value = false;
+
+  const thangThanhToan = hoaDonForm.value.thangThanhToan;
+
+  if (!thangThanhToan) {
+    return;
+  }
+
+  try {
+    const requestMonth = `${thangThanhToan}-01`;
+
+    const response = await api.post("/hoa-don/tao-cho-cac-giuong", {
+      thangThanhToan: requestMonth,
+    });
+
+    const result = response.data;
+
+    await loadData();
+
+    currentTab.value = "hoaDon";
+
+    resetHoaDonForm();
+    showHoaDonForm.value = false;
+
+    const daTao = Number(result?.daTao ?? 0);
+    const daBoQua = Number(result?.daBoQua ?? 0);
+
+    showNotification(
+      [
+        result?.message ?? "Đã xử lý tạo hóa đơn.",
+        `Tháng: ${formatMonthForDisplay(thangThanhToan)}`,
+        `Đã tạo: ${daTao} hóa đơn`,
+        `Đã bỏ qua: ${daBoQua} giường đã có hóa đơn`,
+      ].join("\n"),
+      "success",
+      "Tạo hóa đơn thành công",
+    );
+  } catch (error: any) {
+    console.error("Lỗi tạo hóa đơn cho các giường:", error);
+
+    const message =
+      error?.response?.data?.message ?? "Không thể tạo hóa đơn cho các giường.";
+
+    showNotification(
+      Array.isArray(message) ? message.join("\n") : message,
+      "error",
+      "Không thể tạo hóa đơn",
+    );
   }
 }
 
@@ -653,7 +747,11 @@ function validateNgayHopDong() {
   const endDate = new Date(`${ngayKetThuc}T00:00:00`);
 
   if (startDate >= endDate) {
-    alert("Ngày bắt đầu phải nhỏ hơn ngày kết thúc.");
+    showNotification(
+      "Ngày bắt đầu phải nhỏ hơn ngày kết thúc.",
+      "error",
+      "Ngày hợp đồng không hợp lệ",
+    );
 
     hopDongForm.value.ngayKetThuc = "";
 
@@ -1312,6 +1410,7 @@ async function confirmDeleteHoaDon() {
     }
 
     await loadData();
+    showNotification("Hóa đơn đã được xóa thành công.");
   } catch (error: any) {
     console.error("Không thể xóa hóa đơn:", error);
 
@@ -1756,8 +1855,10 @@ async function saveNhaTro() {
 
     if (editingNhaTroId.value) {
       await api.patch(`/nha-tro/${editingNhaTroId.value}`, payload);
+      showNotification("Nhà trọ đã được sửa thành công.");
     } else {
       await api.post("/nha-tro", payload);
+      showNotification("Nhà trọ đã được thêm thành công.");
     }
 
     resetNhaTroForm();
@@ -1790,8 +1891,10 @@ async function savePhong() {
 
     if (editingPhongId.value) {
       await api.patch(`/phong/${editingPhongId.value}`, payload);
+      showNotification("Phòng đã được sửa thành công.");
     } else {
       await api.post("/phong", payload);
+      showNotification("Phòng đã được thêm thành công.");
     }
 
     resetPhongForm();
@@ -1871,6 +1974,7 @@ async function confirmDeletePhong() {
     }
 
     await loadData();
+    showNotification("Phòng đã được xóa thành công.");
   } catch (error: any) {
     console.error("Không thể xóa phòng:", error);
 
@@ -1905,6 +2009,7 @@ async function confirmDeleteNguoiThue() {
     }
 
     await loadData();
+    showNotification("Người thuê đã được xóa thành công.");
   } catch (error: any) {
     console.error("Không thể xóa người thuê:", error);
 
@@ -1969,7 +2074,7 @@ async function confirmDeleteHopDong() {
 
     await loadData();
 
-    alert("Xóa hợp đồng thành công.");
+    showNotification("Hợp đồng đã được xóa thành công.");
   } catch (error: any) {
     console.error("Không thể xóa hợp đồng:", error);
 
@@ -2026,6 +2131,8 @@ async function handleThemNhieuGiuong() {
         `Đã bỏ qua: ${Number(result?.daBoQua ?? 0)} giường đã tồn tại`,
       ].join("\n"),
     );
+
+    showNotification("Nhiều giường đã được thêm thành công.");
   } catch (error: any) {
     console.error("Không thể thêm nhiều giường:", error);
 
@@ -2049,8 +2156,10 @@ async function saveGiuong() {
   try {
     if (editingGiuongId.value) {
       await api.patch(`/giuong/${editingGiuongId.value}`, payload);
+      showNotification("Giường đã được sửa thành công.");
     } else {
       await api.post("/giuong", payload);
+      showNotification("Giường đã được thêm thành công.");
     }
 
     resetGiuongForm();
@@ -2104,6 +2213,7 @@ async function confirmDeleteGiuong() {
     }
 
     await loadData();
+    showNotification("Giường đã được xóa thành công.");
   } catch (error: any) {
     console.error("Không thể xóa giường:", error);
 
@@ -2186,8 +2296,10 @@ async function saveNguoiThue() {
   try {
     if (editingNguoiThueId.value) {
       await api.patch(`/nguoi-thue/${editingNguoiThueId.value}`, formData);
+      showNotification("Người thuê đã được sửa thành công.");
     } else {
       await api.post("/nguoi-thue", formData);
+      showNotification("Người thuê đã được thêm thành công.");
     }
 
     // Lưu thành công -> clear toàn bộ form,
@@ -2270,8 +2382,10 @@ async function saveHopDong() {
 
   if (editingHopDongId.value) {
     await api.patch(`/hop-dong/${editingHopDongId.value}`, payload);
+    showNotification("Hợp đồng đã được sửa thành công.");
   } else {
     await api.post("/hop-dong", payload);
+    showNotification("Hợp đồng đã được thêm thành công.");
   }
 
   resetHopDongForm();
@@ -2357,8 +2471,10 @@ async function saveHoaDon() {
 
     if (editingHoaDonId.value) {
       await api.patch(`/hoa-don/${editingHoaDonId.value}`, payload);
+      showNotification("Hóa đơn đã được sửa thành công.");
     } else {
       await api.post("/hoa-don", payload);
+      showNotification("Hóa đơn đã được thêm thành công.");
     }
 
     resetHoaDonForm();
@@ -2445,6 +2561,7 @@ async function deleteNhaTro(id: string) {
     }
 
     await loadData();
+    showNotification("Nhà trọ đã được xóa thành công.");
   } catch (error: any) {
     if (error.response?.status === 409) {
       const responseData = error.response?.data;
@@ -2832,6 +2949,20 @@ onMounted(() => {
 </script>
 
 <template>
+  <AppNotification
+    v-model:show="showAppNotification"
+    :type="appNotificationType"
+    :title="appNotificationTitle"
+    :message="appNotificationMessage"
+  />
+  <AppConfirmModal
+    v-model:show="showCreateInvoicesConfirm"
+    title="Xác nhận tạo hóa đơn"
+    :message="createInvoicesConfirmMessage"
+    confirm-text="Tạo hóa đơn"
+    cancel-text="Hủy"
+    @confirm="executeThemHoaDonChoCacGiuong"
+  />
   <Login
     v-if="!isAuthenticated && authMode === 'login'"
     @login-success="handleLogin"
