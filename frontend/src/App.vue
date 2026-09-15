@@ -15,6 +15,7 @@ import Pagination from "./components/common/Pagination.vue";
 import { getRowNumber } from "./utils/pagination";
 import AppNotification from "./components/common/AppNotification.vue";
 import AppConfirmModal from "./components/common/AppConfirmModal.vue";
+import HopDongPdfViewer from "./components/hop-dong/HopDongPdfViewer.vue";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 const cccdMatTruocPreviewUrl = ref("");
@@ -1302,6 +1303,10 @@ const tienThueDisplay = ref("");
 const tienDatCocDisplay = ref("1,000,000");
 const editingHopDongId = ref<string | null>(null);
 const showHopDongForm = ref(false);
+const showHopDongPdf = ref(false);
+const hopDongPdfUrl = ref("");
+const hopDongPdfLoading = ref(false);
+const hopDongPdfError = ref("");
 const editingHoaDonId = ref<string | null>(null);
 const showHoaDonForm = ref(false);
 
@@ -1741,17 +1746,76 @@ function handleGiuongChangeForHopDong() {
   tienThueDisplay.value = giaGiuong ? giaGiuong.toLocaleString("en-US") : "";
 }
 
-function handleTienDatCocInput(event: Event) {
-  const input = event.target as HTMLInputElement;
+async function openHopDongPdf(item: any) {
+  const hopDongId = item?.id;
 
-  const rawValue = input.value.replace(/\D/g, "");
+  if (!hopDongId) {
+    showNotification(
+      "Không xác định được hợp đồng.",
+      "error",
+      "Không thể xem hợp đồng",
+    );
 
-  hopDongForm.value.tienDatCoc = Number(rawValue || 0);
+    return;
+  }
 
-  tienDatCocDisplay.value = rawValue
-    ? Number(rawValue).toLocaleString("en-US")
-    : "";
+  try {
+    hopDongPdfLoading.value = true;
+    hopDongPdfError.value = "";
+
+    if (hopDongPdfUrl.value) {
+      URL.revokeObjectURL(hopDongPdfUrl.value);
+      hopDongPdfUrl.value = "";
+    }
+
+    const response = await api.get(`/hop-dong/${hopDongId}/pdf`, {
+      responseType: "blob",
+    });
+
+    const blob = new Blob([response.data], {
+      type: "application/pdf",
+    });
+
+    hopDongPdfUrl.value = URL.createObjectURL(blob);
+
+    showHopDongPdf.value = true;
+  } catch (error: any) {
+    console.error("Không thể tải PDF hợp đồng:", error);
+
+    const message =
+      error?.response?.data?.message ?? "Không thể tải bản hợp đồng PDF.";
+
+    hopDongPdfError.value = Array.isArray(message)
+      ? message.join("\n")
+      : message;
+
+    showNotification(hopDongPdfError.value, "error", "Không thể xem hợp đồng");
+  } finally {
+    hopDongPdfLoading.value = false;
+  }
 }
+
+function closeHopDongPdf() {
+  showHopDongPdf.value = false;
+
+  if (hopDongPdfUrl.value) {
+    URL.revokeObjectURL(hopDongPdfUrl.value);
+
+    hopDongPdfUrl.value = "";
+  }
+
+  hopDongPdfError.value = "";
+}
+
+watch(showHopDongPdf, (visible) => {
+  if (!visible) {
+    if (hopDongPdfUrl.value) {
+      URL.revokeObjectURL(hopDongPdfUrl.value);
+
+      hopDongPdfUrl.value = "";
+    }
+  }
+});
 
 function resetNguoiThueForm() {
   nguoiThueForm.value = {
@@ -4424,7 +4488,7 @@ onMounted(() => {
               <thead>
                 <tr>
                   <th class="stt-column">Số</th>
-                  <th>Mã HĐ(Giường)</th>
+                  <th>Mã HĐ</th>
                   <th>Người thuê</th>
                   <th>Ngày bắt đầu</th>
                   <th>Ngày kết thúc</th>
@@ -4534,7 +4598,13 @@ onMounted(() => {
                     {{ getRowNumber(index, hopDongCurrentPage, PAGE_SIZE) }}
                   </td>
                   <td>
-                    {{ item.maHopDong }}
+                    <button
+                      type="button"
+                      class="hop-dong-code-link"
+                      @click="openHopDongPdf(item)"
+                    >
+                      {{ item.maHopDong }}
+                    </button>
                   </td>
 
                   <td>
@@ -4829,7 +4899,7 @@ onMounted(() => {
               <thead>
                 <tr>
                   <th class="stt-column">Số</th>
-                  <th>Mã HĐ(Giường)</th>
+                  <th>Mã HĐ</th>
                   <th>Người thuê</th>
                   <th>Tổng tiền</th>
                   <th class="hoa-don-status-header">
@@ -5501,7 +5571,11 @@ onMounted(() => {
     </div>
   </div>
 </template>
-
+<HopDongPdfViewer
+  v-model:show="showHopDongPdf"
+  :pdf-url="hopDongPdfUrl"
+  title="HỢP ĐỒNG THUÊ TRỌ"
+/>
 <style scoped>
 /* =========================================================
    ẢNH CCCD - FORM THÊM / SỬA NGƯỜI THUÊ
@@ -8491,5 +8565,37 @@ tbody tr:hover {
   width: 60px;
   min-width: 60px;
   text-align: center;
+}
+
+.hop-dong-code-link {
+  padding: 0;
+
+  border: 0;
+
+  background: transparent;
+
+  color: #2563eb;
+
+  font: inherit;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  text-decoration: none;
+
+  transition:
+    color 0.15s ease,
+    text-decoration 0.15s ease;
+}
+
+.hop-dong-code-link:hover {
+  color: #1d4ed8;
+  text-decoration: underline;
+}
+
+.hop-dong-code-link:focus-visible {
+  outline: 2px solid #93c5fd;
+  outline-offset: 3px;
+  border-radius: 3px;
 }
 </style>

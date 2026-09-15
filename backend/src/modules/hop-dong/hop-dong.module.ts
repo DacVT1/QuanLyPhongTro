@@ -7,11 +7,15 @@ import { Giuong } from '../../entities/giuong.entity';
 import { AuthModule } from '../auth/auth.module';
 import { Tenant } from '../../entities/tenant.entity';
 import { NguoiThue } from 'src/entities/nguoi-thue.entity';
+import { HopDongPublicPdfService } from '../hop-dong-public/hop-dong-public-pdf.service';
 
 @Module({
-  imports: [AuthModule,TypeOrmModule.forFeature([HopDong,Giuong,NguoiThue, Tenant])],
+  imports: [
+    AuthModule,
+    TypeOrmModule.forFeature([HopDong, Giuong, NguoiThue, Tenant]),
+  ],
   controllers: [HopDongController],
-  providers: [HopDongService],
+  providers: [HopDongService, HopDongPublicPdfService],
   exports: [HopDongService],
 })
 export class HopDongModule {}
