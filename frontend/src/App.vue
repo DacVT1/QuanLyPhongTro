@@ -14,6 +14,7 @@ import { usePagination } from "./composables/usePagination";
 import Pagination from "./components/common/Pagination.vue";
 import { getRowNumber } from "./utils/pagination";
 import AppNotification from "./components/common/AppNotification.vue";
+import AppConfirmModal from "./components/common/AppConfirmModal.vue";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 const cccdMatTruocPreviewUrl = ref("");
@@ -22,6 +23,8 @@ const showHopDongHoaDonErrorModal = ref(false);
 const hopDongHoaDonErrorMessage = ref("");
 type NotificationType = "success" | "error" | "warning" | "info";
 const showAppNotification = ref(false);
+const showCreateInvoicesConfirm = ref(false);
+const createInvoicesConfirmMessage = ref("");
 const appNotificationType = ref<NotificationType>("success");
 const appNotificationTitle = ref("");
 const appNotificationMessage = ref("");
@@ -418,15 +421,13 @@ async function handleThemHoaDonChoCacGiuong() {
   /*
    * Xác nhận trước khi tạo hàng loạt.
    */
-  const confirmed = window.confirm(
-    `Bạn có chắc muốn tạo hóa đơn cho các giường đang có người thuê trong tháng ${formatMonthForDisplay(
-      thangThanhToan,
-    )} không?`,
-  );
+  createInvoicesConfirmMessage.value = `Bạn có chắc muốn tạo hóa đơn cho các giường đang có người thuê trong tháng ${formatMonthForDisplay(
+    thangThanhToan,
+  )} không?`;
 
-  if (!confirmed) {
-    return;
-  }
+  showCreateInvoicesConfirm.value = true;
+
+  return;
 
   try {
     /*
@@ -468,6 +469,58 @@ async function handleThemHoaDonChoCacGiuong() {
     /*
      * Hiển thị kết quả.
      */
+    showNotification(
+      [
+        result?.message ?? "Đã xử lý tạo hóa đơn.",
+        `Tháng: ${formatMonthForDisplay(thangThanhToan)}`,
+        `Đã tạo: ${daTao} hóa đơn`,
+        `Đã bỏ qua: ${daBoQua} giường đã có hóa đơn`,
+      ].join("\n"),
+      "success",
+      "Tạo hóa đơn thành công",
+    );
+  } catch (error: any) {
+    console.error("Lỗi tạo hóa đơn cho các giường:", error);
+
+    const message =
+      error?.response?.data?.message ?? "Không thể tạo hóa đơn cho các giường.";
+
+    showNotification(
+      Array.isArray(message) ? message.join("\n") : message,
+      "error",
+      "Không thể tạo hóa đơn",
+    );
+  }
+}
+
+async function executeThemHoaDonChoCacGiuong() {
+  showCreateInvoicesConfirm.value = false;
+
+  const thangThanhToan = hoaDonForm.value.thangThanhToan;
+
+  if (!thangThanhToan) {
+    return;
+  }
+
+  try {
+    const requestMonth = `${thangThanhToan}-01`;
+
+    const response = await api.post("/hoa-don/tao-cho-cac-giuong", {
+      thangThanhToan: requestMonth,
+    });
+
+    const result = response.data;
+
+    await loadData();
+
+    currentTab.value = "hoaDon";
+
+    resetHoaDonForm();
+    showHoaDonForm.value = false;
+
+    const daTao = Number(result?.daTao ?? 0);
+    const daBoQua = Number(result?.daBoQua ?? 0);
+
     showNotification(
       [
         result?.message ?? "Đã xử lý tạo hóa đơn.",
@@ -2901,6 +2954,14 @@ onMounted(() => {
     :type="appNotificationType"
     :title="appNotificationTitle"
     :message="appNotificationMessage"
+  />
+  <AppConfirmModal
+    v-model:show="showCreateInvoicesConfirm"
+    title="Xác nhận tạo hóa đơn"
+    :message="createInvoicesConfirmMessage"
+    confirm-text="Tạo hóa đơn"
+    cancel-text="Hủy"
+    @confirm="executeThemHoaDonChoCacGiuong"
   />
   <Login
     v-if="!isAuthenticated && authMode === 'login'"
