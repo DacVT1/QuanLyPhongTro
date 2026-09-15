@@ -293,6 +293,33 @@ async function saveAccount() {
       </form>
     </div>
   </div>
+  <div
+    v-if="showAppNotification"
+    class="account-notification"
+    :class="`account-notification-${appNotificationType}`"
+  >
+    <div class="account-notification-icon">
+      {{ appNotificationType === "success" ? "✓" : "!" }}
+    </div>
+
+    <div class="account-notification-content">
+      <div class="account-notification-title">
+        {{ appNotificationTitle }}
+      </div>
+
+      <div class="account-notification-message">
+        {{ appNotificationMessage }}
+      </div>
+    </div>
+
+    <button
+      type="button"
+      class="account-notification-close"
+      @click="showAppNotification = false"
+    >
+      ×
+    </button>
+  </div>
 </template>
 
 <style scoped>
@@ -423,6 +450,85 @@ async function saveAccount() {
 
   .account-field-full {
     grid-column: auto;
+  }
+}
+
+.account-notification {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 10000;
+  min-width: 340px;
+  max-width: 450px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px 18px;
+  border-radius: 10px;
+  background: white;
+  box-shadow: 0 10px 35px rgba(0, 0, 0, 0.18);
+  border-left: 4px solid #16a34a;
+}
+
+.account-notification-success {
+  border-left-color: #16a34a;
+}
+
+.account-notification-error {
+  border-left-color: #dc2626;
+}
+
+.account-notification-icon {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #16a34a;
+  color: white;
+  font-weight: 700;
+}
+
+.account-notification-error .account-notification-icon {
+  background: #dc2626;
+}
+
+.account-notification-content {
+  flex: 1;
+}
+
+.account-notification-title {
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.account-notification-message {
+  font-size: 14px;
+  color: #4b5563;
+}
+
+.account-notification-close {
+  border: 0;
+  background: transparent;
+  font-size: 20px;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+.account-notification-close:hover {
+  color: #111827;
+}
+
+@media (max-width: 600px) {
+  .account-notification {
+    top: 16px;
+    right: 16px;
+    left: 16px;
+    min-width: auto;
   }
 }
 </style>
