@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from "vue";
-
+import qrImage from "../../assets/images/QR.png";
 const props = defineProps<{
   hoaDon: any;
   sendingEmail?: boolean;
@@ -21,6 +21,23 @@ function formatCurrency(value: number | string | null | undefined) {
   }).format(numberValue);
 }
 
+function getHanNop() {
+  const thangThanhToan = props.hoaDon?.thangThanhToan;
+
+  if (!thangThanhToan) {
+    return "";
+  }
+
+  const date = new Date(thangThanhToan);
+
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  const nextMonth = new Date(date.getFullYear(), date.getMonth() + 1, 5);
+
+  return formatDate(nextMonth);
+}
 function formatDate(value: string | Date | null | undefined) {
   if (!value) {
     return "";
@@ -250,40 +267,52 @@ const isPaid = () => props.hoaDon?.trangThai === "da_thanh_toan";
       </div>
 
       <!-- THANH TOÁN -->
+      <!-- THANH TOÁN -->
       <div class="hoa-don-payment-info">
-        <h3>Thông tin thanh toán</h3>
+        <div class="payment-info-content">
+          <div class="payment-info-left">
+            <h3>Thông tin thanh toán</h3>
 
-        <div>
-          🏦 Trạng thái:
-          <strong>
-            {{ isPaid() ? "Đã thanh toán" : "Chưa thanh toán" }}
-          </strong>
-        </div>
+            <div>
+              <span class="payment-icon">🏦</span>
+              Ngân hàng:
+              <strong>Viettin bank</strong>
+            </div>
 
-        <div v-if="hoaDon.ngayNop">
-          📅 Ngày thanh toán:
-          <strong>
-            {{ formatDate(hoaDon.ngayNop) }}
-          </strong>
-        </div>
+            <div>
+              <span class="payment-icon">💳</span>
+              Số tài khoản:
+              <strong>09453242344</strong>
+            </div>
 
-        <div v-if="hoaDon.hopDong?.nguoiThue?.email">
-          ✉️ Email:
-          <strong>
-            {{ hoaDon.hopDong.nguoiThue.email }}
-          </strong>
-        </div>
-        <div>
-          ✉️ Ngân hàng:
-          <strong> Viettin bank </strong>
-        </div>
-        <div>
-          ✉️ Số tài khoản:
-          <strong> 09453242344 </strong>
-        </div>
-        <div>
-          ✉️ Chủ tài khoản:
-          <strong> Nguyễn Thị Chi </strong>
+            <div>
+              <span class="payment-icon">👤</span>
+              Chủ tài khoản:
+              <strong>Nguyễn Thị Chi</strong>
+            </div>
+
+            <div>
+              <span class="payment-icon">📌</span>
+              Nội dung:
+              <strong>
+                {{ hoaDon.maHoaDon }}
+                -
+                {{ hoaDon.hopDong?.nguoiThue?.hoTen || "Tên khách" }}
+              </strong>
+            </div>
+
+            <div>
+              <span class="payment-icon">📅</span>
+              Hạn nộp:
+              <strong class="payment-due-date">
+                {{ getHanNop() }}
+              </strong>
+            </div>
+            <div class="payment-qr">
+              <img :src="qrImage" alt="QR thanh toán" />
+              <div class="payment-qr-label">Quét mã để thanh toán</div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -504,5 +533,74 @@ const isPaid = () => props.hoaDon?.trangThai === "da_thanh_toan";
   .hoa-don-detail-row {
     grid-template-columns: 1fr 100px 120px;
   }
+}
+.payment-info-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.payment-info-left {
+  flex: 1;
+  min-width: 0;
+}
+
+.payment-info-left > div {
+  line-height: 1.8;
+}
+
+.payment-icon {
+  display: inline-block;
+  width: 24px;
+  margin-right: 4px;
+  text-align: center;
+}
+
+.payment-qr {
+  flex: 0 0 130px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  padding-left: 20px;
+
+  border-left: 1px solid #e2e8f0;
+}
+
+.payment-qr img {
+  width: 120px;
+  height: 120px;
+
+  object-fit: contain;
+
+  display: block;
+}
+
+.payment-qr-label {
+  margin-top: 6px;
+
+  color: #64748b;
+  font-size: 11px;
+
+  text-align: center;
+}
+
+.payment-due-date {
+  color: #dc2626;
+}
+.payment-info-content {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.payment-qr {
+  padding-left: 0;
+  padding-top: 16px;
+
+  border-left: none;
+  border-top: 1px solid #e2e8f0;
 }
 </style>
