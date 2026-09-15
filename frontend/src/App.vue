@@ -74,9 +74,6 @@ function handleUnauthorized() {
 onMounted(() => {
   window.addEventListener("auth:unauthorized", handleUnauthorized);
 });
-onMounted(() => {
-  window.addEventListener("auth:unauthorized", handleUnauthorized);
-});
 
 onUnmounted(() => {
   window.removeEventListener("auth:unauthorized", handleUnauthorized);
@@ -422,9 +419,6 @@ async function handleThemHoaDonChoCacGiuong() {
     // để hiển thị Danh sách hóa đơn
     resetHoaDonForm();
     showHoaDonForm.value = false;
-
-    // Chuyển sang tab Danh sách hóa đơn
-    currentTab.value = "hoaDon";
 
     const daTao = Number(result?.daTao ?? 0);
 
