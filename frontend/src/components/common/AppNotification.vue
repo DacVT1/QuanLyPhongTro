@@ -1,16 +1,19 @@
 <script setup lang="ts">
 import { watch, onUnmounted } from "vue";
+type NotificationType = "success" | "error" | "warning" | "info";
 
 type Props = {
   show: boolean;
+  type?: NotificationType;
   title?: string;
   message: string;
   duration?: number;
 };
 
 const props = withDefaults(defineProps<Props>(), {
+  type: "success",
   title: "Thành công",
-  duration: 2500,
+  duration: 3000,
 });
 
 const emit = defineEmits<{
