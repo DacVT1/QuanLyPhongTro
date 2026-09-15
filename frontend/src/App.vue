@@ -12,6 +12,7 @@ import Footer from "./components/Footer.vue";
 import RegisterVerification from "./components/auth/RegisterVerification.vue";
 import { usePagination } from "./composables/usePagination";
 import Pagination from "./components/common/Pagination.vue";
+import { getRowNumber } from "./utils/pagination";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 const cccdMatTruocPreviewUrl = ref("");
@@ -3413,6 +3414,7 @@ onMounted(() => {
             <table>
               <thead>
                 <tr>
+                  <th>Số</th>
                   <th>Mã phòng</th>
                   <th>Nhà trọ</th>
                   <th>Tầng số</th>
@@ -3423,7 +3425,10 @@ onMounted(() => {
               </thead>
 
               <tbody>
-                <tr v-for="item in paginatedPhongs" :key="item.id">
+                <tr v-for="(item, index) in paginatedPhongs" :key="item.id">
+                  <td>
+                    {{ getRowNumber(index, phongCurrentPage, PAGE_SIZE) }}
+                  </td>
                   <td>
                     {{ item.maPhong }}
                   </td>
@@ -3615,6 +3620,7 @@ onMounted(() => {
             <table>
               <thead>
                 <tr>
+                  <th>Số</th>
                   <th>Mã giường</th>
                   <!-- <th>Nhà trọ</th>
           <th>Phòng</th>
@@ -3697,7 +3703,10 @@ onMounted(() => {
               </thead>
 
               <tbody>
-                <tr v-for="item in paginatedGiuongs" :key="item.id">
+                <tr v-for="(item, index) in paginatedGiuongs" :key="item.id">
+                  <td>
+                    {{ getRowNumber(index, giuongCurrentPage, PAGE_SIZE) }}
+                  </td>
                   <td>{{ item.maGiuong }}</td>
 
                   <!-- <td>
@@ -3973,6 +3982,7 @@ onMounted(() => {
             <table>
               <thead>
                 <tr>
+                  <th>Số</th>
                   <th>Họ tên</th>
                   <th>CCCD</th>
                   <th>Số điện thoại</th>
@@ -3983,7 +3993,10 @@ onMounted(() => {
               </thead>
 
               <tbody>
-                <tr v-for="item in paginatedNguoiThues" :key="item.id">
+                <tr v-for="(item, index) in paginatedNguoiThues" :key="item.id">
+                  <td>
+                    {{ getRowNumber(index, nguoiThueCurrentPage, PAGE_SIZE) }}
+                  </td>
                   <td>
                     <button
                       type="button"
@@ -4279,6 +4292,7 @@ onMounted(() => {
             <table>
               <thead>
                 <tr>
+                  <th>Số</th>
                   <th>Mã HĐ(Giường)</th>
                   <th>Người thuê</th>
                   <th>Ngày bắt đầu</th>
@@ -4384,7 +4398,10 @@ onMounted(() => {
               </thead>
 
               <tbody>
-                <tr v-for="item in paginatedHopDongs" :key="item.id">
+                <tr v-for="(item, index) in paginatedHopDongs" :key="item.id">
+                  <td>
+                    {{ getRowNumber(index, hopDongCurrentPage, PAGE_SIZE) }}
+                  </td>
                   <td>
                     {{ item.maHopDong }}
                   </td>
@@ -4680,6 +4697,7 @@ onMounted(() => {
             <table>
               <thead>
                 <tr>
+                  <th>Số</th>
                   <th>Mã HĐ(Giường)</th>
                   <th>Người thuê</th>
                   <th>Tổng tiền</th>
@@ -4762,7 +4780,10 @@ onMounted(() => {
               </thead>
 
               <tbody>
-                <tr v-for="item in paginatedHoaDons" :key="item.id">
+                <tr v-for="(item, index) in paginatedHoaDons" :key="item.id">
+                  <td>
+                    {{ getRowNumber(index, hoaDonCurrentPage, PAGE_SIZE) }}
+                  </td>
                   <td>
                     {{ item.maHoaDon }}
                   </td>
