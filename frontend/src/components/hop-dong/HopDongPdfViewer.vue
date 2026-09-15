@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onBeforeUnmount, ref, watch } from "vue";
 import api from "../../services/api";
+import AppNotification from "../common/AppNotification.vue";
 
 interface Props {
   show: boolean;
@@ -8,6 +9,13 @@ interface Props {
   title?: string;
   hopDongId: string;
 }
+
+const showNotification = ref(false);
+const notificationType = ref<"success" | "error" | "warning" | "info">(
+  "success",
+);
+const notificationTitle = ref("");
+const notificationMessage = ref("");
 
 const props = withDefaults(defineProps<Props>(), {
   title: "HỢP ĐỒNG THUÊ TRỌ",
@@ -24,6 +32,16 @@ function close() {
   emit("update:show", false);
 }
 
+function notify(
+  message: string,
+  type: "success" | "error" | "warning" | "info" = "success",
+  title?: string,
+) {
+  notificationType.value = type;
+  notificationTitle.value = title ?? "";
+  notificationMessage.value = message;
+  showNotification.value = true;
+}
 async function sendContract() {
   if (!props.hopDongId) {
     return;
@@ -34,14 +52,21 @@ async function sendContract() {
 
     const response = await api.post(`/hop-dong/${props.hopDongId}/send-email`);
 
-    alert(response.data?.message ?? "Đã gửi hợp đồng thành công.");
+    const message =
+      response.data?.message ?? "Hợp đồng đã được gửi thành công.";
+
+    notify(message, "success", "Gửi hợp đồng thành công");
   } catch (error: any) {
     console.error("Không thể gửi hợp đồng:", error);
 
     const message =
       error?.response?.data?.message ?? "Không thể gửi hợp đồng qua email.";
 
-    alert(Array.isArray(message) ? message.join("\n") : message);
+    notify(
+      Array.isArray(message) ? message.join("\n") : message,
+      "error",
+      "Không thể gửi hợp đồng",
+    );
   } finally {
     sending.value = false;
   }
@@ -110,6 +135,13 @@ onBeforeUnmount(() => {
       </div>
     </Transition>
   </Teleport>
+  <AppNotification
+    v-model:show="showNotification"
+    :type="notificationType"
+    :title="notificationTitle"
+    :message="notificationMessage"
+    :duration="5000"
+  />
 </template>
 
 <style scoped>
