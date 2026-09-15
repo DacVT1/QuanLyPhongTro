@@ -131,15 +131,27 @@ export class EmailService {
     subject: string,
     html: string,
     tenantName: string,
+    qrBuffer?: Buffer,
   ) {
     const from =
       process.env.MAIL_FROM || 'HÓA ĐƠN TIỀN PHÒNG <onboarding@resend.dev>';
+
+    const attachments = qrBuffer
+      ? [
+          {
+            filename: 'QR.png',
+            content: qrBuffer,
+            contentId: 'payment-qr',
+          },
+        ]
+      : undefined;
 
     const { data, error } = await this.resend.emails.send({
       from,
       to: recipientEmails,
       subject,
       html,
+      attachments,
     });
 
     if (error) {

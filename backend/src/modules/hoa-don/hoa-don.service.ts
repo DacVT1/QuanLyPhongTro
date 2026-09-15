@@ -5,7 +5,8 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-
+import * as fs from 'fs';
+import * as path from 'path';
 import { HoaDon } from '../../entities/hoa-don.entity';
 import { HopDong } from '../../entities/hop-dong.entity';
 import { Tenant } from '../../entities/tenant.entity';
@@ -568,228 +569,794 @@ export class HoaDonService {
 
     const phong = hoaDon.hopDong?.giuong?.phong;
 
+    const giuong = hoaDon.hopDong?.giuong;
+
+    /*
+     * ==============================
+     * HÀM FORMAT
+     * ==============================
+     */
+
+    const formatMoney = (value: number | string | null | undefined) => {
+      return new Intl.NumberFormat('vi-VN').format(Number(value ?? 0));
+    };
+
+    const formatDate = (value: string | Date | null | undefined) => {
+      if (!value) {
+        return '';
+      }
+
+      const date = new Date(value);
+
+      if (Number.isNaN(date.getTime())) {
+        return '';
+      }
+
+      return date.toLocaleDateString('vi-VN');
+    };
+
+    /*
+     * ==============================
+     * THÁNG THANH TOÁN
+     * ==============================
+     */
+
     const thangThanhToan = hoaDon.thangThanhToan
       ? new Date(hoaDon.thangThanhToan)
       : null;
 
     const monthText = thangThanhToan
-      ? `${String(thangThanhToan.getMonth() + 1).padStart(2, '0')}/${thangThanhToan.getFullYear()}`
+      ? `Tháng ${thangThanhToan.getMonth() + 1}/${thangThanhToan.getFullYear()}`
       : '';
 
-    const formatMoney = (value: number | string) =>
-      new Intl.NumberFormat('vi-VN').format(Number(value ?? 0));
+    /*
+     * ==============================
+     * KỲ TÍNH
+     * ==============================
+     */
+
+    let kyTinh = '';
+
+    if (thangThanhToan) {
+      const year = thangThanhToan.getFullYear();
+      const month = thangThanhToan.getMonth();
+
+      const start = new Date(year, month, 1);
+
+      const end = new Date(year, month + 1, 0);
+
+      kyTinh = `${formatDate(start)} – ${formatDate(end)}`;
+    }
+
+    /*
+     * ==============================
+     * PHÒNG
+     * ==============================
+     *
+     * Ví dụ:
+     * CG_T102
+     * -> Tầng 1
+     * -> Phòng 2
+     */
+
+    let phongSo = '';
+
+    const maPhong = phong?.maPhong;
+
+    if (maPhong) {
+      const match = maPhong.match(/_T\d+(\d{2})$/);
+
+      if (match?.[1]) {
+        phongSo = String(Number(match[1]));
+      } else {
+        phongSo = maPhong;
+      }
+    }
+
+    /*
+     * ==============================
+     * HẠN NỘP
+     * ==============================
+     *
+     * Quy ước hiện tại:
+     * ngày 05 của tháng tiếp theo.
+     */
+
+    let hanNop = '';
+
+    if (thangThanhToan) {
+      const nextMonth = new Date(
+        thangThanhToan.getFullYear(),
+        thangThanhToan.getMonth() + 1,
+        5,
+      );
+
+      hanNop = formatDate(nextMonth);
+    }
+
+    /*
+     * ==============================
+     * TRẠNG THÁI
+     * ==============================
+     */
+
+    const trangThai =
+      hoaDon.trangThai === 'da_thanh_toan'
+        ? 'Đã thanh toán'
+        : 'Chưa thanh toán';
+
+    /*
+     * ==============================
+     * EMAIL HTML
+     * ==============================
+     */
 
     const html = `
+  <div style="
+    font-family: Arial, Helvetica, sans-serif;
+    max-width: 760px;
+    margin: 0 auto;
+    color: #172033;
+    background: #ffffff;
+  ">
+
+    <!-- HEADER -->
+
     <div style="
-      font-family: Arial, sans-serif;
-      max-width: 700px;
-      margin: 0 auto;
-      color: #172033;
+      background: #2345b5;
+      color: white;
+      padding: 22px;
+      text-align: center;
+      border-radius: 12px 12px 0 0;
     ">
 
-      <div style="
-        background: #2345b5;
-        color: white;
-        padding: 20px;
-        text-align: center;
-        border-radius: 10px 10px 0 0;
+      <h2 style="
+        margin: 0;
+        font-size: 22px;
       ">
-        <h2 style="margin: 0;">
-          HÓA ĐƠN TIỀN PHÒNG
-        </h2>
+        HÓA ĐƠN TIỀN PHÒNG
+      </h2>
 
-        <div style="margin-top: 5px;">
-          Tháng ${monthText}
-        </div>
+      <div style="
+        margin-top: 6px;
+        font-size: 14px;
+      ">
+        ${monthText}
       </div>
 
+    </div>
+
+
+    <!-- CONTENT -->
+
+    <div style="
+      border: 1px solid #e5e7eb;
+      border-top: none;
+      padding: 24px;
+    ">
+
+
+      <!-- THÔNG TIN CHUNG -->
+
+      <h3 style="
+        margin: 0 0 16px;
+        color: #334155;
+        font-size: 16px;
+      ">
+        Thông tin chung
+      </h3>
+
+      <table
+        width="100%"
+        cellpadding="0"
+        cellspacing="0"
+        style="
+          border-collapse: collapse;
+        "
+      >
+
+        <tr>
+
+          <td
+            width="50%"
+            style="
+              padding: 8px 12px 12px 0;
+              vertical-align: top;
+            "
+          >
+
+            <div style="
+              color: #64748b;
+              font-size: 13px;
+              margin-bottom: 4px;
+            ">
+              Nhà trọ
+            </div>
+
+            <strong style="
+              font-size: 14px;
+            ">
+              ${nhaTro?.tenNhaTro ?? ''}
+            </strong>
+
+            ${
+              nhaTro?.diaChi
+                ? `
+                  <div style="
+                    margin-top: 3px;
+                    color: #475569;
+                    font-size: 13px;
+                  ">
+                    ${nhaTro.diaChi}
+                  </div>
+                `
+                : ''
+            }
+
+          </td>
+
+
+          <td
+            width="50%"
+            style="
+              padding: 8px 0 12px 12px;
+              vertical-align: top;
+            "
+          >
+
+            <div style="
+              color: #64748b;
+              font-size: 13px;
+              margin-bottom: 4px;
+            ">
+              Tầng
+            </div>
+
+            <strong style="
+              font-size: 14px;
+            ">
+              ${phong?.tangSo ? `Tầng ${phong.tangSo}` : ''}
+            </strong>
+
+          </td>
+
+        </tr>
+
+
+        <tr>
+
+          <td
+            style="
+              padding: 8px 12px 12px 0;
+              vertical-align: top;
+            "
+          >
+
+            <div style="
+              color: #64748b;
+              font-size: 13px;
+              margin-bottom: 4px;
+            ">
+              Phòng
+            </div>
+
+            <strong style="
+              font-size: 14px;
+            ">
+              ${phongSo ? `Phòng ${phongSo}` : ''}
+            </strong>
+
+          </td>
+
+
+          <td
+            style="
+              padding: 8px 0 12px 12px;
+              vertical-align: top;
+            "
+          >
+
+            <div style="
+              color: #64748b;
+              font-size: 13px;
+              margin-bottom: 4px;
+            ">
+              Giường
+            </div>
+
+            <strong style="
+              font-size: 14px;
+            ">
+              ${giuong?.giuongSo ? `Giường ${giuong.giuongSo}` : ''}
+            </strong>
+
+          </td>
+
+        </tr>
+
+
+        <tr>
+
+          <td
+            style="
+              padding: 8px 12px 8px 0;
+              vertical-align: top;
+            "
+          >
+
+            <div style="
+              color: #64748b;
+              font-size: 13px;
+              margin-bottom: 4px;
+            ">
+              Khách thuê
+            </div>
+
+            <strong style="
+              font-size: 14px;
+            ">
+              ${nguoiThue.hoTen ?? ''}
+            </strong>
+
+          </td>
+
+
+          <td
+            style="
+              padding: 8px 0 8px 12px;
+              vertical-align: top;
+            "
+          >
+
+            <div style="
+              color: #64748b;
+              font-size: 13px;
+              margin-bottom: 4px;
+            ">
+              Kỳ tính
+            </div>
+
+            <strong style="
+              font-size: 14px;
+            ">
+              ${kyTinh}
+            </strong>
+
+          </td>
+
+        </tr>
+
+      </table>
+
+
+      <!-- CHI TIẾT HÓA ĐƠN -->
+
       <div style="
-        padding: 20px;
-        border: 1px solid #e5e7eb;
+        margin-top: 20px;
+        border-top: 1px solid #e5e7eb;
+        padding-top: 18px;
       ">
 
-        <table width="100%" cellpadding="6">
-          <tr>
-            <td>
-              <div style="color:#64748b;">
-                Nhà trọ
-              </div>
-
-              <strong>
-                ${nhaTro?.tenNhaTro ?? ''}
-                ${nhaTro?.diaChi ? ` — ${nhaTro.diaChi}` : ''}
-              </strong>
-            </td>
-
-            <td>
-              <div style="color:#64748b;">
-                Phòng
-              </div>
-
-              <strong>
-                ${phong?.maPhong ?? ''}
-                ${phong?.tangSo ? ` — Tầng ${phong.tangSo}` : ''}
-              </strong>
-            </td>
-          </tr>
-
-          <tr>
-            <td>
-              <div style="color:#64748b;">
-                Khách thuê
-              </div>
-
-              <strong>
-                ${nguoiThue.hoTen ?? ''}
-              </strong>
-            </td>
-
-            <td>
-              <div style="color:#64748b;">
-                Kỳ tính
-              </div>
-
-              <strong>
-                ${monthText}
-              </strong>
-            </td>
-          </tr>
-        </table>
-
-        <hr style="
-          border: 0;
-          border-top: 1px solid #e5e7eb;
-          margin: 15px 0;
+        <h3 style="
+          margin: 0 0 12px;
+          color: #334155;
+          font-size: 16px;
         ">
+          Chi tiết hóa đơn
+        </h3>
+
 
         <table
           width="100%"
-          cellpadding="10"
+          cellpadding="0"
           cellspacing="0"
+          style="
+            border-collapse: collapse;
+          "
         >
+
           <thead>
-            <tr style="color:#64748b;">
-              <th align="left">
+
+            <tr>
+
+              <th
+                align="left"
+                style="
+                  padding: 10px 0;
+                  color: #64748b;
+                  font-size: 13px;
+                  border-bottom: 1px solid #e5e7eb;
+                "
+              >
                 Khoản mục
               </th>
 
-              <th align="right">
+
+              <th
+                align="center"
+                style="
+                  padding: 10px;
+                  color: #64748b;
+                  font-size: 13px;
+                  border-bottom: 1px solid #e5e7eb;
+                "
+              >
+                Chi tiết
+              </th>
+
+
+              <th
+                align="right"
+                style="
+                  padding: 10px 0;
+                  color: #64748b;
+                  font-size: 13px;
+                  border-bottom: 1px solid #e5e7eb;
+                "
+              >
                 Thành tiền
               </th>
+
             </tr>
+
           </thead>
+
 
           <tbody>
 
             <tr>
-              <td>
-                Tiền thuê phòng
+
+              <td style="
+                padding: 13px 0;
+                border-bottom: 1px solid #f1f5f9;
+              ">
+                <strong>
+                  Tiền thuê phòng
+                </strong>
               </td>
 
-              <td align="right">
+              <td
+                align="center"
+                style="
+                  padding: 13px 10px;
+                  border-bottom: 1px solid #f1f5f9;
+                  font-size: 13px;
+                "
+              >
+                1 tháng
+              </td>
+
+              <td
+                align="right"
+                style="
+                  padding: 13px 0;
+                  border-bottom: 1px solid #f1f5f9;
+                "
+              >
                 ${formatMoney(hoaDon.tienPhong)} đ
               </td>
+
             </tr>
 
+
             <tr>
-              <td>
+
+              <td style="
+                padding: 13px 0;
+                border-bottom: 1px solid #f1f5f9;
+              ">
+                <strong>
+                  Tiền điện
+                </strong>
+
+                ${
+                  hoaDon.ghiChu
+                    ? `
+                      <div style="
+                        margin-top: 4px;
+                        color: #94a3b8;
+                        font-size: 12px;
+                      ">
+                        ${hoaDon.ghiChu}
+                      </div>
+                    `
+                    : ''
+                }
+
+              </td>
+
+              <td
+                align="center"
+                style="
+                  padding: 13px 10px;
+                  border-bottom: 1px solid #f1f5f9;
+                  font-size: 13px;
+                "
+              >
                 Tiền điện
               </td>
 
-              <td align="right">
+              <td
+                align="right"
+                style="
+                  padding: 13px 0;
+                  border-bottom: 1px solid #f1f5f9;
+                "
+              >
                 ${formatMoney(hoaDon.tienDien)} đ
               </td>
+
             </tr>
 
+
             <tr>
-              <td>
+
+              <td style="
+                padding: 13px 0;
+                border-bottom: 1px solid #f1f5f9;
+              ">
+                <strong>
+                  Tiền nước
+                </strong>
+              </td>
+
+              <td
+                align="center"
+                style="
+                  padding: 13px 10px;
+                  border-bottom: 1px solid #f1f5f9;
+                  font-size: 13px;
+                "
+              >
                 Tiền nước
               </td>
 
-              <td align="right">
+              <td
+                align="right"
+                style="
+                  padding: 13px 0;
+                  border-bottom: 1px solid #f1f5f9;
+                "
+              >
                 ${formatMoney(hoaDon.tienNuoc)} đ
               </td>
+
             </tr>
 
+
             <tr>
-              <td>
-                Phí dịch vụ khác
+
+              <td style="
+                padding: 13px 0;
+              ">
+                <strong>
+                  Phí dịch vụ khác
+                </strong>
               </td>
 
-              <td align="right">
+              <td
+                align="center"
+                style="
+                  padding: 13px 10px;
+                  font-size: 13px;
+                "
+              >
+                Cố định
+              </td>
+
+              <td
+                align="right"
+                style="
+                  padding: 13px 0;
+                "
+              >
                 ${formatMoney(hoaDon.tienDichVuKhac)} đ
               </td>
+
             </tr>
 
           </tbody>
+
         </table>
+
+
+        <!-- TỔNG -->
 
         <div style="
           border-top: 2px solid #2345b5;
-          margin-top: 10px;
+          margin-top: 8px;
           padding-top: 15px;
-          display: flex;
-          justify-content: space-between;
-          font-size: 18px;
-          font-weight: bold;
         ">
-          <span>TỔNG CỘNG</span>
 
-          <span style="color:#2345b5;">
-            ${formatMoney(hoaDon.tongTien)} đ
-          </span>
-        </div>
+          <table width="100%">
 
-        <div style="
-          margin-top: 20px;
-          padding: 15px;
-          background: #f8fafc;
-          border-radius: 10px;
-        ">
-          <strong>Thông tin thanh toán</strong>
+            <tr>
 
-          <p style="margin-bottom:0;">
-            Trạng thái:
-            <strong>
-              ${
-                hoaDon.trangThai === 'da_thanh_toan'
-                  ? 'Đã thanh toán'
-                  : 'Chưa thanh toán'
-              }
-            </strong>
-          </p>
+              <td>
+                <strong>
+                  TỔNG CỘNG
+                </strong>
+              </td>
 
-          ${
-            hoaDon.ngayNop
-              ? `
-                <p>
-                  Ngày thanh toán:
-                  <strong>
-                    ${new Date(hoaDon.ngayNop).toLocaleDateString('vi-VN')}
-                  </strong>
-                </p>
-              `
-              : ''
-          }
+              <td align="right">
+
+                <strong style="
+                  color: #2345b5;
+                  font-size: 18px;
+                ">
+                  ${formatMoney(hoaDon.tongTien)} đ
+                </strong>
+
+              </td>
+
+            </tr>
+
+          </table>
+
         </div>
 
       </div>
 
-      <p style="
+
+      <!-- THÔNG TIN THANH TOÁN -->
+
+      <div style="
         margin-top: 20px;
-        color:#64748b;
+        padding: 18px;
+        background: #f8fafc;
+        border-radius: 10px;
       ">
-        Trân trọng.
-      </p>
+
+        <h3 style="
+          margin: 0 0 8px;
+          color: #334155;
+          font-size: 16px;
+        ">
+          Thông tin thanh toán
+        </h3>
+
+
+        <div style="
+          line-height: 1.9;
+          font-size: 13px;
+        ">
+
+          <div>
+            🏦
+            Ngân hàng:
+            <strong>
+              Viettin bank
+            </strong>
+          </div>
+
+
+          <div>
+            💳
+            Số tài khoản:
+            <strong>
+              09453242344
+            </strong>
+          </div>
+
+
+          <div>
+            👤
+            Chủ tài khoản:
+            <strong>
+              Nguyễn Thị Chi
+            </strong>
+          </div>
+
+
+          <div>
+            📌
+            Nội dung:
+            <strong>
+              ${hoaDon.maHoaDon}
+              -
+              ${nguoiThue.hoTen ?? 'Tên khách'}
+            </strong>
+          </div>
+
+
+          <div>
+            📅
+            Hạn nộp:
+            <strong style="
+              color: #dc2626;
+            ">
+              ${hanNop}
+            </strong>
+          </div>
+
+
+          <div style="
+            margin-top: 6px;
+          ">
+            Trạng thái:
+            <strong>
+              ${trangThai}
+            </strong>
+          </div>
+
+
+          ${
+            hoaDon.ngayNop
+              ? `
+                <div>
+                  Ngày thanh toán:
+                  <strong>
+                    ${formatDate(hoaDon.ngayNop)}
+                  </strong>
+                </div>
+              `
+              : ''
+          }
+
+        </div>
+
+      </div>
+
+
+      <!-- QR -->
+
+      <div style="
+        margin-top: 18px;
+        text-align: center;
+        padding: 16px;
+        border-top: 1px solid #e5e7eb;
+      ">
+
+        <div style="
+          margin-bottom: 8px;
+          color: #475569;
+          font-size: 13px;
+        ">
+          Quét mã để thanh toán
+        </div>
+
+        <div style="
+          font-size: 12px;
+          color: #94a3b8;
+        ">
+          QR thanh toán là ảnh được đính kèm ở trong email này.
+        </div>
+
+      </div>
 
     </div>
+
+
+    <!-- FOOTER -->
+
+    <div style="
+      padding: 18px;
+      text-align: center;
+      color: #64748b;
+      font-size: 13px;
+    ">
+      Trân trọng.
+    </div>
+
+  </div>
   `;
+
+    let qrBuffer: Buffer | undefined;
+
+    const qrPath = path.resolve(process.cwd(), 'assets', 'images', 'QR.png');
+
+    try {
+      qrBuffer = await fs.promises.readFile(qrPath);
+    } catch (error) {
+      console.warn(`Không tìm thấy QR: ${qrPath}`);
+    }
 
     await this.emailService.sendInvoiceEmail(
       [emailNguoiThue],
       `Hóa đơn tiền phòng - ${hoaDon.maHoaDon}`,
       html,
       nguoiThue.hoTen ?? 'Người thuê',
+      qrBuffer,
     );
 
     return {
