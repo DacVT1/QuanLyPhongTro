@@ -9,6 +9,7 @@ import { Repository } from 'typeorm';
 import { HoaDon } from '../../entities/hoa-don.entity';
 import { HopDong } from '../../entities/hop-dong.entity';
 import { Tenant } from '../../entities/tenant.entity';
+import { EmailService } from '../email/email.service';
 
 @Injectable()
 export class HoaDonService {
@@ -21,6 +22,8 @@ export class HoaDonService {
 
     @InjectRepository(Tenant)
     private readonly tenantRepository: Repository<Tenant>,
+
+    private readonly emailService: EmailService,
   ) {}
 
   async findAll(tenantId: string) {
@@ -512,6 +515,286 @@ export class HoaDonService {
     return {
       message: 'Xóa hóa đơn thành công',
       id,
+    };
+  }
+
+  async sendInvoiceEmail(
+    id: string,
+    tenantId: string,
+  ): Promise<{
+    success: boolean;
+    message: string;
+  }> {
+    if (!tenantId) {
+      throw new BadRequestException('Không xác định được tenant.');
+    }
+
+    const hoaDon = await this.repository.findOne({
+      where: {
+        id,
+        tenant: {
+          id: tenantId,
+        },
+      },
+      relations: {
+        hopDong: {
+          nguoiThue: true,
+          giuong: {
+            phong: {
+              nhaTro: true,
+            },
+          },
+        },
+      },
+    });
+
+    if (!hoaDon) {
+      throw new NotFoundException('Không tìm thấy hóa đơn.');
+    }
+
+    const nguoiThue = hoaDon.hopDong?.nguoiThue;
+
+    if (!nguoiThue) {
+      throw new NotFoundException('Không tìm thấy người thuê của hóa đơn.');
+    }
+
+    const emailNguoiThue = nguoiThue.email?.trim();
+
+    if (!emailNguoiThue) {
+      throw new BadRequestException('Người thuê chưa có email.');
+    }
+
+    const nhaTro = hoaDon.hopDong?.giuong?.phong?.nhaTro;
+
+    const phong = hoaDon.hopDong?.giuong?.phong;
+
+    const thangThanhToan = hoaDon.thangThanhToan
+      ? new Date(hoaDon.thangThanhToan)
+      : null;
+
+    const monthText = thangThanhToan
+      ? `${String(thangThanhToan.getMonth() + 1).padStart(2, '0')}/${thangThanhToan.getFullYear()}`
+      : '';
+
+    const formatMoney = (value: number | string) =>
+      new Intl.NumberFormat('vi-VN').format(Number(value ?? 0));
+
+    const html = `
+    <div style="
+      font-family: Arial, sans-serif;
+      max-width: 700px;
+      margin: 0 auto;
+      color: #172033;
+    ">
+
+      <div style="
+        background: #2345b5;
+        color: white;
+        padding: 20px;
+        text-align: center;
+        border-radius: 10px 10px 0 0;
+      ">
+        <h2 style="margin: 0;">
+          HÓA ĐƠN TIỀN PHÒNG
+        </h2>
+
+        <div style="margin-top: 5px;">
+          Tháng ${monthText}
+        </div>
+      </div>
+
+      <div style="
+        padding: 20px;
+        border: 1px solid #e5e7eb;
+      ">
+
+        <table width="100%" cellpadding="6">
+          <tr>
+            <td>
+              <div style="color:#64748b;">
+                Nhà trọ
+              </div>
+
+              <strong>
+                ${nhaTro?.tenNhaTro ?? ''}
+                ${nhaTro?.diaChi ? ` — ${nhaTro.diaChi}` : ''}
+              </strong>
+            </td>
+
+            <td>
+              <div style="color:#64748b;">
+                Phòng
+              </div>
+
+              <strong>
+                ${phong?.maPhong ?? ''}
+                ${phong?.tangSo ? ` — Tầng ${phong.tangSo}` : ''}
+              </strong>
+            </td>
+          </tr>
+
+          <tr>
+            <td>
+              <div style="color:#64748b;">
+                Khách thuê
+              </div>
+
+              <strong>
+                ${nguoiThue.hoTen ?? ''}
+              </strong>
+            </td>
+
+            <td>
+              <div style="color:#64748b;">
+                Kỳ tính
+              </div>
+
+              <strong>
+                ${monthText}
+              </strong>
+            </td>
+          </tr>
+        </table>
+
+        <hr style="
+          border: 0;
+          border-top: 1px solid #e5e7eb;
+          margin: 15px 0;
+        ">
+
+        <table
+          width="100%"
+          cellpadding="10"
+          cellspacing="0"
+        >
+          <thead>
+            <tr style="color:#64748b;">
+              <th align="left">
+                Khoản mục
+              </th>
+
+              <th align="right">
+                Thành tiền
+              </th>
+            </tr>
+          </thead>
+
+          <tbody>
+
+            <tr>
+              <td>
+                Tiền thuê phòng
+              </td>
+
+              <td align="right">
+                ${formatMoney(hoaDon.tienPhong)} đ
+              </td>
+            </tr>
+
+            <tr>
+              <td>
+                Tiền điện
+              </td>
+
+              <td align="right">
+                ${formatMoney(hoaDon.tienDien)} đ
+              </td>
+            </tr>
+
+            <tr>
+              <td>
+                Tiền nước
+              </td>
+
+              <td align="right">
+                ${formatMoney(hoaDon.tienNuoc)} đ
+              </td>
+            </tr>
+
+            <tr>
+              <td>
+                Phí dịch vụ khác
+              </td>
+
+              <td align="right">
+                ${formatMoney(hoaDon.tienDichVuKhac)} đ
+              </td>
+            </tr>
+
+          </tbody>
+        </table>
+
+        <div style="
+          border-top: 2px solid #2345b5;
+          margin-top: 10px;
+          padding-top: 15px;
+          display: flex;
+          justify-content: space-between;
+          font-size: 18px;
+          font-weight: bold;
+        ">
+          <span>TỔNG CỘNG</span>
+
+          <span style="color:#2345b5;">
+            ${formatMoney(hoaDon.tongTien)} đ
+          </span>
+        </div>
+
+        <div style="
+          margin-top: 20px;
+          padding: 15px;
+          background: #f8fafc;
+          border-radius: 10px;
+        ">
+          <strong>Thông tin thanh toán</strong>
+
+          <p style="margin-bottom:0;">
+            Trạng thái:
+            <strong>
+              ${
+                hoaDon.trangThai === 'da_thanh_toan'
+                  ? 'Đã thanh toán'
+                  : 'Chưa thanh toán'
+              }
+            </strong>
+          </p>
+
+          ${
+            hoaDon.ngayNop
+              ? `
+                <p>
+                  Ngày thanh toán:
+                  <strong>
+                    ${new Date(hoaDon.ngayNop).toLocaleDateString('vi-VN')}
+                  </strong>
+                </p>
+              `
+              : ''
+          }
+        </div>
+
+      </div>
+
+      <p style="
+        margin-top: 20px;
+        color:#64748b;
+      ">
+        Trân trọng.
+      </p>
+
+    </div>
+  `;
+
+    await this.emailService.sendInvoiceEmail(
+      [emailNguoiThue],
+      `Hóa đơn tiền phòng - ${hoaDon.maHoaDon}`,
+      html,
+      nguoiThue.hoTen ?? 'Người thuê',
+    );
+
+    return {
+      success: true,
+      message: `Hóa đơn đã được gửi đến ${emailNguoiThue}.`,
     };
   }
 }

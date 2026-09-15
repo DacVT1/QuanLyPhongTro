@@ -125,4 +125,29 @@ export class EmailService {
 
     return data;
   }
+
+  async sendInvoiceEmail(
+    recipientEmails: string[],
+    subject: string,
+    html: string,
+    tenantName: string,
+  ) {
+    const from =
+      process.env.MAIL_FROM || 'HÓA ĐƠN TIỀN PHÒNG <onboarding@resend.dev>';
+
+    const { data, error } = await this.resend.emails.send({
+      from,
+      to: recipientEmails,
+      subject,
+      html,
+    });
+
+    if (error) {
+      console.error('Resend invoice error:', error);
+
+      throw new InternalServerErrorException('Không thể gửi email hóa đơn.');
+    }
+
+    return data;
+  }
 }
