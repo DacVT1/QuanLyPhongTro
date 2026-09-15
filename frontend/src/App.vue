@@ -1318,6 +1318,7 @@ async function confirmDeleteHoaDon() {
     }
 
     await loadData();
+    showSuccessNotification("Hóa đơn đã được xóa thành công.");
   } catch (error: any) {
     console.error("Không thể xóa hóa đơn:", error);
 
@@ -1877,6 +1878,7 @@ async function confirmDeletePhong() {
     }
 
     await loadData();
+    showSuccessNotification("Phòng đã được xóa thành công.");
   } catch (error: any) {
     console.error("Không thể xóa phòng:", error);
 
@@ -1911,6 +1913,7 @@ async function confirmDeleteNguoiThue() {
     }
 
     await loadData();
+    showSuccessNotification("Người thuê đã được xóa thành công.");
   } catch (error: any) {
     console.error("Không thể xóa người thuê:", error);
 
@@ -1975,7 +1978,7 @@ async function confirmDeleteHopDong() {
 
     await loadData();
 
-    alert("Xóa hợp đồng thành công.");
+    showSuccessNotification("Hợp đồng đã được xóa thành công.");
   } catch (error: any) {
     console.error("Không thể xóa hợp đồng:", error);
 
@@ -2110,6 +2113,7 @@ async function confirmDeleteGiuong() {
     }
 
     await loadData();
+    showSuccessNotification("Giường đã được xóa thành công.");
   } catch (error: any) {
     console.error("Không thể xóa giường:", error);
 
@@ -2451,6 +2455,7 @@ async function deleteNhaTro(id: string) {
     }
 
     await loadData();
+    showSuccessNotification("Nhà trọ đã được xóa thành công.");
   } catch (error: any) {
     if (error.response?.status === 409) {
       const responseData = error.response?.data;
