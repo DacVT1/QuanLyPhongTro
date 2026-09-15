@@ -17,39 +17,26 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 @Controller('hoa-don')
 @UseGuards(JwtAuthGuard)
 export class HoaDonController {
-  constructor(
-    private readonly hoaDonService: HoaDonService,
-  ) {}
+  constructor(private readonly hoaDonService: HoaDonService) {}
 
   @Get()
-  findAll(
-    @CurrentUser() user: JwtPayload,
-  ) {
-    return this.hoaDonService.findAll(
-      user.tenantId,
-    );
+  findAll(@CurrentUser() user: JwtPayload) {
+    return this.hoaDonService.findAll(user.tenantId);
   }
 
   @Get(':id')
-  findOne(
-    @Param('id') id: string,
-    @CurrentUser() user: JwtPayload,
-  ) {
-    return this.hoaDonService.findOne(
-      id,
-      user.tenantId,
-    );
+  findOne(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
+    return this.hoaDonService.findOne(id, user.tenantId);
+  }
+
+  @Post(':id/send-email')
+  async sendEmail(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
+    return this.hoaDonService.sendInvoiceEmail(id, user.tenantId);
   }
 
   @Post()
-  create(
-    @Body() payload: any,
-    @CurrentUser() user: JwtPayload,
-  ) {
-    return this.hoaDonService.create(
-      payload,
-      user.tenantId,
-    );
+  create(@Body() payload: any, @CurrentUser() user: JwtPayload) {
+    return this.hoaDonService.create(payload, user.tenantId);
   }
 
   @Post('tao-cho-cac-giuong')
@@ -72,21 +59,11 @@ export class HoaDonController {
     @Body() payload: any,
     @CurrentUser() user: JwtPayload,
   ) {
-    return this.hoaDonService.update(
-      id,
-      payload,
-      user.tenantId,
-    );
+    return this.hoaDonService.update(id, payload, user.tenantId);
   }
 
   @Delete(':id')
-  remove(
-    @Param('id') id: string,
-    @CurrentUser() user: JwtPayload,
-  ) {
-    return this.hoaDonService.remove(
-      id,
-      user.tenantId,
-    );
+  remove(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
+    return this.hoaDonService.remove(id, user.tenantId);
   }
 }
