@@ -148,7 +148,7 @@ onBeforeUnmount(() => {
 .pdf-overlay {
   position: fixed;
   inset: 0;
-  z-index: 10050;
+  z-index: 9000;
 
   display: flex;
   align-items: center;
