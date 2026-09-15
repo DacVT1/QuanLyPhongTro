@@ -109,12 +109,13 @@ function showNotification(
   title?: string,
 ) {
   appNotificationType.value = type;
-
   appNotificationTitle.value = title ?? getDefaultNotificationTitle(type);
-
   appNotificationMessage.value = message;
-
   showAppNotification.value = true;
+
+  setTimeout(() => {
+    showAppNotification.value = false;
+  }, 1000);
 }
 
 function handleQrChange(event: Event) {
@@ -286,6 +287,15 @@ async function saveAccount() {
         </div>
 
         <div class="account-actions">
+          <button
+            type="button"
+            class="account-exit"
+            :disabled="saving"
+            @click="closeAccount"
+          >
+            Thoát
+          </button>
+
           <button type="submit" class="account-save" :disabled="saving">
             {{ saving ? "Đang lưu..." : "Lưu" }}
           </button>
@@ -420,6 +430,7 @@ async function saveAccount() {
 .account-actions {
   display: flex;
   justify-content: flex-end;
+  gap: 10px;
   margin-top: 24px;
 }
 
@@ -530,5 +541,24 @@ async function saveAccount() {
     left: 16px;
     min-width: auto;
   }
+}
+
+.account-exit {
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 10px 24px;
+  cursor: pointer;
+  background: rgb(199, 15, 15);
+  color: hsl(216, 50%, 96%);
+  font-weight: 600;
+}
+
+.account-exit:hover {
+  background: #f3f4f6;
+}
+
+.account-exit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 </style>
