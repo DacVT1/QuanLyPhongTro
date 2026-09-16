@@ -9,7 +9,9 @@ const taiKhoan = ref({
   chuTaiKhoan: "",
   maQrThanhToan: "",
 });
-
+function getNgayThanhToan() {
+  return formatDate(props.hoaDon?.ngayNop);
+}
 async function loadTaiKhoan() {
   try {
     const response = await api.get("/tai-khoan/me");
@@ -340,7 +342,15 @@ const isPaid = () => props.hoaDon?.trangThai === "da_thanh_toan";
               </strong>
             </div>
 
-            <div>
+            <div v-if="isPaid()">
+              <span class="payment-icon">📅</span>
+              Ngày thanh toán:
+              <strong class="payment-paid-date">
+                {{ getNgayThanhToan() || "Chưa cập nhật" }}
+              </strong>
+            </div>
+
+            <div v-else>
               <span class="payment-icon">📅</span>
               Hạn nộp:
               <strong class="payment-due-date">
