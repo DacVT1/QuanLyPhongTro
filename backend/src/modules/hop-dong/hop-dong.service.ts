@@ -497,36 +497,16 @@ export class HopDongService {
     if (!hopDong.nguoiThue) {
       throw new NotFoundException('Không tìm thấy người thuê của hợp đồng.');
     }
-    // =====================================================
-    // LẤY THÔNG TIN BÊN A TỪ TÀI KHOẢN ĐĂNG NHẬP
-    // =====================================================
 
-    const taiKhoan = await this.taiKhoanRepository.findOne({
-      where: {
-        id: taiKhoanId,
-        tenant: {
-          id: tenantId,
-        },
-      },
-    });
-
-    if (!taiKhoan) {
-      throw new NotFoundException(
-        'Không tìm thấy thông tin tài khoản của Bên A.',
-      );
-    }
     const nguoiThue = hopDong.nguoiThue;
 
     const nhaTro = hopDong.giuong.phong.nhaTro;
 
     const phong = hopDong.giuong.phong;
 
-    /*
-     * Ảnh CCCD hiện đang được lưu dưới dạng
-     * đường dẫn file trong NguoiThue.
-     *
-     * Cần đọc thành Buffer để truyền vào PDFKit.
-     */
+    // =====================================================
+    // ĐỌC FILE ẢNH TỪ STORAGE
+    // =====================================================
 
     const fs = await import('fs/promises');
     const path = await import('path');
@@ -535,7 +515,6 @@ export class HopDongService {
       imagePath?: string | null,
     ): Promise<Buffer | null> => {
       if (!imagePath) {
-        console.warn('Người thuê chưa có ảnh CCCD.');
         return null;
       }
 
@@ -552,14 +531,43 @@ export class HopDongService {
         return await fs.readFile(absolutePath);
       } catch (error: any) {
         if (error?.code === 'ENOENT') {
-          console.warn(`Ảnh CCCD không tồn tại, bỏ qua ảnh: ${absolutePath}`);
+          console.warn(`Ảnh không tồn tại, bỏ qua: ${absolutePath}`);
         } else {
-          console.error(`Không thể đọc ảnh CCCD: ${absolutePath}`, error);
+          console.error(`Không thể đọc ảnh: ${absolutePath}`, error);
         }
 
         return null;
       }
     };
+
+    // =====================================================
+    // LẤY THÔNG TIN TÀI KHOẢN ĐANG ĐĂNG NHẬP
+    // =====================================================
+
+    const taiKhoan = await this.taiKhoanRepository.findOne({
+      where: {
+        id: taiKhoanId,
+        tenant: {
+          id: tenantId,
+        },
+      },
+    });
+
+    if (!taiKhoan) {
+      throw new NotFoundException(
+        'Không tìm thấy thông tin tài khoản của Bên A.',
+      );
+    }
+
+    // =====================================================
+    // QR THANH TOÁN CỦA TÀI KHOẢN
+    // =====================================================
+
+    const maQrThanhToan = await readImageBuffer(taiKhoan.maQrThanhToan);
+
+    // =====================================================
+    // ẢNH CCCD NGƯỜI THUÊ
+    // =====================================================
 
     const cccdMatTruoc = await readImageBuffer(nguoiThue.cccdMatTruoc);
 
@@ -626,6 +634,7 @@ export class HopDongService {
   async sendContractEmail(
     id: string,
     tenantId: string,
+    taiKhoanId: string,
   ): Promise<{
     success: boolean;
     message: string;
@@ -667,7 +676,7 @@ export class HopDongService {
 
     // Tạo đúng PDF HỢP ĐỒNG THUÊ TRỌ
     // đang hiển thị trên màn hình.
-    const pdfBuffer = await this.generatePdf(id, tenantId);
+    const pdfBuffer = await this.generatePdf(id, tenantId, taiKhoanId);
 
     // Gửi cho:
     // 1. Email cố định của bên A

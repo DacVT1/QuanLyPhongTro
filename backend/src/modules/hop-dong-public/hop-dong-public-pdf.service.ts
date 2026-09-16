@@ -16,6 +16,7 @@ interface ContractPdfData {
     soTaiKhoan: string;
     chuTaiKhoan: string;
     diaChi: string;
+    maQrThanhToan: Buffer | null;
   };
 
   // =========================
@@ -267,11 +268,21 @@ export class HopDongPublicPdfService {
 
       doc.moveDown(0.3);
 
-      doc.image(qrPath, {
-        fit: [150, 150],
-        align: 'center',
-        valign: 'center',
-      });
+      if (data.benA.maQrThanhToan) {
+        doc.image(data.benA.maQrThanhToan, {
+          fit: [150, 150],
+          align: 'center',
+          valign: 'center',
+        });
+      } else {
+        doc
+          .font('Vietnamese')
+          .fontSize(9)
+          .text('Chưa cập nhật mã QR thanh toán', {
+            align: 'center',
+            width: 495,
+          });
+      }
 
       doc.moveDown(0.8);
       // =====================================================
