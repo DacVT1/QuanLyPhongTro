@@ -266,7 +266,7 @@ export class HopDongPublicPdfService {
         width: 495,
       });
 
-      doc.moveDown(0.3);
+      doc.moveDown(0.5);
 
       if (data.benA.maQrThanhToan) {
         doc.image(data.benA.maQrThanhToan, {
@@ -282,9 +282,9 @@ export class HopDongPublicPdfService {
             align: 'center',
             width: 495,
           });
+        doc.moveDown(0.8);
       }
-
-      doc.moveDown(0.8);
+      doc.moveDown(3);
       // =====================================================
       // BÊN B
       // =====================================================

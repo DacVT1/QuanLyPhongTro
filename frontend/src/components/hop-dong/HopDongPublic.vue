@@ -2134,25 +2134,40 @@ select:disabled {
 }
 
 .qr-payment {
+  width: 100%;
   margin-top: 20px;
   text-align: center;
 }
 
 .qr-payment-title {
-  margin-bottom: 10px;
-  font-weight: 600;
-  font-size: 15px;
+  margin-bottom: 12px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
 }
 
 .qr-payment-image {
   display: block;
-  width: 180px;
-  height: 180px;
-  object-fit: contain;
+  width: 150px;
+  height: 150px;
   margin: 0 auto;
-  border: 1px solid #ddd;
-  padding: 6px;
-  background: #fff;
+  object-fit: contain;
+}
+
+.qr-payment-empty {
+  width: 150px;
+  min-height: 150px;
+  margin: 0 auto;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  box-sizing: border-box;
+  border: 1px dashed #ccc;
   border-radius: 8px;
+  color: #777;
+  font-size: 13px;
 }
 </style>
