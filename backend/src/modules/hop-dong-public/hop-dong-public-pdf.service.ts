@@ -302,48 +302,80 @@ export class HopDongPublicPdfService {
       // BÊN B
       // =====================================================
 
-      addSectionTitle('BÊN THUÊ (BÊN B)');
-
-      addLabelValue('Họ và tên', data.hoTen);
-
-      addLabelValue('CCCD', data.cccd);
-
-      addLabelValue('Số điện thoại', data.sdt);
-
-      addLabelValue('Gmail', data.email);
-
-      addLabelValue('Ngày sinh', formatDate(data.ngaySinh));
-
-      addLabelValue('Địa chỉ', data.diaChi);
-
-      addLabelValue('Biển số xe', data.bienSoXe);
-
-      doc.moveDown(0.5);
-
       // =====================================================
       // CCCD BÊN B
       // =====================================================
 
       addSectionTitle('ẢNH CCCD BÊN THUÊ');
 
-      const imageWidth = 220;
+      // =====================================================
+      // CẤU HÌNH VÙNG ẢNH
+      // =====================================================
+
+      const pageLeft = 50;
+      const pageRight = 545;
+
+      const imageGap = 20;
+
+      // Chiều rộng vùng hiển thị mỗi ảnh
+      const imageWidth = (pageRight - pageLeft - imageGap) / 2;
+
+      // Chiều cao tối đa của ảnh
       const imageHeight = 140;
-      const imageGap = 30;
 
-      const imageStartX = 50;
-      const imageStartY = doc.y;
+      // Khoảng cách từ tiêu đề đến ảnh
+      const imageTopGap = 20;
 
-      // Mặt trước
+      // Khoảng cách an toàn phía dưới ảnh
+      const bottomSafeGap = 45;
+
+      // Vị trí footer hiện tại của PDF:
+      // source đang đặt số trang tại y = 810
+      const footerY = 810;
+
+      // =====================================================
+      // KIỂM TRA TRƯỚC KHI ĐẶT ẢNH
+      // =====================================================
+
+      const currentY = doc.y;
+
+      // Chiều cao thực tế cần cho:
+      // tiêu đề + khoảng cách + ảnh + khoảng cách an toàn
+      const requiredHeight = imageTopGap + imageHeight + bottomSafeGap;
+
+      // Nếu không đủ chỗ trên trang hiện tại
+      // thì chuyển toàn bộ phần CCCD sang trang mới.
+      if (currentY + requiredHeight > footerY) {
+        doc.addPage();
+
+        doc.font('Vietnamese').fontSize(11).fillColor('#000000');
+
+        addSectionTitle('ẢNH CCCD BÊN THUÊ');
+      }
+
+      // =====================================================
+      // VỊ TRÍ HIỂN THỊ ẢNH
+      // =====================================================
+
+      const imageTitleY = doc.y;
+
+      const imageStartY = imageTitleY + imageTopGap;
+
+      // =====================================================
+      // MẶT TRƯỚC CCCD
+      // =====================================================
+
       doc
         .font('Vietnamese')
         .fontSize(10)
-        .text('Mặt trước CCCD', imageStartX, imageStartY, {
+        .fillColor('#000000')
+        .text('Mặt trước CCCD', pageLeft, imageTitleY, {
           width: imageWidth,
           align: 'center',
         });
 
       if (data.cccdMatTruoc) {
-        doc.image(data.cccdMatTruoc, imageStartX, imageStartY + 20, {
+        doc.image(data.cccdMatTruoc, pageLeft, imageStartY, {
           fit: [imageWidth, imageHeight],
           align: 'center',
           valign: 'center',
@@ -352,25 +384,29 @@ export class HopDongPublicPdfService {
         doc
           .font('Vietnamese')
           .fontSize(9)
-          .text('Không có ảnh', imageStartX, imageStartY + 75, {
+          .text('Không có ảnh', pageLeft, imageStartY + 60, {
             width: imageWidth,
             align: 'center',
           });
       }
 
-      // Mặt sau
-      const imageBackX = imageStartX + imageWidth + imageGap;
+      // =====================================================
+      // MẶT SAU CCCD
+      // =====================================================
+
+      const imageBackX = pageLeft + imageWidth + imageGap;
 
       doc
         .font('Vietnamese')
         .fontSize(10)
-        .text('Mặt sau CCCD', imageBackX, imageStartY, {
+        .fillColor('#000000')
+        .text('Mặt sau CCCD', imageBackX, imageTitleY, {
           width: imageWidth,
           align: 'center',
         });
 
       if (data.cccdMatSau) {
-        doc.image(data.cccdMatSau, imageBackX, imageStartY + 20, {
+        doc.image(data.cccdMatSau, imageBackX, imageStartY, {
           fit: [imageWidth, imageHeight],
           align: 'center',
           valign: 'center',
@@ -379,13 +415,19 @@ export class HopDongPublicPdfService {
         doc
           .font('Vietnamese')
           .fontSize(9)
-          .text('Không có ảnh', imageBackX, imageStartY + 75, {
+          .text('Không có ảnh', imageBackX, imageStartY + 60, {
             width: imageWidth,
             align: 'center',
           });
       }
 
-      doc.y = imageStartY + imageHeight + 40;
+      // =====================================================
+      // ĐẨY NỘI DUNG TIẾP THEO XUỐNG DƯỚI ẢNH
+      // =====================================================
+
+      doc.y = imageStartY + imageHeight + 30;
+
+      doc.font('Vietnamese').fontSize(11).fillColor('#000000');
 
       doc
         .font('Vietnamese')
