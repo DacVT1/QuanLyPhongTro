@@ -16,6 +16,7 @@ interface ContractPdfData {
     soTaiKhoan: string;
     chuTaiKhoan: string;
     diaChi: string;
+    maQrThanhToan: Buffer | null;
   };
 
   // =========================
@@ -260,20 +261,43 @@ export class HopDongPublicPdfService {
       // MÃ QR THANH TOÁN BÊN A
       // =====================================================
 
-      doc.font('Vietnamese').fontSize(11).text('MÃ QR THANH TOÁN', {
-        align: 'center',
-        width: 495,
-      });
+      const qrTitleY = doc.y;
 
-      doc.moveDown(0.3);
+      doc
+        .font('Vietnamese')
+        .fontSize(11)
+        .text('MÃ QR THANH TOÁN', 50, qrTitleY, {
+          width: 495,
+          align: 'center',
+        });
 
-      doc.image(qrPath, {
-        fit: [150, 150],
-        align: 'center',
-        valign: 'center',
-      });
+      doc.moveDown(0.5);
 
-      doc.moveDown(0.8);
+      if (data.benA.maQrThanhToan) {
+        const qrSize = 150;
+
+        // Căn QR chính giữa vùng nội dung PDF
+        const qrX = 50 + (495 - qrSize) / 2;
+        const qrY = doc.y;
+
+        doc.image(data.benA.maQrThanhToan, qrX, qrY, {
+          fit: [qrSize, qrSize],
+        });
+
+        // Đẩy nội dung tiếp theo xuống dưới QR
+        doc.y = qrY + qrSize + 12;
+      } else {
+        doc
+          .font('Vietnamese')
+          .fontSize(9)
+          .text('Chưa cập nhật mã QR thanh toán', {
+            width: 495,
+            align: 'center',
+          });
+
+        doc.moveDown(0.8);
+      }
+
       // =====================================================
       // BÊN B
       // =====================================================
@@ -386,7 +410,12 @@ export class HopDongPublicPdfService {
 
       addLabelValue('Tầng số', data.tangSo);
 
-      addLabelValue('Phòng số', data.maPhong);
+      const phongSo =
+        String(data.maPhong ?? '')
+          .split('_T')
+          .pop() || data.maPhong;
+
+      addLabelValue('Phòng số', phongSo);
 
       addLabelValue('Giường số', data.giuongSo);
 

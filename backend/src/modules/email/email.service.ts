@@ -139,9 +139,10 @@ export class EmailService {
     const attachments = qrBuffer
       ? [
           {
-            filename: 'QR.png',
+            filename: 'QR-thanh-toan.png',
             content: qrBuffer,
-            contentId: 'payment-qr',
+            contentType: 'image/png',
+            contentId: 'qr-thanh-toan',
           },
         ]
       : undefined;

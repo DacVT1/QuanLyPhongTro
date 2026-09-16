@@ -9,10 +9,12 @@ import { Tenant } from '../../entities/tenant.entity';
 import { NguoiThue } from 'src/entities/nguoi-thue.entity';
 import { HopDongPublicPdfService } from '../hop-dong-public/hop-dong-public-pdf.service';
 import { EmailModule } from '../email/email.module';
+import { TaiKhoan } from '../../entities/tai-khoan.entity';
+
 @Module({
   imports: [
     AuthModule,
-    TypeOrmModule.forFeature([HopDong, Giuong, NguoiThue, Tenant]),
+    TypeOrmModule.forFeature([HopDong, Giuong, NguoiThue, Tenant, TaiKhoan]),
     EmailModule,
   ],
   controllers: [HopDongController],
