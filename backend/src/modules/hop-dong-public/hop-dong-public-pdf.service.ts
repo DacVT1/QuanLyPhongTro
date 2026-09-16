@@ -261,30 +261,43 @@ export class HopDongPublicPdfService {
       // MÃ QR THANH TOÁN BÊN A
       // =====================================================
 
-      doc.font('Vietnamese').fontSize(11).text('MÃ QR THANH TOÁN', {
-        align: 'center',
-        width: 495,
-      });
+      const qrTitleY = doc.y;
+
+      doc
+        .font('Vietnamese')
+        .fontSize(11)
+        .text('MÃ QR THANH TOÁN', 50, qrTitleY, {
+          width: 495,
+          align: 'center',
+        });
 
       doc.moveDown(0.5);
 
       if (data.benA.maQrThanhToan) {
-        doc.image(data.benA.maQrThanhToan, {
-          fit: [150, 150],
-          align: 'center',
-          valign: 'center',
+        const qrSize = 150;
+
+        // Căn QR chính giữa vùng nội dung PDF
+        const qrX = 50 + (495 - qrSize) / 2;
+        const qrY = doc.y;
+
+        doc.image(data.benA.maQrThanhToan, qrX, qrY, {
+          fit: [qrSize, qrSize],
         });
+
+        // Đẩy nội dung tiếp theo xuống dưới QR
+        doc.y = qrY + qrSize + 12;
       } else {
         doc
           .font('Vietnamese')
           .fontSize(9)
           .text('Chưa cập nhật mã QR thanh toán', {
-            align: 'center',
             width: 495,
+            align: 'center',
           });
+
         doc.moveDown(0.8);
       }
-      doc.moveDown(3);
+
       // =====================================================
       // BÊN B
       // =====================================================
