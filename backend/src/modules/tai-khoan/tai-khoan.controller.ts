@@ -13,13 +13,21 @@ import {
 
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
-import { extname } from 'path';
+import { extname, join } from 'path';
+import { mkdirSync } from 'fs';
+import { randomUUID } from 'crypto';
 
 import { TaiKhoanService } from './tai-khoan.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import type { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+const storageDir = process.env.STORAGE_DIR || join(process.cwd(), 'uploads');
 
+const taiKhoanUploadDir = join(storageDir, 'tai-khoan');
+
+mkdirSync(taiKhoanUploadDir, {
+  recursive: true,
+});
 @Controller('tai-khoan')
 @UseGuards(JwtAuthGuard)
 export class TaiKhoanController {
@@ -34,15 +42,26 @@ export class TaiKhoanController {
   @UseInterceptors(
     FileInterceptor('maQrThanhToan', {
       storage: diskStorage({
-        destination: './uploads/tai-khoan',
-        filename: (_req, file, callback) => {
-          const uniqueName =
-            `qr-${Date.now()}-${Math.round(Math.random() * 1e9)}` +
-            extname(file.originalname);
+        destination: taiKhoanUploadDir,
 
-          callback(null, uniqueName);
+        filename: (_req, file, cb) => {
+          const extension = extname(file.originalname);
+
+          cb(null, `${randomUUID()}${extension}`);
         },
       }),
+
+      fileFilter: (_req, file, cb) => {
+        if (!file.mimetype.startsWith('image/')) {
+          return cb(new Error('Chi cho phep upload file anh'), false);
+        }
+
+        cb(null, true);
+      },
+
+      limits: {
+        fileSize: 5 * 1024 * 1024,
+      },
     }),
   )
   updateMe(
