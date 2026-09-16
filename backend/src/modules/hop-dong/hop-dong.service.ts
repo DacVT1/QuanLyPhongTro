@@ -12,6 +12,7 @@ import { Tenant } from 'src/entities/tenant.entity';
 import { NguoiThue } from '../../entities/nguoi-thue.entity';
 import { HopDongPublicPdfService } from '../hop-dong-public/hop-dong-public-pdf.service';
 import { EmailService } from '../email/email.service';
+import { TaiKhoan } from '../../entities/tai-khoan.entity';
 
 @Injectable()
 export class HopDongService {
@@ -27,6 +28,9 @@ export class HopDongService {
 
     @InjectRepository(Tenant)
     private readonly tenantRepository: Repository<Tenant>,
+
+    @InjectRepository(TaiKhoan)
+    private readonly taiKhoanRepository: Repository<TaiKhoan>,
 
     private readonly pdfService: HopDongPublicPdfService,
     private readonly emailService: EmailService,
@@ -448,7 +452,11 @@ export class HopDongService {
     return hopDong;
   }
 
-  async generatePdf(id: string, tenantId: string): Promise<Buffer> {
+  async generatePdf(
+    id: string,
+    tenantId: string,
+    taiKhoanId: string,
+  ): Promise<Buffer> {
     if (!tenantId) {
       throw new BadRequestException('Không xác định được tenant.');
     }
@@ -489,7 +497,24 @@ export class HopDongService {
     if (!hopDong.nguoiThue) {
       throw new NotFoundException('Không tìm thấy người thuê của hợp đồng.');
     }
+    // =====================================================
+    // LẤY THÔNG TIN BÊN A TỪ TÀI KHOẢN ĐĂNG NHẬP
+    // =====================================================
 
+    const taiKhoan = await this.taiKhoanRepository.findOne({
+      where: {
+        id: taiKhoanId,
+        tenant: {
+          id: tenantId,
+        },
+      },
+    });
+
+    if (!taiKhoan) {
+      throw new NotFoundException(
+        'Không tìm thấy thông tin tài khoản của Bên A.',
+      );
+    }
     const nguoiThue = hopDong.nguoiThue;
 
     const nhaTro = hopDong.giuong.phong.nhaTro;
@@ -541,16 +566,28 @@ export class HopDongService {
     const cccdMatSau = await readImageBuffer(nguoiThue.cccdMatSau);
 
     const pdfBuffer = await this.pdfService.generate({
+      // benA: {
+      //   hoTen: 'Nguyễn Thị Chi',
+      //   cccd: '0909889908098',
+      //   ngayCap: '12/13/2026',
+      //   noiCap: 'Bộ công an',
+      //   sdt: '098989898',
+      //   nganHang: 'Viettin bank',
+      //   soTaiKhoan: '09453242344',
+      //   chuTaiKhoan: 'Nguyễn Thị Chi',
+      //   diaChi: 'Cầu Giấy',
+      // },
       benA: {
-        hoTen: 'Nguyễn Thị Chi',
-        cccd: '0909889908098',
-        ngayCap: '12/13/2026',
-        noiCap: 'Bộ công an',
-        sdt: '098989898',
-        nganHang: 'Viettin bank',
-        soTaiKhoan: '09453242344',
-        chuTaiKhoan: 'Nguyễn Thị Chi',
-        diaChi: 'Cầu Giấy',
+        hoTen: taiKhoan.hoTen ?? taiKhoan.tenHienThi ?? '',
+        cccd: taiKhoan.soCccd ?? '',
+        ngayCap: taiKhoan.ngayCap ? String(taiKhoan.ngayCap) : '',
+        noiCap: taiKhoan.noiCap ?? '',
+        sdt: taiKhoan.dienThoai ?? '',
+        nganHang: taiKhoan.nganHang ?? '',
+        soTaiKhoan: taiKhoan.soTaiKhoan ?? '',
+        chuTaiKhoan: taiKhoan.chuTaiKhoan ?? '',
+        diaChi: taiKhoan.diaChiThuongTru ?? '',
+        maQrThanhToan,
       },
 
       hoTen: nguoiThue.hoTen ?? '',
