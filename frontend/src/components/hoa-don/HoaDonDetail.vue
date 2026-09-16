@@ -330,6 +330,17 @@ const isPaid = () => props.hoaDon?.trangThai === "da_thanh_toan";
             </div>
 
             <div>
+              <span class="payment-icon">📌</span>
+              Trạng thái:
+              <strong
+                class="hoa-don-payment-status"
+                :class="isPaid() ? 'paid' : 'unpaid'"
+              >
+                {{ isPaid() ? "Đã thanh toán" : "Chưa thanh toán" }}
+              </strong>
+            </div>
+
+            <div>
               <span class="payment-icon">📅</span>
               Hạn nộp:
               <strong class="payment-due-date">
@@ -638,5 +649,25 @@ const isPaid = () => props.hoaDon?.trangThai === "da_thanh_toan";
 
   border-left: none;
   border-top: 1px solid #e2e8f0;
+}
+
+.hoa-don-payment-status {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+}
+
+.hoa-don-payment-status.paid {
+  color: #166534;
+  background: #dcfce7;
+}
+
+.hoa-don-payment-status.unpaid {
+  color: #b45309;
+  background: #fef3c7;
 }
 </style>
