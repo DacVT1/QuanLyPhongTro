@@ -410,7 +410,12 @@ export class HopDongPublicPdfService {
 
       addLabelValue('Tầng số', data.tangSo);
 
-      addLabelValue('Phòng số', data.maPhong);
+      const phongSo =
+        String(data.maPhong ?? '')
+          .split('_T')
+          .pop() || data.maPhong;
+
+      addLabelValue('Phòng số', phongSo);
 
       addLabelValue('Giường số', data.giuongSo);
 
