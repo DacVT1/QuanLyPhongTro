@@ -1,6 +1,34 @@
 <script setup lang="ts">
-import { ref } from "vue";
-import qrImage from "../../assets/images/QR.png";
+import { onMounted, ref } from "vue";
+import api from "@/services/api";
+import { getImageUrl } from "@/utils/image";
+
+const taiKhoan = ref({
+  nganHang: "",
+  soTaiKhoan: "",
+  chuTaiKhoan: "",
+  maQrThanhToan: "",
+});
+
+async function loadTaiKhoan() {
+  try {
+    const response = await api.get("/tai-khoan/me");
+
+    taiKhoan.value = {
+      nganHang: response.data.nganHang ?? "",
+      soTaiKhoan: response.data.soTaiKhoan ?? "",
+      chuTaiKhoan: response.data.chuTaiKhoan ?? "",
+      maQrThanhToan: response.data.maQrThanhToan ?? "",
+    };
+  } catch (error) {
+    console.error("Không thể tải thông tin tài khoản:", error);
+  }
+}
+
+onMounted(() => {
+  loadTaiKhoan();
+});
+
 const props = defineProps<{
   hoaDon: any;
   sendingEmail?: boolean;
@@ -276,19 +304,19 @@ const isPaid = () => props.hoaDon?.trangThai === "da_thanh_toan";
             <div>
               <span class="payment-icon">🏦</span>
               Ngân hàng:
-              <strong>Viettin bank</strong>
+              <strong>{{ taiKhoan.nganHang }}</strong>
             </div>
 
             <div>
               <span class="payment-icon">💳</span>
               Số tài khoản:
-              <strong>09453242344</strong>
+              <strong>{{ taiKhoan.soTaiKhoan }}</strong>
             </div>
 
             <div>
               <span class="payment-icon">👤</span>
               Chủ tài khoản:
-              <strong>Nguyễn Thị Chi</strong>
+              <strong>{{ taiKhoan.chuTaiKhoan }}</strong>
             </div>
 
             <div>
@@ -309,7 +337,15 @@ const isPaid = () => props.hoaDon?.trangThai === "da_thanh_toan";
               </strong>
             </div>
             <div class="payment-qr">
-              <img :src="qrImage" alt="QR thanh toán" />
+              <img
+                v-if="taiKhoan.maQrThanhToan"
+                :src="getImageUrl(taiKhoan.maQrThanhToan)"
+                alt="QR thanh toán"
+              />
+
+              <div v-else class="payment-qr-empty">
+                Chưa cập nhật mã QR thanh toán
+              </div>
               <div class="payment-qr-label">Quét mã để thanh toán</div>
             </div>
           </div>
