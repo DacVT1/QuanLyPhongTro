@@ -242,7 +242,7 @@ export class HopDongPublicPdfService {
 
       addLabelValue('CCCD số', data.benA.cccd);
 
-      addLabelValue('Ngày cấp', data.benA.ngayCap);
+      addLabelValue('Ngày cấp', formatDate(data.benA.ngayCap));
 
       addLabelValue('Nơi cấp', data.benA.noiCap);
 
@@ -301,6 +301,24 @@ export class HopDongPublicPdfService {
       // =====================================================
       // BÊN B
       // =====================================================
+
+      addSectionTitle('BÊN THUÊ (BÊN B)');
+
+      addLabelValue('Họ và tên', data.hoTen);
+
+      addLabelValue('CCCD số', data.cccd);
+
+      addLabelValue('Ngày sinh', formatDate(data.ngaySinh));
+
+      addLabelValue('Điện thoại', data.sdt);
+
+      addLabelValue('Email', data.email);
+
+      addLabelValue('Địa chỉ', data.diaChi);
+
+      addLabelValue('Biển số xe', data.bienSoXe);
+
+      doc.moveDown(0.5);
 
       // =====================================================
       // CCCD BÊN B
