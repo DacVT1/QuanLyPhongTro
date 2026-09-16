@@ -367,8 +367,6 @@ export class HopDongPublicPdfService {
         doc.addPage();
 
         doc.font('Vietnamese').fontSize(11).fillColor('#000000');
-
-        addSectionTitle('ẢNH CCCD BÊN THUÊ');
       }
 
       // =====================================================
