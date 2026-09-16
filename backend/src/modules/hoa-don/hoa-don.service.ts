@@ -1335,16 +1335,9 @@ export class HoaDonService {
       </div>
 
 
-      <!-- QR -->
+<!-- QR -->
 
-      <div style="
-        margin-top: 18px;
-        text-align: center;
-        padding: 16px;
-        border-top: 1px solid #e5e7eb;
-      ">
-
-       <div style="
+<div style="
   margin-top: 18px;
   text-align: center;
   padding: 16px;
@@ -1394,10 +1387,6 @@ export class HoaDonService {
   }
 
 </div>
-      </div>
-
-    </div>
-
 
     <!-- FOOTER -->
 
