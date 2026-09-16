@@ -357,6 +357,20 @@ export class HopDongPublicService {
     // 6. Trả dữ liệu public
     // ==========================================
     return {
+      taiKhoan: {
+        hoTen: taiKhoan.hoTen ?? taiKhoan.tenHienThi ?? '',
+        soCccd: taiKhoan.soCccd ?? '',
+        ngayCap: taiKhoan.ngayCap ? String(taiKhoan.ngayCap) : '',
+        noiCap: taiKhoan.noiCap ?? '',
+        diaChiThuongTru: taiKhoan.diaChiThuongTru ?? '',
+        email: taiKhoan.email ?? '',
+        dienThoai: taiKhoan.dienThoai ?? '',
+        nganHang: taiKhoan.nganHang ?? '',
+        soTaiKhoan: taiKhoan.soTaiKhoan ?? '',
+        chuTaiKhoan: taiKhoan.chuTaiKhoan ?? '',
+        maQrThanhToan: taiKhoan.maQrThanhToan ?? null,
+      },
+
       nhaTros,
       phongs,
       giuongs,

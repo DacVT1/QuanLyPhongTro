@@ -2,6 +2,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
 import api from "../../services/api";
+import { getImageUrl } from "../../utils/image";
 
 /* =========================================================
  * TYPES
@@ -94,18 +95,30 @@ const giuongs = ref<Giuong[]>([]);
  * Tạm thời để dữ liệu rỗng để không hard-code
  * thông tin chủ nhà trong frontend.
  */
+// const benA = ref<BenA>({
+//   hoTen: "Nguyễn Thị Chi",
+//   cccd: "0909889908098",
+//   ngayCap: "12/13/2026",
+//   noiCap: "Bộ công an ",
+//   sdt: "098989898",
+//   nganHang: "Viettin bank",
+//   soTaiKhoan: "09453242344",
+//   chuTaiKhoan: "Nguyễn Thị Chi",
+//   diaChi: "Cầu Giấy ",
+// });
 const benA = ref<BenA>({
-  hoTen: "Nguyễn Thị Chi",
-  cccd: "0909889908098",
-  ngayCap: "12/13/2026",
-  noiCap: "Bộ công an ",
-  sdt: "098989898",
-  nganHang: "Viettin bank",
-  soTaiKhoan: "09453242344",
-  chuTaiKhoan: "Nguyễn Thị Chi",
-  diaChi: "Cầu Giấy ",
+  hoTen: "",
+  cccd: "",
+  ngayCap: "",
+  noiCap: "",
+  sdt: "",
+  nganHang: "",
+  soTaiKhoan: "",
+  chuTaiKhoan: "",
+  diaChi: "",
 });
 
+const benAQr = ref("");
 /* =========================================================
  * FORM
  * ======================================================= */
@@ -593,10 +606,45 @@ async function loadData() {
 
     const data = response.data;
 
+    // ==========================================
+    // BÊN A - TAI_KHOAN
+    // ==========================================
+    const taiKhoan = data?.taiKhoan;
+
+    benA.value = {
+      hoTen: taiKhoan?.hoTen ?? taiKhoan?.tenHienThi ?? "",
+      cccd: taiKhoan?.soCccd ?? "",
+      ngayCap: taiKhoan?.ngayCap
+        ? String(taiKhoan.ngayCap).substring(0, 10)
+        : "",
+      noiCap: taiKhoan?.noiCap ?? "",
+      sdt: taiKhoan?.dienThoai ?? "",
+      nganHang: taiKhoan?.nganHang ?? "",
+      soTaiKhoan: taiKhoan?.soTaiKhoan ?? "",
+      chuTaiKhoan: taiKhoan?.chuTaiKhoan ?? "",
+      diaChi: taiKhoan?.diaChiThuongTru ?? "",
+    };
+
+    // ==========================================
+    // MÃ QR THANH TOÁN - TAI_KHOAN
+    // ==========================================
+    benAQr.value = taiKhoan?.maQrThanhToan
+      ? getImageUrl(taiKhoan.maQrThanhToan)
+      : "";
+
+    // ==========================================
+    // NHÀ TRỌ
+    // ==========================================
     nhaTros.value = data?.nhaTros ?? [];
 
+    // ==========================================
+    // PHÒNG
+    // ==========================================
     phongs.value = data?.phongs ?? [];
 
+    // ==========================================
+    // GIƯỜNG
+    // ==========================================
     giuongs.value = data?.giuongs ?? [];
   } catch (error: any) {
     console.error("Không thể tải dữ liệu hợp đồng:", error);
@@ -954,10 +1002,15 @@ onMounted(() => {
               <div class="qr-payment-title">Mã QR thanh toán</div>
 
               <img
-                src="/images/QR.png"
+                v-if="benAQr"
+                :src="benAQr"
                 alt="Mã QR thanh toán của Bên A"
                 class="qr-payment-image"
               />
+
+              <div v-else class="qr-payment-empty">
+                Chưa cập nhật mã QR thanh toán
+              </div>
             </div>
           </div>
         </section>
