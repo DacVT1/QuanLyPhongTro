@@ -12,6 +12,7 @@ import { Tenant } from 'src/entities/tenant.entity';
 import { NguoiThue } from '../../entities/nguoi-thue.entity';
 import { HopDongPublicPdfService } from '../hop-dong-public/hop-dong-public-pdf.service';
 import { EmailService } from '../email/email.service';
+import { TaiKhoan } from '../../entities/tai-khoan.entity';
 
 @Injectable()
 export class HopDongService {
@@ -27,6 +28,9 @@ export class HopDongService {
 
     @InjectRepository(Tenant)
     private readonly tenantRepository: Repository<Tenant>,
+
+    @InjectRepository(TaiKhoan)
+    private readonly taiKhoanRepository: Repository<TaiKhoan>,
 
     private readonly pdfService: HopDongPublicPdfService,
     private readonly emailService: EmailService,
@@ -448,7 +452,11 @@ export class HopDongService {
     return hopDong;
   }
 
-  async generatePdf(id: string, tenantId: string): Promise<Buffer> {
+  async generatePdf(
+    id: string,
+    tenantId: string,
+    taiKhoanId: string,
+  ): Promise<Buffer> {
     if (!tenantId) {
       throw new BadRequestException('Không xác định được tenant.');
     }
@@ -496,12 +504,9 @@ export class HopDongService {
 
     const phong = hopDong.giuong.phong;
 
-    /*
-     * Ảnh CCCD hiện đang được lưu dưới dạng
-     * đường dẫn file trong NguoiThue.
-     *
-     * Cần đọc thành Buffer để truyền vào PDFKit.
-     */
+    // =====================================================
+    // ĐỌC FILE ẢNH TỪ STORAGE
+    // =====================================================
 
     const fs = await import('fs/promises');
     const path = await import('path');
@@ -510,7 +515,6 @@ export class HopDongService {
       imagePath?: string | null,
     ): Promise<Buffer | null> => {
       if (!imagePath) {
-        console.warn('Người thuê chưa có ảnh CCCD.');
         return null;
       }
 
@@ -527,30 +531,71 @@ export class HopDongService {
         return await fs.readFile(absolutePath);
       } catch (error: any) {
         if (error?.code === 'ENOENT') {
-          console.warn(`Ảnh CCCD không tồn tại, bỏ qua ảnh: ${absolutePath}`);
+          console.warn(`Ảnh không tồn tại, bỏ qua: ${absolutePath}`);
         } else {
-          console.error(`Không thể đọc ảnh CCCD: ${absolutePath}`, error);
+          console.error(`Không thể đọc ảnh: ${absolutePath}`, error);
         }
 
         return null;
       }
     };
 
+    // =====================================================
+    // LẤY THÔNG TIN TÀI KHOẢN ĐANG ĐĂNG NHẬP
+    // =====================================================
+
+    const taiKhoan = await this.taiKhoanRepository.findOne({
+      where: {
+        id: taiKhoanId,
+        tenant: {
+          id: tenantId,
+        },
+      },
+    });
+
+    if (!taiKhoan) {
+      throw new NotFoundException(
+        'Không tìm thấy thông tin tài khoản của Bên A.',
+      );
+    }
+
+    // =====================================================
+    // QR THANH TOÁN CỦA TÀI KHOẢN
+    // =====================================================
+
+    const maQrThanhToan = await readImageBuffer(taiKhoan.maQrThanhToan);
+
+    // =====================================================
+    // ẢNH CCCD NGƯỜI THUÊ
+    // =====================================================
+
     const cccdMatTruoc = await readImageBuffer(nguoiThue.cccdMatTruoc);
 
     const cccdMatSau = await readImageBuffer(nguoiThue.cccdMatSau);
 
     const pdfBuffer = await this.pdfService.generate({
+      // benA: {
+      //   hoTen: 'Nguyễn Thị Chi',
+      //   cccd: '0909889908098',
+      //   ngayCap: '12/13/2026',
+      //   noiCap: 'Bộ công an',
+      //   sdt: '098989898',
+      //   nganHang: 'Viettin bank',
+      //   soTaiKhoan: '09453242344',
+      //   chuTaiKhoan: 'Nguyễn Thị Chi',
+      //   diaChi: 'Cầu Giấy',
+      // },
       benA: {
-        hoTen: 'Nguyễn Thị Chi',
-        cccd: '0909889908098',
-        ngayCap: '12/13/2026',
-        noiCap: 'Bộ công an',
-        sdt: '098989898',
-        nganHang: 'Viettin bank',
-        soTaiKhoan: '09453242344',
-        chuTaiKhoan: 'Nguyễn Thị Chi',
-        diaChi: 'Cầu Giấy',
+        hoTen: taiKhoan.hoTen ?? taiKhoan.tenHienThi ?? '',
+        cccd: taiKhoan.soCccd ?? '',
+        ngayCap: taiKhoan.ngayCap ? String(taiKhoan.ngayCap) : '',
+        noiCap: taiKhoan.noiCap ?? '',
+        sdt: taiKhoan.dienThoai ?? '',
+        nganHang: taiKhoan.nganHang ?? '',
+        soTaiKhoan: taiKhoan.soTaiKhoan ?? '',
+        chuTaiKhoan: taiKhoan.chuTaiKhoan ?? '',
+        diaChi: taiKhoan.diaChiThuongTru ?? '',
+        maQrThanhToan,
       },
 
       hoTen: nguoiThue.hoTen ?? '',
@@ -589,6 +634,7 @@ export class HopDongService {
   async sendContractEmail(
     id: string,
     tenantId: string,
+    taiKhoanId: string,
   ): Promise<{
     success: boolean;
     message: string;
@@ -630,7 +676,7 @@ export class HopDongService {
 
     // Tạo đúng PDF HỢP ĐỒNG THUÊ TRỌ
     // đang hiển thị trên màn hình.
-    const pdfBuffer = await this.generatePdf(id, tenantId);
+    const pdfBuffer = await this.generatePdf(id, tenantId, taiKhoanId);
 
     // Gửi cho:
     // 1. Email cố định của bên A

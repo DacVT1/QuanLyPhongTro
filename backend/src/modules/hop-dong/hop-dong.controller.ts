@@ -36,7 +36,11 @@ export class HopDongController {
     @CurrentUser() user: JwtPayload,
     @Res() res: Response,
   ) {
-    const pdfBuffer = await this.hopDongService.generatePdf(id, user.tenantId);
+    const pdfBuffer = await this.hopDongService.generatePdf(
+      id,
+      user.tenantId,
+      user.sub,
+    );
 
     res.set({
       'Content-Type': 'application/pdf',
@@ -49,7 +53,7 @@ export class HopDongController {
 
   @Post(':id/send-email')
   async sendEmail(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
-    return this.hopDongService.sendContractEmail(id, user.tenantId);
+    return this.hopDongService.sendContractEmail(id, user.tenantId, user.sub);
   }
 
   @Post()

@@ -1,6 +1,36 @@
 <script setup lang="ts">
-import { ref } from "vue";
-import qrImage from "../../assets/images/QR.png";
+import { onMounted, ref } from "vue";
+import api from "@/services/api";
+import { getImageUrl } from "@/utils/image";
+
+const taiKhoan = ref({
+  nganHang: "",
+  soTaiKhoan: "",
+  chuTaiKhoan: "",
+  maQrThanhToan: "",
+});
+function getNgayThanhToan() {
+  return formatDate(props.hoaDon?.ngayNop);
+}
+async function loadTaiKhoan() {
+  try {
+    const response = await api.get("/tai-khoan/me");
+
+    taiKhoan.value = {
+      nganHang: response.data.nganHang ?? "",
+      soTaiKhoan: response.data.soTaiKhoan ?? "",
+      chuTaiKhoan: response.data.chuTaiKhoan ?? "",
+      maQrThanhToan: response.data.maQrThanhToan ?? "",
+    };
+  } catch (error) {
+    console.error("Không thể tải thông tin tài khoản:", error);
+  }
+}
+
+onMounted(() => {
+  loadTaiKhoan();
+});
+
 const props = defineProps<{
   hoaDon: any;
   sendingEmail?: boolean;
@@ -276,19 +306,19 @@ const isPaid = () => props.hoaDon?.trangThai === "da_thanh_toan";
             <div>
               <span class="payment-icon">🏦</span>
               Ngân hàng:
-              <strong>Viettin bank</strong>
+              <strong>{{ taiKhoan.nganHang }}</strong>
             </div>
 
             <div>
               <span class="payment-icon">💳</span>
               Số tài khoản:
-              <strong>09453242344</strong>
+              <strong>{{ taiKhoan.soTaiKhoan }}</strong>
             </div>
 
             <div>
               <span class="payment-icon">👤</span>
               Chủ tài khoản:
-              <strong>Nguyễn Thị Chi</strong>
+              <strong>{{ taiKhoan.chuTaiKhoan }}</strong>
             </div>
 
             <div>
@@ -302,6 +332,25 @@ const isPaid = () => props.hoaDon?.trangThai === "da_thanh_toan";
             </div>
 
             <div>
+              <span class="payment-icon">📌</span>
+              Trạng thái:
+              <strong
+                class="hoa-don-payment-status"
+                :class="isPaid() ? 'paid' : 'unpaid'"
+              >
+                {{ isPaid() ? "Đã thanh toán" : "Chưa thanh toán" }}
+              </strong>
+            </div>
+
+            <div v-if="isPaid()">
+              <span class="payment-icon">📅</span>
+              Ngày thanh toán:
+              <strong class="payment-paid-date">
+                {{ getNgayThanhToan() || "Chưa cập nhật" }}
+              </strong>
+            </div>
+
+            <div v-else>
               <span class="payment-icon">📅</span>
               Hạn nộp:
               <strong class="payment-due-date">
@@ -309,7 +358,15 @@ const isPaid = () => props.hoaDon?.trangThai === "da_thanh_toan";
               </strong>
             </div>
             <div class="payment-qr">
-              <img :src="qrImage" alt="QR thanh toán" />
+              <img
+                v-if="taiKhoan.maQrThanhToan"
+                :src="getImageUrl(taiKhoan.maQrThanhToan)"
+                alt="QR thanh toán"
+              />
+
+              <div v-else class="payment-qr-empty">
+                Chưa cập nhật mã QR thanh toán
+              </div>
               <div class="payment-qr-label">Quét mã để thanh toán</div>
             </div>
           </div>
@@ -602,5 +659,25 @@ const isPaid = () => props.hoaDon?.trangThai === "da_thanh_toan";
 
   border-left: none;
   border-top: 1px solid #e2e8f0;
+}
+
+.hoa-don-payment-status {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+}
+
+.hoa-don-payment-status.paid {
+  color: #166534;
+  background: #dcfce7;
+}
+
+.hoa-don-payment-status.unpaid {
+  color: #b45309;
+  background: #fef3c7;
 }
 </style>

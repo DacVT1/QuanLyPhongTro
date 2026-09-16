@@ -11,6 +11,7 @@ import { HoaDon } from '../../entities/hoa-don.entity';
 import { HopDong } from '../../entities/hop-dong.entity';
 import { Tenant } from '../../entities/tenant.entity';
 import { EmailService } from '../email/email.service';
+import { TaiKhoan } from '../../entities/tai-khoan.entity';
 
 @Injectable()
 export class HoaDonService {
@@ -23,6 +24,9 @@ export class HoaDonService {
 
     @InjectRepository(Tenant)
     private readonly tenantRepository: Repository<Tenant>,
+
+    @InjectRepository(TaiKhoan)
+    private readonly taiKhoanRepository: Repository<TaiKhoan>,
 
     private readonly emailService: EmailService,
   ) {}
@@ -570,6 +574,41 @@ export class HoaDonService {
     const phong = hoaDon.hopDong?.giuong?.phong;
 
     const giuong = hoaDon.hopDong?.giuong;
+
+    const taiKhoan = await this.taiKhoanRepository.findOne({
+      where: {
+        tenant: {
+          id: tenantId,
+        },
+      },
+    });
+
+    if (!taiKhoan) {
+      throw new NotFoundException(
+        'Không tìm thấy tài khoản thuộc tenant hiện tại.',
+      );
+    }
+
+    // 2. Đọc QR trước khi tạo HTML
+    let qrBuffer: Buffer | undefined;
+
+    if (taiKhoan.maQrThanhToan) {
+      const qrRelativePath = taiKhoan.maQrThanhToan.replace(/^\/uploads\//, '');
+
+      const storageDir =
+        process.env.STORAGE_DIR || path.resolve(process.cwd(), 'uploads');
+
+      const qrPath = path.join(storageDir, qrRelativePath);
+
+      try {
+        qrBuffer = await fs.promises.readFile(qrPath);
+      } catch (error) {
+        console.warn(
+          `Không thể đọc QR thanh toán của tài khoản: ${qrPath}`,
+          error,
+        );
+      }
+    }
 
     /*
      * ==============================
@@ -1222,30 +1261,28 @@ export class HoaDonService {
         ">
 
           <div>
-            🏦
-            Ngân hàng:
-            <strong>
-              Viettin bank
-            </strong>
-          </div>
+  🏦
+  Ngân hàng:
+  <strong>
+    ${taiKhoan.nganHang ?? ''}
+  </strong>
+</div>
 
+<div>
+  💳
+  Số tài khoản:
+  <strong>
+    ${taiKhoan.soTaiKhoan ?? ''}
+  </strong>
+</div>
 
-          <div>
-            💳
-            Số tài khoản:
-            <strong>
-              09453242344
-            </strong>
-          </div>
-
-
-          <div>
-            👤
-            Chủ tài khoản:
-            <strong>
-              Nguyễn Thị Chi
-            </strong>
-          </div>
+<div>
+  👤
+  Chủ tài khoản:
+  <strong>
+    ${taiKhoan.chuTaiKhoan ?? ''}
+  </strong>
+</div>
 
 
           <div>
@@ -1298,34 +1335,58 @@ export class HoaDonService {
       </div>
 
 
-      <!-- QR -->
+<!-- QR -->
 
-      <div style="
-        margin-top: 18px;
-        text-align: center;
-        padding: 16px;
-        border-top: 1px solid #e5e7eb;
-      ">
+<div style="
+  margin-top: 18px;
+  text-align: center;
+  padding: 16px;
+  border-top: 1px solid #e5e7eb;
+">
 
+  <div style="
+    margin-bottom: 12px;
+    color: #475569;
+    font-size: 13px;
+    font-weight: 600;
+  ">
+    Quét mã để thanh toán
+  </div>
+
+  ${
+    taiKhoan.maQrThanhToan && qrBuffer
+      ? `
         <div style="
-          margin-bottom: 8px;
-          color: #475569;
-          font-size: 13px;
+          margin-top: 8px;
+          text-align: center;
         ">
-          Quét mã để thanh toán
+          <img
+            src="cid:qr-thanh-toan"
+            alt="QR thanh toán"
+            width="220"
+            style="
+              display: block;
+              width: 220px;
+              max-width: 100%;
+              height: auto;
+              margin: 0 auto;
+              border: 1px solid #e5e7eb;
+              border-radius: 8px;
+            "
+          />
         </div>
-
+      `
+      : `
         <div style="
           font-size: 12px;
           color: #94a3b8;
         ">
-          QR thanh toán là ảnh được đính kèm ở trong email này.
+          Chưa cập nhật mã QR thanh toán.
         </div>
+      `
+  }
 
-      </div>
-
-    </div>
-
+</div>
 
     <!-- FOOTER -->
 
@@ -1340,16 +1401,6 @@ export class HoaDonService {
 
   </div>
   `;
-
-    let qrBuffer: Buffer | undefined;
-
-    const qrPath = path.resolve(process.cwd(), 'assets', 'images', 'QR.png');
-
-    try {
-      qrBuffer = await fs.promises.readFile(qrPath);
-    } catch (error) {
-      console.warn(`Không tìm thấy QR: ${qrPath}`);
-    }
 
     await this.emailService.sendInvoiceEmail(
       [emailNguoiThue],

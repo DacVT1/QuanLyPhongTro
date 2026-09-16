@@ -5,8 +5,8 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { mkdir, writeFile } from 'fs/promises';
-import { extname, join } from 'path';
+import { mkdir, writeFile, readFile } from 'fs/promises';
+import { extname, join, resolve } from 'path';
 import { randomUUID } from 'crypto';
 
 import { TaiKhoan } from '../../entities/tai-khoan.entity';
@@ -54,6 +54,36 @@ export class HopDongPublicService {
     private readonly hopDongRepository: Repository<HopDong>,
   ) {}
 
+  private async readQrThanhToan(
+    maQrThanhToan?: string | null,
+  ): Promise<Buffer | null> {
+    if (!maQrThanhToan) {
+      console.warn('Tài khoản chưa cập nhật mã QR thanh toán.');
+      return null;
+    }
+
+    const normalizedPath = maQrThanhToan
+      .replace(/^\/+/, '')
+      .replace(/^uploads[\\/]/, '');
+
+    const storageDir =
+      process.env.STORAGE_DIR || resolve(process.cwd(), 'uploads');
+
+    const absolutePath = resolve(storageDir, normalizedPath);
+
+    try {
+      return await readFile(absolutePath);
+    } catch (error: any) {
+      if (error?.code === 'ENOENT') {
+        console.warn(`Không tìm thấy mã QR thanh toán: ${absolutePath}`);
+      } else {
+        console.error(`Không thể đọc mã QR thanh toán: ${absolutePath}`, error);
+      }
+
+      return null;
+    }
+  }
+
   async submitContract(
     body: any,
     files: {
@@ -65,6 +95,21 @@ export class HopDongPublicService {
     if (!body.email) {
       throw new BadRequestException('Email người thuê không được để trống.');
     }
+
+    const taiKhoan = await this.taiKhoanRepository.findOne({
+      where: {
+        email: this.publicEmail,
+      },
+    });
+
+    if (!taiKhoan) {
+      throw new NotFoundException(
+        'Không tìm thấy tài khoản cung cấp thông tin Bên A.',
+      );
+    }
+
+    const maQrThanhToan = await this.readQrThanhToan(taiKhoan.maQrThanhToan);
+
     const cccdMatTruoc = files?.cccdMatTruoc?.[0];
     const cccdMatSau = files?.cccdMatSau?.[0];
 
@@ -136,16 +181,29 @@ export class HopDongPublicService {
       // =========================
       // BÊN A
       // =========================
+      // benA: {
+      //   hoTen: 'Nguyễn Thị Chi',
+      //   cccd: '0909889908098',
+      //   ngayCap: '12/13/2026',
+      //   noiCap: 'Bộ công an',
+      //   sdt: '098989898',
+      //   nganHang: 'Viettin bank',
+      //   soTaiKhoan: '09453242344',
+      //   chuTaiKhoan: 'Nguyễn Thị Chi',
+      //   diaChi: 'Cầu Giấy',
+      // },
+
       benA: {
-        hoTen: 'Nguyễn Thị Chi',
-        cccd: '0909889908098',
-        ngayCap: '12/13/2026',
-        noiCap: 'Bộ công an',
-        sdt: '098989898',
-        nganHang: 'Viettin bank',
-        soTaiKhoan: '09453242344',
-        chuTaiKhoan: 'Nguyễn Thị Chi',
-        diaChi: 'Cầu Giấy',
+        hoTen: taiKhoan.hoTen ?? taiKhoan.tenHienThi ?? '',
+        cccd: taiKhoan.soCccd ?? '',
+        ngayCap: taiKhoan.ngayCap ? String(taiKhoan.ngayCap) : '',
+        noiCap: taiKhoan.noiCap ?? '',
+        sdt: taiKhoan.dienThoai ?? '',
+        nganHang: taiKhoan.nganHang ?? '',
+        soTaiKhoan: taiKhoan.soTaiKhoan ?? '',
+        chuTaiKhoan: taiKhoan.chuTaiKhoan ?? '',
+        diaChi: taiKhoan.diaChiThuongTru ?? '',
+        maQrThanhToan,
       },
 
       // =========================
@@ -299,6 +357,20 @@ export class HopDongPublicService {
     // 6. Trả dữ liệu public
     // ==========================================
     return {
+      taiKhoan: {
+        hoTen: taiKhoan.hoTen ?? taiKhoan.tenHienThi ?? '',
+        soCccd: taiKhoan.soCccd ?? '',
+        ngayCap: taiKhoan.ngayCap ? String(taiKhoan.ngayCap) : '',
+        noiCap: taiKhoan.noiCap ?? '',
+        diaChiThuongTru: taiKhoan.diaChiThuongTru ?? '',
+        email: taiKhoan.email ?? '',
+        dienThoai: taiKhoan.dienThoai ?? '',
+        nganHang: taiKhoan.nganHang ?? '',
+        soTaiKhoan: taiKhoan.soTaiKhoan ?? '',
+        chuTaiKhoan: taiKhoan.chuTaiKhoan ?? '',
+        maQrThanhToan: taiKhoan.maQrThanhToan ?? null,
+      },
+
       nhaTros,
       phongs,
       giuongs,
@@ -498,6 +570,20 @@ export class HopDongPublicService {
 
     const body = pending.contractData;
 
+    const taiKhoan = await this.taiKhoanRepository.findOne({
+      where: {
+        email: this.publicEmail,
+      },
+    });
+
+    if (!taiKhoan) {
+      throw new NotFoundException(
+        'Không tìm thấy tài khoản cung cấp thông tin Bên A.',
+      );
+    }
+
+    const maQrThanhToan = await this.readQrThanhToan(taiKhoan.maQrThanhToan);
+
     const phong = await this.phongRepository.findOne({
       where: {
         id: body.phongId,
@@ -578,16 +664,28 @@ export class HopDongPublicService {
       await this.giuongRepository.save(giuong);
     }
     const pdfBuffer = await this.pdfService.generate({
+      // benA: {
+      //   hoTen: 'Nguyễn Thị Chi',
+      //   cccd: '0909889908098',
+      //   ngayCap: '12/13/2026',
+      //   noiCap: 'Bộ công an',
+      //   sdt: '098989898',
+      //   nganHang: 'Viettin bank',
+      //   soTaiKhoan: '09453242344',
+      //   chuTaiKhoan: 'Nguyễn Thị Chi',
+      //   diaChi: 'Cầu Giấy',
+      // },
       benA: {
-        hoTen: 'Nguyễn Thị Chi',
-        cccd: '0909889908098',
-        ngayCap: '12/13/2026',
-        noiCap: 'Bộ công an',
-        sdt: '098989898',
-        nganHang: 'Viettin bank',
-        soTaiKhoan: '09453242344',
-        chuTaiKhoan: 'Nguyễn Thị Chi',
-        diaChi: 'Cầu Giấy',
+        hoTen: taiKhoan.hoTen ?? taiKhoan.tenHienThi ?? '',
+        cccd: taiKhoan.soCccd ?? '',
+        ngayCap: taiKhoan.ngayCap ? String(taiKhoan.ngayCap) : '',
+        noiCap: taiKhoan.noiCap ?? '',
+        sdt: taiKhoan.dienThoai ?? '',
+        nganHang: taiKhoan.nganHang ?? '',
+        soTaiKhoan: taiKhoan.soTaiKhoan ?? '',
+        chuTaiKhoan: taiKhoan.chuTaiKhoan ?? '',
+        diaChi: taiKhoan.diaChiThuongTru ?? '',
+        maQrThanhToan,
       },
 
       hoTen: body.hoTen,
