@@ -54,6 +54,36 @@ export class HopDongPublicService {
     private readonly hopDongRepository: Repository<HopDong>,
   ) {}
 
+  private async readQrThanhToan(
+    maQrThanhToan?: string | null,
+  ): Promise<Buffer | null> {
+    if (!maQrThanhToan) {
+      console.warn('Tài khoản chưa cập nhật mã QR thanh toán.');
+      return null;
+    }
+
+    const normalizedPath = maQrThanhToan
+      .replace(/^\/+/, '')
+      .replace(/^uploads[\\/]/, '');
+
+    const storageDir =
+      process.env.STORAGE_DIR || resolve(process.cwd(), 'uploads');
+
+    const absolutePath = resolve(storageDir, normalizedPath);
+
+    try {
+      return await readFile(absolutePath);
+    } catch (error: any) {
+      if (error?.code === 'ENOENT') {
+        console.warn(`Không tìm thấy mã QR thanh toán: ${absolutePath}`);
+      } else {
+        console.error(`Không thể đọc mã QR thanh toán: ${absolutePath}`, error);
+      }
+
+      return null;
+    }
+  }
+
   async submitContract(
     body: any,
     files: {
@@ -526,6 +556,20 @@ export class HopDongPublicService {
 
     const body = pending.contractData;
 
+    const taiKhoan = await this.taiKhoanRepository.findOne({
+      where: {
+        email: this.publicEmail,
+      },
+    });
+
+    if (!taiKhoan) {
+      throw new NotFoundException(
+        'Không tìm thấy tài khoản cung cấp thông tin Bên A.',
+      );
+    }
+
+    const maQrThanhToan = await this.readQrThanhToan(taiKhoan.maQrThanhToan);
+
     const phong = await this.phongRepository.findOne({
       where: {
         id: body.phongId,
@@ -886,36 +930,6 @@ export class HopDongPublicService {
       throw new BadRequestException(
         'Gmail này đã tồn tại trong danh sách người thuê. Vui lòng sử dụng Gmail khác.',
       );
-    }
-  }
-
-  private async readQrThanhToan(
-    maQrThanhToan?: string | null,
-  ): Promise<Buffer | null> {
-    if (!maQrThanhToan) {
-      console.warn('Tài khoản chưa cập nhật mã QR thanh toán.');
-      return null;
-    }
-
-    const normalizedPath = maQrThanhToan
-      .replace(/^\/+/, '')
-      .replace(/^uploads[\\/]/, '');
-
-    const storageDir =
-      process.env.STORAGE_DIR || resolve(process.cwd(), 'uploads');
-
-    const absolutePath = resolve(storageDir, normalizedPath);
-
-    try {
-      return await readFile(absolutePath);
-    } catch (error: any) {
-      if (error?.code === 'ENOENT') {
-        console.warn(`Không tìm thấy mã QR thanh toán: ${absolutePath}`);
-      } else {
-        console.error(`Không thể đọc mã QR thanh toán: ${absolutePath}`, error);
-      }
-
-      return null;
     }
   }
 }
