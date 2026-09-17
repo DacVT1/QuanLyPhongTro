@@ -3166,14 +3166,6 @@ onMounted(() => {
     :title="appNotificationTitle"
     :message="appNotificationMessage"
   />
-  <AppConfirmModal
-    v-model:show="showCreateInvoicesConfirm"
-    title="Xác nhận tạo hóa đơn"
-    :message="createInvoicesConfirmMessage"
-    confirm-text="Tạo hóa đơn"
-    cancel-text="Hủy"
-    @confirm="executeThemHoaDonChoCacGiuong"
-  />
   <Login
     v-if="authMode === 'login' && !isAuthenticated"
     @login-success="handleLogin"
@@ -3184,7 +3176,7 @@ onMounted(() => {
   <Register
     v-else-if="authMode === 'register'"
     @otp-required="handleOtpRequired"
-    @back="handleBackToLogin"
+    @login="authMode = 'login'"
   />
 
   <RegisterVerification
@@ -3197,14 +3189,14 @@ onMounted(() => {
   <ForgotPassword
     v-else-if="authMode === 'forgotPassword'"
     @otp-sent="handleForgotPasswordOtpSent"
-    @back="handleBackToLogin"
+    @back-to-login="handleBackToLogin"
   />
 
   <ForgotPasswordVerification
     v-else-if="authMode === 'forgotPasswordVerification'"
     :email="resetPasswordEmail"
     @verified="handleForgotPasswordVerified"
-    @back="handleBackToLogin"
+    @back="handleForgotPassword"
   />
 
   <ResetPassword
@@ -3212,7 +3204,7 @@ onMounted(() => {
     :email="resetPasswordEmail"
     :otp="resetPasswordOtp"
     @success="handleResetPasswordSuccess"
-    @back="handleBackToLogin"
+    @back-to-login="handleBackToLogin"
   />
 
   <div
