@@ -41,7 +41,12 @@ api.interceptors.response.use(
   (error) => {
     const status = error?.response?.status;
 
-    if (status === 401 && !isHandlingUnauthorized) {
+    const requestUrl = error?.config?.url || "";
+
+    const isLoginRequest =
+      requestUrl === "/auth/login" || requestUrl.endsWith("/auth/login");
+
+    if (status === 401 && !isLoginRequest && !isHandlingUnauthorized) {
       isHandlingUnauthorized = true;
 
       console.warn(
