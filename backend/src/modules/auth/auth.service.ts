@@ -14,10 +14,12 @@ import { TaiKhoan } from '../../entities/tai-khoan.entity';
 import { Tenant } from '../../entities/tenant.entity';
 import { GoiDichVu } from '../../entities/goi-dich-vu.entity';
 import { Subscription } from '../../entities/subscription.entity';
-
+import { PasswordResetOtp } from '../../entities/password-reset-otp.entity';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { VerifyRegisterDto } from './dto/verify-register.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 
 @Injectable()
 export class AuthService {
@@ -33,6 +35,9 @@ export class AuthService {
 
     @InjectRepository(Subscription)
     private readonly subscriptionRepository: Repository<Subscription>,
+
+    @InjectRepository(PasswordResetOtp)
+    private readonly passwordResetOtpRepository: Repository<PasswordResetOtp>,
 
     private readonly jwtService: JwtService,
   ) {}
@@ -465,6 +470,306 @@ export class AuthService {
         email: taiKhoan.email,
         role: taiKhoan.role,
       },
+    };
+  }
+
+  /**
+   * Gửi OTP lấy lại mật khẩu.
+   */
+  async forgotPassword(dto: ForgotPasswordDto) {
+    const email = dto.email.trim().toLowerCase();
+
+    const taiKhoan = await this.taiKhoanRepository.findOne({
+      where: {
+        username: email,
+      },
+    });
+
+    /*
+     * Không tiết lộ email có tồn tại hay không.
+     *
+     * Người dùng luôn nhận cùng một thông báo.
+     */
+    if (!taiKhoan) {
+      return {
+        message:
+          'Nếu email tồn tại trong hệ thống, mã xác thực sẽ được gửi về email.',
+      };
+    }
+
+    /*
+     * Xóa các OTP cũ chưa sử dụng của email này.
+     */
+    await this.passwordResetOtpRepository.delete({
+      email,
+      used: false,
+    });
+
+    /*
+     * Sinh OTP 6 số.
+     */
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    /*
+     * OTP có hiệu lực 5 phút.
+     */
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+
+    const resetOtp = this.passwordResetOtpRepository.create({
+      email,
+      otp,
+      expiresAt,
+      used: false,
+    });
+
+    await this.passwordResetOtpRepository.save(resetOtp);
+
+    try {
+      await this.sendForgotPasswordOtpEmail(email, otp);
+    } catch (error) {
+      /*
+       * Nếu gửi email thất bại thì xóa OTP.
+       */
+      await this.passwordResetOtpRepository.delete({
+        id: resetOtp.id,
+      });
+
+      console.error('Gửi email OTP lấy lại mật khẩu thất bại:', error);
+
+      throw new InternalServerErrorException(
+        'Không thể gửi mã xác thực về email. Vui lòng kiểm tra cấu hình email.',
+      );
+    }
+
+    return {
+      message: 'Mã xác thực đã được gửi về email.',
+    };
+  }
+
+  /**
+   * Gửi OTP lấy lại mật khẩu qua Resend.
+   */
+  private async sendForgotPasswordOtpEmail(email: string, otp: string) {
+    const apiKey = process.env.RESEND_API_KEY;
+
+    const mailFrom = process.env.MAIL_FROM;
+
+    if (!apiKey) {
+      throw new Error('Thiếu biến môi trường RESEND_API_KEY');
+    }
+
+    if (!mailFrom) {
+      throw new Error('Thiếu biến môi trường MAIL_FROM');
+    }
+
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+
+      body: JSON.stringify({
+        from: mailFrom,
+
+        to: [email],
+
+        subject: 'Mã xác thực lấy lại mật khẩu - Quản lý phòng trọ',
+
+        html: `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="UTF-8" />
+
+            <title>Lấy lại mật khẩu</title>
+          </head>
+
+          <body
+            style="
+              margin: 0;
+              padding: 0;
+              background: #f1f5f9;
+              font-family: Arial, sans-serif;
+            "
+          >
+            <div
+              style="
+                max-width: 600px;
+                margin: 30px auto;
+                background: #ffffff;
+                padding: 30px;
+                border-radius: 12px;
+              "
+            >
+              <h2
+                style="
+                  text-align: center;
+                  margin-bottom: 20px;
+                "
+              >
+                Lấy lại mật khẩu
+              </h2>
+
+              <p>
+                Xin chào,
+              </p>
+
+              <p>
+                Bạn vừa yêu cầu lấy lại mật khẩu
+                cho tài khoản Quản lý phòng trọ.
+              </p>
+
+              <p>
+                Mã xác thực của bạn là:
+              </p>
+
+              <div
+                style="
+                  text-align: center;
+                  margin: 25px 0;
+                "
+              >
+                <span
+                  style="
+                    display: inline-block;
+                    padding: 15px 25px;
+                    background: #f1f5f9;
+                    border-radius: 10px;
+                    font-size: 32px;
+                    font-weight: bold;
+                    letter-spacing: 8px;
+                  "
+                >
+                  ${otp}
+                </span>
+              </div>
+
+              <p>
+                Mã xác thực có hiệu lực trong
+                <strong>5 phút</strong>.
+              </p>
+
+              <p>
+                Không cung cấp mã xác thực này cho người khác.
+              </p>
+
+              <p>
+                Nếu bạn không thực hiện yêu cầu lấy lại mật khẩu,
+                vui lòng bỏ qua email này.
+              </p>
+
+              <hr />
+
+              <p
+                style="
+                  color: #64748b;
+                  font-size: 13px;
+                  text-align: center;
+                "
+              >
+                Quản lý phòng trọ
+              </p>
+            </div>
+          </body>
+        </html>
+      `,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+
+      console.error('========== RESEND RESET PASSWORD ERROR ==========');
+
+      console.error('Status:', response.status);
+      console.error('Response:', errorText);
+      console.error('Email:', email);
+      console.error('MAIL_FROM:', mailFrom);
+
+      console.error('=================================================');
+
+      throw new Error(`Resend API error: ${response.status} ${errorText}`);
+    }
+  }
+
+  /**
+   * Xác nhận OTP và đổi mật khẩu.
+   */
+  async resetPassword(dto: ResetPasswordDto) {
+    const email = dto.email.trim().toLowerCase();
+
+    const otp = dto.otp.trim();
+
+    /*
+     * Tìm OTP mới nhất chưa sử dụng.
+     */
+    const resetOtp = await this.passwordResetOtpRepository.findOne({
+      where: {
+        email,
+        otp,
+        used: false,
+      },
+      order: {
+        createdAt: 'DESC',
+      },
+    });
+
+    if (!resetOtp) {
+      throw new BadRequestException('Mã xác thực không đúng hoặc đã hết hạn.');
+    }
+
+    /*
+     * Kiểm tra thời gian hết hạn.
+     */
+    if (new Date() > resetOtp.expiresAt) {
+      resetOtp.used = true;
+
+      await this.passwordResetOtpRepository.save(resetOtp);
+
+      throw new BadRequestException(
+        'Mã xác thực đã hết hạn. Vui lòng yêu cầu mã mới.',
+      );
+    }
+
+    /*
+     * Tìm tài khoản.
+     */
+    const taiKhoan = await this.taiKhoanRepository.findOne({
+      where: {
+        username: email,
+      },
+    });
+
+    if (!taiKhoan) {
+      throw new BadRequestException('Không tìm thấy tài khoản.');
+    }
+
+    /*
+     * Hash mật khẩu mới.
+     */
+    taiKhoan.passwordHash = await bcrypt.hash(dto.newPassword, 10);
+
+    await this.taiKhoanRepository.save(taiKhoan);
+
+    /*
+     * Đánh dấu OTP đã sử dụng.
+     */
+    resetOtp.used = true;
+
+    await this.passwordResetOtpRepository.save(resetOtp);
+
+    /*
+     * Xóa các OTP cũ khác của email.
+     */
+    await this.passwordResetOtpRepository.delete({
+      email,
+      used: false,
+    });
+
+    return {
+      message: 'Đổi mật khẩu thành công. Vui lòng đăng nhập bằng mật khẩu mới.',
     };
   }
 }

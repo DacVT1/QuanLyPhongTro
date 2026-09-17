@@ -18,6 +18,9 @@ import AppConfirmModal from "./components/common/AppConfirmModal.vue";
 import HopDongPdfViewer from "./components/hop-dong/HopDongPdfViewer.vue";
 import HoaDonDetail from "./components/hoa-don/HoaDonDetail.vue";
 import AccountProfile from "./components/tai-khoan/AccountProfile.vue";
+import ForgotPassword from "./components/auth/ForgotPassword.vue";
+import ResetPassword from "./components/auth/ResetPassword.vue";
+import ForgotPasswordVerification from "./components/auth/ForgotPasswordVerification.vue";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 const cccdMatTruocPreviewUrl = ref("");
@@ -45,9 +48,18 @@ const currentTab = ref("dashboard");
 const isMenuOpen = ref(false);
 const soDienThoaiError = ref("");
 
-const authMode = ref<"login" | "register" | "registerVerification">("login");
+const authMode = ref<
+  | "login"
+  | "register"
+  | "registerVerification"
+  | "forgotPassword"
+  | "forgotPasswordVerification"
+  | "resetPassword"
+>("login");
 
 const registerIdentifier = ref("");
+const resetPasswordEmail = ref("");
+const resetPasswordOtp = ref("");
 const phongSearchKeyword = ref("");
 const accessToken = ref(localStorage.getItem("accessToken"));
 
@@ -185,6 +197,39 @@ function handleRegisterVerified() {
 
 function handleBackToRegister() {
   authMode.value = "register";
+}
+
+function handleForgotPassword() {
+  resetPasswordEmail.value = "";
+  resetPasswordOtp.value = "";
+
+  authMode.value = "forgotPassword";
+}
+
+function handleForgotPasswordOtpSent(email: string) {
+  resetPasswordEmail.value = email;
+
+  authMode.value = "forgotPasswordVerification";
+}
+
+function handleForgotPasswordVerified(otp: string) {
+  resetPasswordOtp.value = otp;
+
+  authMode.value = "resetPassword";
+}
+
+function handleResetPasswordSuccess() {
+  resetPasswordEmail.value = "";
+  resetPasswordOtp.value = "";
+
+  authMode.value = "login";
+}
+
+function handleBackToLogin() {
+  resetPasswordEmail.value = "";
+  resetPasswordOtp.value = "";
+
+  authMode.value = "login";
 }
 
 const tienDienDisplay = ref("0");
@@ -3066,22 +3111,44 @@ onMounted(() => {
     @confirm="executeThemHoaDonChoCacGiuong"
   />
   <Login
-    v-if="!isAuthenticated && authMode === 'login'"
+    v-if="authMode === 'login'"
     @login-success="handleLogin"
     @register="authMode = 'register'"
+    @forgot-password="handleForgotPassword"
   />
 
   <Register
-    v-else-if="!isAuthenticated && authMode === 'register'"
-    @login="authMode = 'login'"
+    v-else-if="authMode === 'register'"
     @otp-required="handleOtpRequired"
+    @back="handleBackToLogin"
   />
 
   <RegisterVerification
-    v-else-if="!isAuthenticated && authMode === 'registerVerification'"
+    v-else-if="authMode === 'registerVerification'"
     :identifier="registerIdentifier"
     @verified="handleRegisterVerified"
     @back="handleBackToRegister"
+  />
+
+  <ForgotPassword
+    v-else-if="authMode === 'forgotPassword'"
+    @otp-sent="handleForgotPasswordOtpSent"
+    @back="handleBackToLogin"
+  />
+
+  <ForgotPasswordVerification
+    v-else-if="authMode === 'forgotPasswordVerification'"
+    :email="resetPasswordEmail"
+    @verified="handleForgotPasswordVerified"
+    @back="handleBackToLogin"
+  />
+
+  <ResetPassword
+    v-else-if="authMode === 'resetPassword'"
+    :email="resetPasswordEmail"
+    :otp="resetPasswordOtp"
+    @success="handleResetPasswordSuccess"
+    @back="handleBackToLogin"
   />
 
   <div

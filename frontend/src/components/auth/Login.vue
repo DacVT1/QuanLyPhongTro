@@ -11,6 +11,7 @@ const loading = ref(false);
 const emit = defineEmits<{
   loginSuccess: [data: any];
   register: [];
+  forgotPassword: [];
 }>();
 
 async function login() {
@@ -77,7 +78,11 @@ async function login() {
       <button class="auth-button" :disabled="loading" @click="login">
         {{ loading ? "Đang đăng nhập..." : "Đăng nhập" }}
       </button>
-
+      <div class="auth-forgot-password">
+        <button type="button" @click="emit('forgotPassword')">
+          Quên mật khẩu?
+        </button>
+      </div>
       <div class="auth-register">
         Chưa có tài khoản?
 
@@ -243,5 +248,19 @@ async function login() {
     max-width: 100%;
     box-sizing: border-box;
   }
+}
+
+.auth-forgot-password {
+  margin-top: 14px;
+  text-align: center;
+}
+
+.auth-forgot-password button {
+  border: none;
+  background: none;
+
+  cursor: pointer;
+
+  font-weight: 600;
 }
 </style>
