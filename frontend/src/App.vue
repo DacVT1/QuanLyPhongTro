@@ -3175,7 +3175,7 @@ onMounted(() => {
     @confirm="executeThemHoaDonChoCacGiuong"
   />
   <Login
-    v-if="authMode === 'login'"
+    v-if="authMode === 'login' && !isAuthenticated"
     @login-success="handleLogin"
     @register="authMode = 'register'"
     @forgot-password="handleForgotPassword"
