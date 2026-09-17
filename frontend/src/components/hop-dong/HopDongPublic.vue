@@ -1235,11 +1235,11 @@ onMounted(() => {
                   <option value="">-- Chọn phòng --</option>
 
                   <option
-                    v-for="(item, index) in phongOptions"
-                    :key="item.id"
-                    :value="item.id"
+                    v-for="phong in phongOptions"
+                    :key="phong.id"
+                    :value="phong.id"
                   >
-                    Phòng {{ index + 1 }}
+                    {{ phong.maPhong }}
                   </option>
                 </select>
               </div>
