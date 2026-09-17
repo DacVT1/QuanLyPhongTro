@@ -276,25 +276,59 @@ function formatMoney(value: number | string | null | undefined) {
     return "";
   }
 
-  const numberValue = Number(String(value).replace(/[^\d]/g, ""));
+  const numberValue = Number(value);
 
-  if (Number.isNaN(numberValue)) {
+  if (!Number.isFinite(numberValue)) {
     return "";
   }
 
   return numberValue.toLocaleString("en-US");
 }
 
+function normalizeTienDatCoc(value: string): number | null {
+  const trimmed = value.trim();
+
+  // Để trống => 0
+  if (trimmed === "") {
+    return 0;
+  }
+
+  // Cho phép số nguyên không âm, có thể có dấu . phân cách hàng nghìn
+  // Ví dụ:
+  // 5000
+  // 5.000
+  // 1.000.000
+  // 1000000
+  if (!/^\d+(?:\.\d{3})*$/.test(trimmed) && !/^\d+$/.test(trimmed)) {
+    return null;
+  }
+
+  // Bỏ dấu chấm phân cách hàng nghìn
+  const rawValue = trimmed.replace(/\./g, "");
+
+  const numberValue = Number(rawValue);
+
+  if (!Number.isSafeInteger(numberValue) || numberValue < 0) {
+    return null;
+  }
+
+  return numberValue;
+}
+
 function handleTienDatCocInput(event: Event) {
   const input = event.target as HTMLInputElement;
 
-  const rawValue = input.value.replace(/\D/g, "");
+  const value = input.value;
 
-  form.value.tienDatCoc = Number(rawValue || 0);
+  // Cho phép người dùng nhập tạm thời.
+  // Validation chính sẽ thực hiện khi bấm tiếp tục.
+  tienDatCocDisplay.value = value;
 
-  tienDatCocDisplay.value = rawValue
-    ? Number(rawValue).toLocaleString("en-US")
-    : "";
+  const normalized = normalizeTienDatCoc(value);
+
+  if (normalized !== null) {
+    form.value.tienDatCoc = normalized;
+  }
 }
 
 /* =========================================================
@@ -545,10 +579,17 @@ function validateForm() {
     return false;
   }
 
-  if (form.value.tienDatCoc < 0) {
-    errorMessage.value = "Tiền đặt cọc không hợp lệ.";
+  const tienDatCocInput = tienDatCocDisplay.value.trim();
+
+  const tienDatCoc = normalizeTienDatCoc(tienDatCocInput);
+
+  if (tienDatCoc === null) {
+    errorMessage.value =
+      "Tiền đặt cọc phải là số nguyên không âm. Ví dụ: 5000 hoặc 1.000.000.";
     return false;
   }
+
+  form.value.tienDatCoc = tienDatCoc;
 
   if (!form.value.ngayBatDau) {
     errorMessage.value = "Vui lòng chọn ngày bắt đầu.";
@@ -1194,11 +1235,16 @@ onMounted(() => {
                   <option value="">-- Chọn phòng --</option>
 
                   <option
-                    v-for="(item, index) in phongOptions"
+                    v-for="item in phongOptions"
                     :key="item.id"
                     :value="item.id"
                   >
-                    Phòng {{ index + 1 }}
+                    Phòng
+                    {{
+                      item.maPhong
+                        ?.match(/_T\d+(\d{2})$/)?.[1]
+                        ?.replace(/^0+/, "") || ""
+                    }}
                   </option>
                 </select>
               </div>
@@ -1256,11 +1302,11 @@ onMounted(() => {
 
                 <div class="money-input">
                   <input
-                    :value="tienDatCocDisplay"
                     type="text"
-                    inputmode="numeric"
-                    placeholder="Nhập tiền đặt cọc"
+                    :value="tienDatCocDisplay"
                     @input="handleTienDatCocInput"
+                    inputmode="decimal"
+                    autocomplete="off"
                   />
 
                   <span>đồng</span>
