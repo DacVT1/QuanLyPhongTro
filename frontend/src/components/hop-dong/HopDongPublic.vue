@@ -1235,11 +1235,16 @@ onMounted(() => {
                   <option value="">-- Chọn phòng --</option>
 
                   <option
-                    v-for="phong in phongOptions"
-                    :key="phong.id"
-                    :value="phong.id"
+                    v-for="item in phongOptions"
+                    :key="item.id"
+                    :value="item.id"
                   >
-                    {{ phong.maPhong }}
+                    Phòng
+                    {{
+                      item.maPhong
+                        ?.match(/_T\d+(\d{2})$/)?.[1]
+                        ?.replace(/^0+/, "") || ""
+                    }}
                   </option>
                 </select>
               </div>
