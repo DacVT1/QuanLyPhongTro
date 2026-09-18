@@ -485,16 +485,11 @@ export class AuthService {
       },
     });
 
-    /*
-     * Không tiết lộ email có tồn tại hay không.
-     *
-     * Người dùng luôn nhận cùng một thông báo.
-     */
+    // Kiểm tra email có tồn tại trong hệ thống hay không.
     if (!taiKhoan) {
-      return {
-        message:
-          'Nếu email tồn tại trong hệ thống, mã xác thực sẽ được gửi về email.',
-      };
+      throw new BadRequestException(
+        'Email chưa tồn tại trong hệ thống. Vui lòng kiểm tra lại email.',
+      );
     }
 
     /*
@@ -527,9 +522,6 @@ export class AuthService {
     try {
       await this.sendForgotPasswordOtpEmail(email, otp);
     } catch (error) {
-      /*
-       * Nếu gửi email thất bại thì xóa OTP.
-       */
       await this.passwordResetOtpRepository.delete({
         id: resetOtp.id,
       });
