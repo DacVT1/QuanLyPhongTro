@@ -9,10 +9,17 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { Tenant } from '../../entities/tenant.entity';
 import { GoiDichVu } from 'src/entities/goi-dich-vu.entity';
 import { Subscription } from 'src/entities/subscription.entity';
+import { PasswordResetOtp } from '../../entities/password-reset-otp.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([TaiKhoan, Tenant, GoiDichVu, Subscription]),
+    TypeOrmModule.forFeature([
+      TaiKhoan,
+      Tenant,
+      GoiDichVu,
+      Subscription,
+      PasswordResetOtp,
+    ]),
 
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'quan-ly-phong-tro-secret-key',

@@ -242,7 +242,7 @@ export class HopDongPublicPdfService {
 
       addLabelValue('CCCD số', data.benA.cccd);
 
-      addLabelValue('Ngày cấp', data.benA.ngayCap);
+      addLabelValue('Ngày cấp', formatDate(data.benA.ngayCap));
 
       addLabelValue('Nơi cấp', data.benA.noiCap);
 
@@ -302,6 +302,24 @@ export class HopDongPublicPdfService {
       // BÊN B
       // =====================================================
 
+      addSectionTitle('BÊN THUÊ (BÊN B)');
+
+      addLabelValue('Họ và tên', data.hoTen);
+
+      addLabelValue('CCCD số', data.cccd);
+
+      addLabelValue('Ngày sinh', formatDate(data.ngaySinh));
+
+      addLabelValue('Điện thoại', data.sdt);
+
+      addLabelValue('Email', data.email);
+
+      addLabelValue('Địa chỉ', data.diaChi);
+
+      addLabelValue('Biển số xe', data.bienSoXe);
+
+      doc.moveDown(0.5);
+
       // =====================================================
       // CCCD BÊN B
       // =====================================================
@@ -349,8 +367,6 @@ export class HopDongPublicPdfService {
         doc.addPage();
 
         doc.font('Vietnamese').fontSize(11).fillColor('#000000');
-
-        addSectionTitle('ẢNH CCCD BÊN THUÊ');
       }
 
       // =====================================================
@@ -452,12 +468,20 @@ export class HopDongPublicPdfService {
 
       addLabelValue('Tầng số', data.tangSo);
 
-      const phongSo =
-        String(data.maPhong ?? '')
-          .split('_T')
-          .pop() || data.maPhong;
+      const maPhong = String(data.maPhong ?? '').trim();
 
-      addLabelValue('Phòng số', phongSo);
+      let phongSo = maPhong;
+
+      // Nếu mã phòng là dạng số có từ 3 chữ số,
+      // lấy 2 chữ số cuối làm số phòng.
+      if (/^\d{3,}$/.test(maPhong)) {
+        phongSo = maPhong.slice(-2).replace(/^0+/, '') || '0';
+      }
+
+      addLabelValue(
+        'Phòng số',
+        phongSo?.match(/_T\d+(\d{2})$/)?.[1]?.replace(/^0+/, '') || '',
+      );
 
       addLabelValue('Giường số', data.giuongSo);
 

@@ -659,7 +659,22 @@ export class HopDongPublicService {
         throw new BadRequestException('Không thể tạo hợp đồng.');
       }
 
+      // ==========================================
+      // CẬP NHẬT TRẠNG THÁI GIƯỜNG
+      // ==========================================
       giuong.trangThai = 'da_thue';
+
+      // ==========================================
+      // CẬP NHẬT CỌC SỚM
+      // ==========================================
+      // Tiền đặt cọc > 0
+      // => Cọc sớm = true
+      //
+      // Tiền đặt cọc = 0
+      // => Cọc sớm = false
+      const tienDatCoc = Number(body.tienDatCoc ?? 0);
+
+      giuong.datCocSom = tienDatCoc > 0;
 
       await this.giuongRepository.save(giuong);
     }

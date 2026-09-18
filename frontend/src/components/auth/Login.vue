@@ -11,12 +11,17 @@ const loading = ref(false);
 const emit = defineEmits<{
   loginSuccess: [data: any];
   register: [];
+  forgotPassword: [];
 }>();
 
 async function login() {
+  if (loading.value) {
+    return;
+  }
+
   errorMessage.value = "";
 
-  if (!username.value || !password.value) {
+  if (!username.value.trim() || !password.value) {
     errorMessage.value = "Vui lòng nhập đầy đủ thông tin";
     return;
   }
@@ -25,9 +30,14 @@ async function login() {
     loading.value = true;
 
     const response = await api.post("/auth/login", {
-      username: username.value,
+      username: username.value.trim(),
       password: password.value,
     });
+
+    console.log("========== LOGIN SUCCESS ==========");
+    console.log("Status:", response.status);
+    console.log("User:", response.data.user);
+    console.log("===================================");
 
     localStorage.setItem("accessToken", response.data.accessToken);
 
@@ -35,7 +45,12 @@ async function login() {
 
     emit("loginSuccess", response.data);
   } catch (error: any) {
-    errorMessage.value = error.response?.data?.message || "Đăng nhập thất bại";
+    console.error("========== LOGIN ERROR ==========");
+    console.error("Status:", error?.response?.status);
+    console.error("Response:", error?.response?.data);
+    console.error("=================================");
+
+    errorMessage.value = error?.response?.data?.message || "Đăng nhập thất bại";
   } finally {
     loading.value = false;
   }
@@ -52,13 +67,13 @@ async function login() {
       </div>
 
       <div class="form-group">
-        <label>Số điện thoại hoặc email</label>
+        <label>Email</label>
 
         <input
           v-model="username"
           type="text"
           autocomplete="username"
-          placeholder="Nhập số điện thoại hoặc email"
+          placeholder="Nhập email"
         />
       </div>
 
@@ -77,7 +92,11 @@ async function login() {
       <button class="auth-button" :disabled="loading" @click="login">
         {{ loading ? "Đang đăng nhập..." : "Đăng nhập" }}
       </button>
-
+      <div class="auth-forgot-password">
+        <button type="button" @click="emit('forgotPassword')">
+          Quên mật khẩu?
+        </button>
+      </div>
       <div class="auth-register">
         Chưa có tài khoản?
 
@@ -243,5 +262,19 @@ async function login() {
     max-width: 100%;
     box-sizing: border-box;
   }
+}
+
+.auth-forgot-password {
+  margin-top: 14px;
+  text-align: center;
+}
+
+.auth-forgot-password button {
+  border: none;
+  background: none;
+
+  cursor: pointer;
+
+  font-weight: 600;
 }
 </style>

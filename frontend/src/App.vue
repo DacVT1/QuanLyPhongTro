@@ -18,6 +18,9 @@ import AppConfirmModal from "./components/common/AppConfirmModal.vue";
 import HopDongPdfViewer from "./components/hop-dong/HopDongPdfViewer.vue";
 import HoaDonDetail from "./components/hoa-don/HoaDonDetail.vue";
 import AccountProfile from "./components/tai-khoan/AccountProfile.vue";
+import ForgotPassword from "./components/auth/ForgotPassword.vue";
+import ResetPassword from "./components/auth/ResetPassword.vue";
+import ForgotPasswordVerification from "./components/auth/ForgotPasswordVerification.vue";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 const cccdMatTruocPreviewUrl = ref("");
@@ -45,9 +48,18 @@ const currentTab = ref("dashboard");
 const isMenuOpen = ref(false);
 const soDienThoaiError = ref("");
 
-const authMode = ref<"login" | "register" | "registerVerification">("login");
+const authMode = ref<
+  | "login"
+  | "register"
+  | "registerVerification"
+  | "forgotPassword"
+  | "forgotPasswordVerification"
+  | "resetPassword"
+>("login");
 
 const registerIdentifier = ref("");
+const resetPasswordEmail = ref("");
+const resetPasswordOtp = ref("");
 const phongSearchKeyword = ref("");
 const accessToken = ref(localStorage.getItem("accessToken"));
 
@@ -185,6 +197,39 @@ function handleRegisterVerified() {
 
 function handleBackToRegister() {
   authMode.value = "register";
+}
+
+function handleForgotPassword() {
+  resetPasswordEmail.value = "";
+  resetPasswordOtp.value = "";
+
+  authMode.value = "forgotPassword";
+}
+
+function handleForgotPasswordOtpSent(email: string) {
+  resetPasswordEmail.value = email;
+
+  authMode.value = "forgotPasswordVerification";
+}
+
+function handleForgotPasswordVerified(otp: string) {
+  resetPasswordOtp.value = otp;
+
+  authMode.value = "resetPassword";
+}
+
+function handleResetPasswordSuccess() {
+  resetPasswordEmail.value = "";
+  resetPasswordOtp.value = "";
+
+  authMode.value = "login";
+}
+
+function handleBackToLogin() {
+  resetPasswordEmail.value = "";
+  resetPasswordOtp.value = "";
+
+  authMode.value = "login";
 }
 
 const tienDienDisplay = ref("0");
@@ -1685,35 +1730,99 @@ function getNguoiThueGiuongStatus(nguoiThueId: string | number) {
 }
 
 async function loadData() {
-  try {
-    const [
-      nhaTroResponse,
-      phongResponse,
-      giuongResponse,
-      nguoiThueResponse,
-      hopDongResponse,
-      hoaDonResponse,
-      dashboardResponse,
-    ] = await Promise.all([
-      api.get("/nha-tro"),
-      api.get("/phong"),
-      api.get("/giuong"),
-      api.get("/nguoi-thue"),
-      api.get("/hop-dong"),
-      api.get("/hoa-don"),
-      api.get("/dashboard/summary"),
-    ]);
+  console.log("======================================");
+  console.log("BẮT ĐẦU LOAD DATA SAU KHI ĐĂNG NHẬP");
+  console.log("======================================");
 
-    nhaTros.value = nhaTroResponse.data;
-    phongs.value = phongResponse.data;
-    giuongs.value = giuongResponse.data;
-    nguoiThues.value = nguoiThueResponse.data;
-    hopDongs.value = hopDongResponse.data;
-    hoaDons.value = hoaDonResponse.data;
-    summary.value = dashboardResponse.data;
-  } catch (error) {
-    console.error("Không thể nạp dữ liệu:", error);
+  const requests = [
+    {
+      name: "nha-tro",
+      request: () => api.get("/nha-tro"),
+      success: (data: any) => {
+        nhaTros.value = data;
+      },
+    },
+
+    {
+      name: "phong",
+      request: () => api.get("/phong"),
+      success: (data: any) => {
+        phongs.value = data;
+      },
+    },
+
+    {
+      name: "giuong",
+      request: () => api.get("/giuong"),
+      success: (data: any) => {
+        giuongs.value = data;
+      },
+    },
+
+    {
+      name: "nguoi-thue",
+      request: () => api.get("/nguoi-thue"),
+      success: (data: any) => {
+        nguoiThues.value = data;
+      },
+    },
+
+    {
+      name: "hop-dong",
+      request: () => api.get("/hop-dong"),
+      success: (data: any) => {
+        hopDongs.value = data;
+      },
+    },
+
+    {
+      name: "hoa-don",
+      request: () => api.get("/hoa-don"),
+      success: (data: any) => {
+        hoaDons.value = data;
+      },
+    },
+
+    {
+      name: "dashboard/summary",
+      request: () => api.get("/dashboard/summary"),
+      success: (data: any) => {
+        summary.value = data;
+      },
+    },
+  ];
+
+  for (const item of requests) {
+    try {
+      console.log(`→ ĐANG GỌI GET /${item.name}`);
+
+      const response = await item.request();
+
+      console.log(`✓ GET /${item.name} THÀNH CÔNG`);
+      console.log("Status:", response.status);
+
+      item.success(response.data);
+    } catch (error: any) {
+      console.error(`✗ GET /${item.name} THẤT BẠI`);
+
+      console.error({
+        status: error?.response?.status,
+        data: error?.response?.data,
+        message: error?.message,
+      });
+
+      /*
+       * Không throw tiếp.
+       *
+       * Một API lỗi không được làm toàn bộ
+       * quá trình đăng nhập thất bại.
+       */
+    }
   }
+
+  console.log("======================================");
+  console.log("KẾT THÚC LOAD DATA");
+  console.log("======================================");
 }
 
 function resetNhaTroForm() {
@@ -3057,31 +3166,45 @@ onMounted(() => {
     :title="appNotificationTitle"
     :message="appNotificationMessage"
   />
-  <AppConfirmModal
-    v-model:show="showCreateInvoicesConfirm"
-    title="Xác nhận tạo hóa đơn"
-    :message="createInvoicesConfirmMessage"
-    confirm-text="Tạo hóa đơn"
-    cancel-text="Hủy"
-    @confirm="executeThemHoaDonChoCacGiuong"
-  />
   <Login
-    v-if="!isAuthenticated && authMode === 'login'"
+    v-if="authMode === 'login' && !isAuthenticated"
     @login-success="handleLogin"
     @register="authMode = 'register'"
+    @forgot-password="handleForgotPassword"
   />
 
   <Register
-    v-else-if="!isAuthenticated && authMode === 'register'"
-    @login="authMode = 'login'"
+    v-else-if="authMode === 'register'"
     @otp-required="handleOtpRequired"
+    @login="authMode = 'login'"
   />
 
   <RegisterVerification
-    v-else-if="!isAuthenticated && authMode === 'registerVerification'"
+    v-else-if="authMode === 'registerVerification'"
     :identifier="registerIdentifier"
     @verified="handleRegisterVerified"
     @back="handleBackToRegister"
+  />
+
+  <ForgotPassword
+    v-else-if="authMode === 'forgotPassword'"
+    @otp-sent="handleForgotPasswordOtpSent"
+    @back-to-login="handleBackToLogin"
+  />
+
+  <ForgotPasswordVerification
+    v-else-if="authMode === 'forgotPasswordVerification'"
+    :email="resetPasswordEmail"
+    @verified="handleForgotPasswordVerified"
+    @back="handleForgotPassword"
+  />
+
+  <ResetPassword
+    v-else-if="authMode === 'resetPassword'"
+    :email="resetPasswordEmail"
+    :otp="resetPasswordOtp"
+    @success="handleResetPasswordSuccess"
+    @back-to-login="handleBackToLogin"
   />
 
   <div
