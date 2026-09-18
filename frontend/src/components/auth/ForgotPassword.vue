@@ -8,7 +8,7 @@ const loading = ref(false);
 
 const emit = defineEmits<{
   otpSent: [email: string];
-  back: [];
+  backToLogin: [];
 }>();
 
 async function sendOtp() {
@@ -68,7 +68,9 @@ async function sendOtp() {
       </button>
 
       <div class="auth-register">
-        <button type="button" @click="emit('back')">Quay lại đăng nhập</button>
+        <button type="button" @click="emit('backToLogin')">
+          Quay lại đăng nhập
+        </button>
       </div>
     </div>
   </div>
