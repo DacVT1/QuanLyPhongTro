@@ -465,10 +465,7 @@ function formatMonthForDisplay(value: string) {
   return `${match[2]}/${match[1]}`;
 }
 
-async function handleThemHoaDonChoCacGiuong() {
-  /*
-   * Kiểm tra tháng thanh toán
-   */
+function handleThemHoaDonChoCacGiuong() {
   const thangThanhToan = hoaDonForm.value.thangThanhToan;
 
   if (!thangThanhToan) {
@@ -480,79 +477,11 @@ async function handleThemHoaDonChoCacGiuong() {
 
   hoaDonThangThanhToanError.value = "";
 
-  /*
-   * Xác nhận trước khi tạo hàng loạt.
-   */
-  createInvoicesConfirmMessage.value = `Bạn có chắc muốn tạo hóa đơn cho các giường đang có người thuê trong tháng ${formatMonthForDisplay(
-    thangThanhToan,
-  )} không?`;
+  createInvoicesConfirmMessage.value =
+    `Bạn có chắc muốn tạo hóa đơn cho các giường đang có người thuê ` +
+    `trong tháng ${formatMonthForDisplay(thangThanhToan)} không?`;
 
   showCreateInvoicesConfirm.value = true;
-
-  return;
-
-  try {
-    /*
-     * Đảm bảo ngày gửi backend là ngày đầu tháng.
-     *
-     * input type="month":
-     * 2026-08
-     *
-     * API:
-     * 2026-08-01
-     */
-    const requestMonth = `${thangThanhToan}-01`;
-
-    const response = await api.post("/hoa-don/tao-cho-cac-giuong", {
-      thangThanhToan: requestMonth,
-    });
-
-    const result = response.data;
-
-    /*
-     * Load lại danh sách hóa đơn.
-     */
-    await loadData();
-
-    showNotification("Nhiều hóa đơn đã được thêm thành công.");
-
-    // Chuyển sang module Hóa đơn
-    currentTab.value = "hoaDon";
-
-    // Quan trọng: đóng form Thêm hóa đơn
-    // để hiển thị Danh sách hóa đơn
-    resetHoaDonForm();
-    showHoaDonForm.value = false;
-
-    const daTao = Number(result?.daTao ?? 0);
-
-    const daBoQua = Number(result?.daBoQua ?? 0);
-
-    /*
-     * Hiển thị kết quả.
-     */
-    showNotification(
-      [
-        result?.message ?? "Đã xử lý tạo hóa đơn.",
-        `Tháng: ${formatMonthForDisplay(thangThanhToan)}`,
-        `Đã tạo: ${daTao} hóa đơn`,
-        `Đã bỏ qua: ${daBoQua} giường đã có hóa đơn`,
-      ].join("\n"),
-      "success",
-      "Tạo hóa đơn thành công",
-    );
-  } catch (error: any) {
-    console.error("Lỗi tạo hóa đơn cho các giường:", error);
-
-    const message =
-      error?.response?.data?.message ?? "Không thể tạo hóa đơn cho các giường.";
-
-    showNotification(
-      Array.isArray(message) ? message.join("\n") : message,
-      "error",
-      "Không thể tạo hóa đơn",
-    );
-  }
 }
 
 async function executeThemHoaDonChoCacGiuong() {
@@ -5217,12 +5146,12 @@ onMounted(() => {
                   </td>
                 </tr>
               </tbody>
-              <Pagination
-                :current-page="hoaDonCurrentPage"
-                :total-pages="hoaDonTotalPages"
-                @update:current-page="goToHoaDonPage"
-              />
             </table>
+            <Pagination
+              :current-page="hoaDonCurrentPage"
+              :total-pages="hoaDonTotalPages"
+              @update:current-page="goToHoaDonPage"
+            />
           </div>
         </section>
       </main>
@@ -5752,6 +5681,18 @@ onMounted(() => {
     :sending-email="sendingHoaDonEmail"
     @close="closeHoaDonDetail"
     @send-email="sendHoaDonEmail"
+  />
+
+  <!-- =====================================================
+     MODAL XÁC NHẬN TẠO HÓA ĐƠN CHO CÁC GIƯỜNG
+     ===================================================== -->
+  <AppConfirmModal
+    v-model:show="showCreateInvoicesConfirm"
+    title="Xác nhận tạo hóa đơn"
+    :message="createInvoicesConfirmMessage"
+    confirm-text="Xác nhận"
+    cancel-text="Hủy"
+    @confirm="executeThemHoaDonChoCacGiuong"
   />
 </template>
 
