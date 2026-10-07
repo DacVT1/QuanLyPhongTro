@@ -5146,12 +5146,12 @@ onMounted(() => {
                   </td>
                 </tr>
               </tbody>
-              <Pagination
-                :current-page="hoaDonCurrentPage"
-                :total-pages="hoaDonTotalPages"
-                @update:current-page="goToHoaDonPage"
-              />
             </table>
+            <Pagination
+              :current-page="hoaDonCurrentPage"
+              :total-pages="hoaDonTotalPages"
+              @update:current-page="goToHoaDonPage"
+            />
           </div>
         </section>
       </main>
