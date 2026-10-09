@@ -878,10 +878,11 @@ const filteredHoaDons = computed(() => {
   return hoaDons.value.filter((item: any) => {
     const hoTen = normalizeSearchText(item.hopDong?.nguoiThue?.hoTen ?? "");
 
-    const maHopDong = normalizeSearchText(item.hopDong?.maHopDong ?? "");
+    const maHoaDon = normalizeSearchText(item.maHoaDon ?? "");
 
+    // Tìm theo tên người thuê hoặc mã hóa đơn.
     const matchKeyword =
-      !keyword || hoTen.includes(keyword) || maHopDong.includes(keyword);
+      !keyword || hoTen.includes(keyword) || maHoaDon.includes(keyword);
 
     const matchStatus =
       statusFilter === "all" || item.trangThai === statusFilter;
