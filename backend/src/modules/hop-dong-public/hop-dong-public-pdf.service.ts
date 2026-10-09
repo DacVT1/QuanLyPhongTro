@@ -468,12 +468,20 @@ export class HopDongPublicPdfService {
 
       addLabelValue('Tầng số', data.tangSo);
 
-      const phongSo =
-        String(data.maPhong ?? '')
-          .split('_T')
-          .pop() || data.maPhong;
+      const maPhong = String(data.maPhong ?? '').trim();
 
-      addLabelValue('Phòng số', phongSo);
+      let phongSo = maPhong;
+
+      // Nếu mã phòng là dạng số có từ 3 chữ số,
+      // lấy 2 chữ số cuối làm số phòng.
+      if (/^\d{3,}$/.test(maPhong)) {
+        phongSo = maPhong.slice(-2).replace(/^0+/, '') || '0';
+      }
+
+      addLabelValue(
+        'Phòng số',
+        phongSo?.match(/_T\d+(\d{2})$/)?.[1]?.replace(/^0+/, '') || '',
+      );
 
       addLabelValue('Giường số', data.giuongSo);
 

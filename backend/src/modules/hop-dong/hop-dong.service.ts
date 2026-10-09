@@ -107,21 +107,31 @@ export class HopDongService {
 
     const hopDongs = giuong.hopDongs ?? [];
 
-    // Có hợp đồng đang có hiệu lực
-    const coHopDongHieuLuc = hopDongs.some(
+    // ==========================================
+    // TÌM HỢP ĐỒNG ĐANG CÓ HIỆU LỰC
+    // ==========================================
+    const hopDongHieuLuc = hopDongs.find(
       (hopDong) => hopDong.trangThai === 'active',
     );
 
-    if (coHopDongHieuLuc) {
+    // ==========================================
+    // CÓ HỢP ĐỒNG ĐANG CÓ HIỆU LỰC
+    // ==========================================
+    if (hopDongHieuLuc) {
       giuong.trangThai = 'da_thue';
+
+      // Tiền đặt cọc > 0 => Cọc sớm = tích
+      // Tiền đặt cọc = 0 => Cọc sớm = bỏ tích
+      giuong.datCocSom = Number(hopDongHieuLuc.tienDatCoc ?? 0) > 0;
 
       await this.giuongRepository.save(giuong);
 
       return;
     }
 
-    // Không còn hợp đồng có hiệu lực,
-    // kiểm tra hợp đồng sắp hết hiệu lực
+    // ==========================================
+    // KHÔNG CÓ HỢP ĐỒNG ACTIVE
+    // ==========================================
     const coHopDongSapHetHieuLuc = hopDongs.some(
       (hopDong) => hopDong.trangThai === 'sap_het_hieu_luc',
     );
@@ -129,14 +139,21 @@ export class HopDongService {
     if (coHopDongSapHetHieuLuc) {
       giuong.trangThai = 'sap_tra_tro';
 
+      // Không còn HĐ active => không còn Cọc sớm
+      giuong.datCocSom = false;
+
       await this.giuongRepository.save(giuong);
 
       return;
     }
 
-    // Không có hợp đồng hiệu lực
-    // hoặc tất cả hợp đồng đã hết hiệu lực
+    // ==========================================
+    // KHÔNG CÒN HỢP ĐỒNG HIỆU LỰC
+    // ==========================================
     giuong.trangThai = 'trong';
+
+    // Không còn Hợp đồng => bỏ tích Cọc sớm
+    giuong.datCocSom = false;
 
     await this.giuongRepository.save(giuong);
   }

@@ -18,6 +18,9 @@ import AppConfirmModal from "./components/common/AppConfirmModal.vue";
 import HopDongPdfViewer from "./components/hop-dong/HopDongPdfViewer.vue";
 import HoaDonDetail from "./components/hoa-don/HoaDonDetail.vue";
 import AccountProfile from "./components/tai-khoan/AccountProfile.vue";
+import ForgotPassword from "./components/auth/ForgotPassword.vue";
+import ResetPassword from "./components/auth/ResetPassword.vue";
+import ForgotPasswordVerification from "./components/auth/ForgotPasswordVerification.vue";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 const cccdMatTruocPreviewUrl = ref("");
@@ -45,9 +48,18 @@ const currentTab = ref("dashboard");
 const isMenuOpen = ref(false);
 const soDienThoaiError = ref("");
 
-const authMode = ref<"login" | "register" | "registerVerification">("login");
+const authMode = ref<
+  | "login"
+  | "register"
+  | "registerVerification"
+  | "forgotPassword"
+  | "forgotPasswordVerification"
+  | "resetPassword"
+>("login");
 
 const registerIdentifier = ref("");
+const resetPasswordEmail = ref("");
+const resetPasswordOtp = ref("");
 const phongSearchKeyword = ref("");
 const accessToken = ref(localStorage.getItem("accessToken"));
 
@@ -185,6 +197,39 @@ function handleRegisterVerified() {
 
 function handleBackToRegister() {
   authMode.value = "register";
+}
+
+function handleForgotPassword() {
+  resetPasswordEmail.value = "";
+  resetPasswordOtp.value = "";
+
+  authMode.value = "forgotPassword";
+}
+
+function handleForgotPasswordOtpSent(email: string) {
+  resetPasswordEmail.value = email;
+
+  authMode.value = "forgotPasswordVerification";
+}
+
+function handleForgotPasswordVerified(otp: string) {
+  resetPasswordOtp.value = otp;
+
+  authMode.value = "resetPassword";
+}
+
+function handleResetPasswordSuccess() {
+  resetPasswordEmail.value = "";
+  resetPasswordOtp.value = "";
+
+  authMode.value = "login";
+}
+
+function handleBackToLogin() {
+  resetPasswordEmail.value = "";
+  resetPasswordOtp.value = "";
+
+  authMode.value = "login";
 }
 
 const tienDienDisplay = ref("0");
@@ -420,10 +465,7 @@ function formatMonthForDisplay(value: string) {
   return `${match[2]}/${match[1]}`;
 }
 
-async function handleThemHoaDonChoCacGiuong() {
-  /*
-   * Kiểm tra tháng thanh toán
-   */
+function handleThemHoaDonChoCacGiuong() {
   const thangThanhToan = hoaDonForm.value.thangThanhToan;
 
   if (!thangThanhToan) {
@@ -435,79 +477,11 @@ async function handleThemHoaDonChoCacGiuong() {
 
   hoaDonThangThanhToanError.value = "";
 
-  /*
-   * Xác nhận trước khi tạo hàng loạt.
-   */
-  createInvoicesConfirmMessage.value = `Bạn có chắc muốn tạo hóa đơn cho các giường đang có người thuê trong tháng ${formatMonthForDisplay(
-    thangThanhToan,
-  )} không?`;
+  createInvoicesConfirmMessage.value =
+    `Bạn có chắc muốn tạo hóa đơn cho các giường đang có người thuê ` +
+    `trong tháng ${formatMonthForDisplay(thangThanhToan)} không?`;
 
   showCreateInvoicesConfirm.value = true;
-
-  return;
-
-  try {
-    /*
-     * Đảm bảo ngày gửi backend là ngày đầu tháng.
-     *
-     * input type="month":
-     * 2026-08
-     *
-     * API:
-     * 2026-08-01
-     */
-    const requestMonth = `${thangThanhToan}-01`;
-
-    const response = await api.post("/hoa-don/tao-cho-cac-giuong", {
-      thangThanhToan: requestMonth,
-    });
-
-    const result = response.data;
-
-    /*
-     * Load lại danh sách hóa đơn.
-     */
-    await loadData();
-
-    showNotification("Nhiều hóa đơn đã được thêm thành công.");
-
-    // Chuyển sang module Hóa đơn
-    currentTab.value = "hoaDon";
-
-    // Quan trọng: đóng form Thêm hóa đơn
-    // để hiển thị Danh sách hóa đơn
-    resetHoaDonForm();
-    showHoaDonForm.value = false;
-
-    const daTao = Number(result?.daTao ?? 0);
-
-    const daBoQua = Number(result?.daBoQua ?? 0);
-
-    /*
-     * Hiển thị kết quả.
-     */
-    showNotification(
-      [
-        result?.message ?? "Đã xử lý tạo hóa đơn.",
-        `Tháng: ${formatMonthForDisplay(thangThanhToan)}`,
-        `Đã tạo: ${daTao} hóa đơn`,
-        `Đã bỏ qua: ${daBoQua} giường đã có hóa đơn`,
-      ].join("\n"),
-      "success",
-      "Tạo hóa đơn thành công",
-    );
-  } catch (error: any) {
-    console.error("Lỗi tạo hóa đơn cho các giường:", error);
-
-    const message =
-      error?.response?.data?.message ?? "Không thể tạo hóa đơn cho các giường.";
-
-    showNotification(
-      Array.isArray(message) ? message.join("\n") : message,
-      "error",
-      "Không thể tạo hóa đơn",
-    );
-  }
 }
 
 async function executeThemHoaDonChoCacGiuong() {
@@ -1685,35 +1659,99 @@ function getNguoiThueGiuongStatus(nguoiThueId: string | number) {
 }
 
 async function loadData() {
-  try {
-    const [
-      nhaTroResponse,
-      phongResponse,
-      giuongResponse,
-      nguoiThueResponse,
-      hopDongResponse,
-      hoaDonResponse,
-      dashboardResponse,
-    ] = await Promise.all([
-      api.get("/nha-tro"),
-      api.get("/phong"),
-      api.get("/giuong"),
-      api.get("/nguoi-thue"),
-      api.get("/hop-dong"),
-      api.get("/hoa-don"),
-      api.get("/dashboard/summary"),
-    ]);
+  console.log("======================================");
+  console.log("BẮT ĐẦU LOAD DATA SAU KHI ĐĂNG NHẬP");
+  console.log("======================================");
 
-    nhaTros.value = nhaTroResponse.data;
-    phongs.value = phongResponse.data;
-    giuongs.value = giuongResponse.data;
-    nguoiThues.value = nguoiThueResponse.data;
-    hopDongs.value = hopDongResponse.data;
-    hoaDons.value = hoaDonResponse.data;
-    summary.value = dashboardResponse.data;
-  } catch (error) {
-    console.error("Không thể nạp dữ liệu:", error);
+  const requests = [
+    {
+      name: "nha-tro",
+      request: () => api.get("/nha-tro"),
+      success: (data: any) => {
+        nhaTros.value = data;
+      },
+    },
+
+    {
+      name: "phong",
+      request: () => api.get("/phong"),
+      success: (data: any) => {
+        phongs.value = data;
+      },
+    },
+
+    {
+      name: "giuong",
+      request: () => api.get("/giuong"),
+      success: (data: any) => {
+        giuongs.value = data;
+      },
+    },
+
+    {
+      name: "nguoi-thue",
+      request: () => api.get("/nguoi-thue"),
+      success: (data: any) => {
+        nguoiThues.value = data;
+      },
+    },
+
+    {
+      name: "hop-dong",
+      request: () => api.get("/hop-dong"),
+      success: (data: any) => {
+        hopDongs.value = data;
+      },
+    },
+
+    {
+      name: "hoa-don",
+      request: () => api.get("/hoa-don"),
+      success: (data: any) => {
+        hoaDons.value = data;
+      },
+    },
+
+    {
+      name: "dashboard/summary",
+      request: () => api.get("/dashboard/summary"),
+      success: (data: any) => {
+        summary.value = data;
+      },
+    },
+  ];
+
+  for (const item of requests) {
+    try {
+      console.log(`→ ĐANG GỌI GET /${item.name}`);
+
+      const response = await item.request();
+
+      console.log(`✓ GET /${item.name} THÀNH CÔNG`);
+      console.log("Status:", response.status);
+
+      item.success(response.data);
+    } catch (error: any) {
+      console.error(`✗ GET /${item.name} THẤT BẠI`);
+
+      console.error({
+        status: error?.response?.status,
+        data: error?.response?.data,
+        message: error?.message,
+      });
+
+      /*
+       * Không throw tiếp.
+       *
+       * Một API lỗi không được làm toàn bộ
+       * quá trình đăng nhập thất bại.
+       */
+    }
   }
+
+  console.log("======================================");
+  console.log("KẾT THÚC LOAD DATA");
+  console.log("======================================");
 }
 
 function resetNhaTroForm() {
@@ -1780,6 +1818,21 @@ function handleGiaGiuongInput(event: Event) {
   giaGiuongDisplay.value = rawValue
     ? Number(rawValue).toLocaleString("en-US")
     : "";
+}
+
+//Thêm hàm xử lý số tiền đặt cọc
+function handleTienDatCocInput(event: Event) {
+  const input = event.target as HTMLInputElement;
+
+  // Loại bỏ ký tự không phải số
+  const rawValue = input.value.replace(/\D/g, "");
+  const amount = Number(rawValue || 0);
+
+  // Cập nhật giá trị thực tế dùng để lưu hợp đồng
+  hopDongForm.value.tienDatCoc = amount;
+
+  // Định dạng số tiền để hiển thị trên giao diện
+  tienDatCocDisplay.value = rawValue ? amount.toLocaleString("en-US") : "";
 }
 
 function handleGiuongChangeForHopDong() {
@@ -2483,11 +2536,49 @@ async function saveHopDong() {
   };
 
   if (editingHopDongId.value) {
+    // Cập nhật hợp đồng
     await api.patch(`/hop-dong/${editingHopDongId.value}`, payload);
+
     showNotification("Hợp đồng đã được sửa thành công.");
   } else {
-    await api.post("/hop-dong", payload);
-    showNotification("Hợp đồng đã được thêm thành công.");
+    // =====================================================
+    // 1. TẠO HỢP ĐỒNG
+    // =====================================================
+    const response = await api.post("/hop-dong", payload);
+
+    const hopDongMoi = response.data;
+
+    if (!hopDongMoi?.id) {
+      throw new Error("Không nhận được ID hợp đồng sau khi tạo.");
+    }
+
+    // =====================================================
+    // 2. GỬI PDF HỢP ĐỒNG QUA EMAIL
+    //    - Email người thuê
+    //    - nguyenchihaucan@gmail.com
+    // =====================================================
+    try {
+      await api.post(`/hop-dong/${hopDongMoi.id}/send-email`);
+
+      showNotification(
+        "Hợp đồng đã được thêm thành công và PDF đã được gửi qua email người thuê và nguyenchihaucan@gmail.com.",
+        "success",
+        "Thêm hợp đồng thành công",
+      );
+    } catch (emailError: any) {
+      console.error("Lỗi gửi email hợp đồng:", emailError);
+
+      const emailMessage =
+        emailError?.response?.data?.message ?? "Không thể gửi email hợp đồng.";
+
+      showNotification(
+        `Hợp đồng đã được lưu thành công nhưng chưa gửi được email.\n${
+          Array.isArray(emailMessage) ? emailMessage.join("\n") : emailMessage
+        }`,
+        "warning",
+        "Hợp đồng đã lưu",
+      );
+    }
   }
 
   resetHopDongForm();
@@ -3057,31 +3148,45 @@ onMounted(() => {
     :title="appNotificationTitle"
     :message="appNotificationMessage"
   />
-  <AppConfirmModal
-    v-model:show="showCreateInvoicesConfirm"
-    title="Xác nhận tạo hóa đơn"
-    :message="createInvoicesConfirmMessage"
-    confirm-text="Tạo hóa đơn"
-    cancel-text="Hủy"
-    @confirm="executeThemHoaDonChoCacGiuong"
-  />
   <Login
-    v-if="!isAuthenticated && authMode === 'login'"
+    v-if="authMode === 'login' && !isAuthenticated"
     @login-success="handleLogin"
     @register="authMode = 'register'"
+    @forgot-password="handleForgotPassword"
   />
 
   <Register
-    v-else-if="!isAuthenticated && authMode === 'register'"
-    @login="authMode = 'login'"
+    v-else-if="authMode === 'register'"
     @otp-required="handleOtpRequired"
+    @login="authMode = 'login'"
   />
 
   <RegisterVerification
-    v-else-if="!isAuthenticated && authMode === 'registerVerification'"
+    v-else-if="authMode === 'registerVerification'"
     :identifier="registerIdentifier"
     @verified="handleRegisterVerified"
     @back="handleBackToRegister"
+  />
+
+  <ForgotPassword
+    v-else-if="authMode === 'forgotPassword'"
+    @otp-sent="handleForgotPasswordOtpSent"
+    @back-to-login="handleBackToLogin"
+  />
+
+  <ForgotPasswordVerification
+    v-else-if="authMode === 'forgotPasswordVerification'"
+    :email="resetPasswordEmail"
+    @verified="handleForgotPasswordVerified"
+    @back="handleForgotPassword"
+  />
+
+  <ResetPassword
+    v-else-if="authMode === 'resetPassword'"
+    :email="resetPasswordEmail"
+    :otp="resetPasswordOtp"
+    @success="handleResetPasswordSuccess"
+    @back-to-login="handleBackToLogin"
   />
 
   <div
@@ -4453,6 +4558,7 @@ onMounted(() => {
                     :value="tienDatCocDisplay"
                     type="text"
                     placeholder="Số tiền đặt cọc"
+                    @input="handleTienDatCocInput"
                   />
 
                   <span>VND</span>
@@ -5094,12 +5200,12 @@ onMounted(() => {
                   </td>
                 </tr>
               </tbody>
-              <Pagination
-                :current-page="hoaDonCurrentPage"
-                :total-pages="hoaDonTotalPages"
-                @update:current-page="goToHoaDonPage"
-              />
             </table>
+            <Pagination
+              :current-page="hoaDonCurrentPage"
+              :total-pages="hoaDonTotalPages"
+              @update:current-page="goToHoaDonPage"
+            />
           </div>
         </section>
       </main>
@@ -5629,6 +5735,18 @@ onMounted(() => {
     :sending-email="sendingHoaDonEmail"
     @close="closeHoaDonDetail"
     @send-email="sendHoaDonEmail"
+  />
+
+  <!-- =====================================================
+     MODAL XÁC NHẬN TẠO HÓA ĐƠN CHO CÁC GIƯỜNG
+     ===================================================== -->
+  <AppConfirmModal
+    v-model:show="showCreateInvoicesConfirm"
+    title="Xác nhận tạo hóa đơn"
+    :message="createInvoicesConfirmMessage"
+    confirm-text="Xác nhận"
+    cancel-text="Hủy"
+    @confirm="executeThemHoaDonChoCacGiuong"
   />
 </template>
 
