@@ -1820,6 +1820,21 @@ function handleGiaGiuongInput(event: Event) {
     : "";
 }
 
+//Thêm hàm xử lý số tiền đặt cọc
+function handleTienDatCocInput(event: Event) {
+  const input = event.target as HTMLInputElement;
+
+  // Loại bỏ ký tự không phải số
+  const rawValue = input.value.replace(/\D/g, "");
+  const amount = Number(rawValue || 0);
+
+  // Cập nhật giá trị thực tế dùng để lưu hợp đồng
+  hopDongForm.value.tienDatCoc = amount;
+
+  // Định dạng số tiền để hiển thị trên giao diện
+  tienDatCocDisplay.value = rawValue ? amount.toLocaleString("en-US") : "";
+}
+
 function handleGiuongChangeForHopDong() {
   syncHopDongCode();
 
@@ -2521,11 +2536,49 @@ async function saveHopDong() {
   };
 
   if (editingHopDongId.value) {
+    // Cập nhật hợp đồng
     await api.patch(`/hop-dong/${editingHopDongId.value}`, payload);
+
     showNotification("Hợp đồng đã được sửa thành công.");
   } else {
-    await api.post("/hop-dong", payload);
-    showNotification("Hợp đồng đã được thêm thành công.");
+    // =====================================================
+    // 1. TẠO HỢP ĐỒNG
+    // =====================================================
+    const response = await api.post("/hop-dong", payload);
+
+    const hopDongMoi = response.data;
+
+    if (!hopDongMoi?.id) {
+      throw new Error("Không nhận được ID hợp đồng sau khi tạo.");
+    }
+
+    // =====================================================
+    // 2. GỬI PDF HỢP ĐỒNG QUA EMAIL
+    //    - Email người thuê
+    //    - nguyenchihaucan@gmail.com
+    // =====================================================
+    try {
+      await api.post(`/hop-dong/${hopDongMoi.id}/send-email`);
+
+      showNotification(
+        "Hợp đồng đã được thêm thành công và PDF đã được gửi qua email người thuê và nguyenchihaucan@gmail.com.",
+        "success",
+        "Thêm hợp đồng thành công",
+      );
+    } catch (emailError: any) {
+      console.error("Lỗi gửi email hợp đồng:", emailError);
+
+      const emailMessage =
+        emailError?.response?.data?.message ?? "Không thể gửi email hợp đồng.";
+
+      showNotification(
+        `Hợp đồng đã được lưu thành công nhưng chưa gửi được email.\n${
+          Array.isArray(emailMessage) ? emailMessage.join("\n") : emailMessage
+        }`,
+        "warning",
+        "Hợp đồng đã lưu",
+      );
+    }
   }
 
   resetHopDongForm();
@@ -4505,6 +4558,7 @@ onMounted(() => {
                     :value="tienDatCocDisplay"
                     type="text"
                     placeholder="Số tiền đặt cọc"
+                    @input="handleTienDatCocInput"
                   />
 
                   <span>VND</span>
