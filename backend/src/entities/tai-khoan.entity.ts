@@ -64,7 +64,7 @@ export class TaiKhoan {
   @Column({ nullable: true })
   maQrThanhToan?: string;
 
-  @Column({ default: 'admin' })
+  @Column({ default: 'user' })
   role: string;
 
   @CreateDateColumn()

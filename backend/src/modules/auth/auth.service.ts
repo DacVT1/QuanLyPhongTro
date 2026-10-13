@@ -396,7 +396,7 @@ export class AuthService {
       passwordHash: pending.passwordHash,
       tenHienThi: pending.tenHienThi,
       email: username,
-      role: 'admin',
+      role: 'user',
       tenant: savedTenant,
     });
 
