@@ -82,6 +82,11 @@ export class TaiKhoanController {
     return this.taiKhoanService.findAll(user.tenantId);
   }
 
+  @Get('admin/users')
+  findAllUsersForAdmin(@CurrentUser() user: JwtPayload) {
+    return this.taiKhoanService.findAllUsersForAdmin(user.sub);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
     return this.taiKhoanService.findOne(id, user.tenantId);

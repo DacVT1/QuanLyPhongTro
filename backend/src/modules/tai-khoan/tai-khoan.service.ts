@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Injectable,
   NotFoundException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -27,6 +28,46 @@ export class TaiKhoanService {
         },
       },
       relations: { nhaTros: true },
+    });
+  }
+
+  async findAllUsersForAdmin(adminId: string) {
+    // Kiểm tra quyền admin trực tiếp từ database,
+    // không chỉ tin role được lưu trong JWT.
+    const admin = await this.repository.findOne({
+      where: {
+        id: adminId,
+      },
+      select: {
+        id: true,
+        role: true,
+      },
+    });
+
+    if (!admin || admin.role !== 'admin') {
+      throw new ForbiddenException(
+        'Bạn không có quyền xem danh sách tài khoản.',
+      );
+    }
+
+    // Lấy tất cả tài khoản có role user trên toàn hệ thống.
+    // Không giới hạn theo tenant của admin.
+    // Không trả về passwordHash hoặc dữ liệu CCCD/ngân hàng.
+    return this.repository.find({
+      where: {
+        role: 'user',
+      },
+      select: {
+        id: true,
+        username: true,
+        tenHienThi: true,
+        email: true,
+        role: true,
+        createdAt: true,
+      },
+      order: {
+        createdAt: 'DESC',
+      },
     });
   }
 
