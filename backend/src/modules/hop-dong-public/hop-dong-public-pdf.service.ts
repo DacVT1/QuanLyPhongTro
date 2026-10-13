@@ -493,19 +493,19 @@ export class HopDongPublicPdfService {
 
       addSectionTitle('ĐIỀU 2. GIÁ THUÊ, TIỀN ĐẶT CỌC VÀ THANH TOÁN');
 
-      addLabelValue('Giá thuê', `${formatMoney(data.tienThue)} đồng/tháng`);
+      addLabelValue('1. Giá thuê', `${formatMoney(data.tienThue)} đồng/tháng`);
 
-      addLabelValue('Tiền đặt cọc', `${formatMoney(data.tienDatCoc)} đồng`);
-
-      addParagraph(
-        'Giá thuê đã bao gồm tất cả các dịch vụ đi kèm theo thỏa thuận của hai bên.',
-      );
+      addLabelValue('2. Tiền đặt cọc', `${formatMoney(data.tienDatCoc)} đồng`);
 
       addParagraph(
-        'Bên B thanh toán tiền thuê vào ngày mùng 1 hằng tháng bằng hình thức chuyển khoản.',
+        '3. Giá thuê đã bao gồm các dịch vụ đi kèm theo thỏa thuận của hai bên.',
       );
-
-      addParagraph(`Số tiền thuê: ${formatMoney(data.tienThue)} đồng/tháng.`);
+      addParagraph(
+        '4. Bên B có trách nhiệm thanh toán tiền thuê vào ngày mùng 1 hằng tháng bằng hình thức chuyển khoản.',
+      );
+      addParagraph(
+        '5. Các khoản tiền và nghĩa vụ thanh toán khác, nếu có, được thực hiện theo thỏa thuận cụ thể giữa hai bên.',
+      );
 
       // =====================================================
       // ĐIỀU 3
@@ -514,12 +514,15 @@ export class HopDongPublicPdfService {
       addSectionTitle('ĐIỀU 3. THỜI HẠN THUÊ VÀ GIAO NHẬN');
 
       addParagraph(
-        'Thời hạn thuê tối thiểu là 03 tháng. Hai bên thống nhất thời gian thuê như sau:',
+        '1. Thời hạn thuê tối thiểu là 03 tháng. Hai bên thống nhất thời gian thuê như sau:',
       );
 
       addLabelValue('Ngày bắt đầu', formatDate(data.ngayBatDau));
 
       addLabelValue('Ngày kết thúc', formatDate(data.ngayKetThuc));
+      addParagraph(
+        '2. Bên A có trách nhiệm bàn giao chỗ thuê cho Bên B theo đúng thời gian và hiện trạng đã thỏa thuận.',
+      );
 
       // =====================================================
       // ĐIỀU 4
@@ -527,20 +530,32 @@ export class HopDongPublicPdfService {
 
       addSectionTitle('ĐIỀU 4. QUYỀN VÀ NGHĨA VỤ CỦA HAI BÊN');
 
+      addParagraph('4.1. Bên A:');
       addParagraph(
-        '4.1. Bên A: Giao nhà đúng hiện trạng và đúng thời gian đã thỏa thuận; đảm bảo cho Bên B được sử dụng ổn định trong thời hạn thuê; thực hiện sửa chữa các hư hỏng không do lỗi của Bên B.',
+        '- Giao chỗ thuê đúng hiện trạng và thời gian đã thỏa thuận.',
+      );
+      addParagraph(
+        '- Đảm bảo cho Bên B được sử dụng ổn định chỗ thuê trong thời hạn hợp đồng, trừ các trường hợp được phép theo thỏa thuận và quy định pháp luật.',
+      );
+      addParagraph(
+        '- Thực hiện sửa chữa các hư hỏng không do lỗi của Bên B theo trách nhiệm của Bên A.',
+      );
+      addParagraph(
+        '- Tôn trọng quyền và lợi ích hợp pháp của Bên B theo hợp đồng và quy định pháp luật.',
       );
 
+      addParagraph('4.2. Bên B:');
       addParagraph(
-        '4.2. Bên B: Thanh toán tiền thuê và các khoản chi phí đúng thời hạn; sử dụng nhà đúng mục đích; giữ gìn tài sản; không tự ý sửa chữa, cải tạo hoặc cho thuê lại khi chưa được Bên A đồng ý.',
+        '- Thanh toán tiền thuê và các khoản chi phí theo đúng thời hạn đã thỏa thuận.',
       );
-
       addParagraph(
-        'Bên B có trách nhiệm tuân thủ các quy định của nhà trọ, quy định về phòng cháy chữa cháy và đăng ký tạm trú theo quy định.',
+        '- Sử dụng chỗ thuê đúng mục đích; giữ gìn tài sản; không tự ý sửa chữa, cải tạo hoặc cho thuê lại khi chưa được Bên A đồng ý.',
       );
-
       addParagraph(
-        'Khi chấm dứt hợp đồng, Bên B có trách nhiệm bàn giao lại phòng và tài sản theo đúng hiện trạng ban đầu, ngoại trừ hao mòn tự nhiên.',
+        '- Tuân thủ nội quy nhà trọ, quy định về phòng cháy, chữa cháy và thực hiện đăng ký, khai báo tạm trú theo quy định pháp luật.',
+      );
+      addParagraph(
+        '- Khi chấm dứt hợp đồng, bàn giao lại chỗ thuê và tài sản theo hiện trạng ban đầu, ngoại trừ hao mòn tự nhiên và các trường hợp khác được hai bên thống nhất.',
       );
 
       // =====================================================
@@ -550,19 +565,16 @@ export class HopDongPublicPdfService {
       addSectionTitle('ĐIỀU 5. CHẤM DỨT HỢP ĐỒNG');
 
       addParagraph(
-        'Hợp đồng chấm dứt khi hết thời hạn thuê hoặc theo thỏa thuận của hai bên.',
+        '1. Hợp đồng chấm dứt khi hết thời hạn thuê hoặc theo thỏa thuận của hai bên, hoặc các trường hợp khác theo quy định pháp luật.',
       );
-
       addParagraph(
-        'Thời hạn thuê tối thiểu là 03 tháng. Trường hợp một bên muốn chấm dứt hợp đồng trước thời hạn phải thông báo cho bên còn lại trước ít nhất 30 ngày.',
+        '2. Thời hạn thuê tối thiểu là 03 tháng. Trường hợp một bên muốn chấm dứt hợp đồng trước thời hạn, bên đó phải thông báo cho bên còn lại trước ít nhất 30 ngày, trừ trường hợp hai bên có thỏa thuận khác hoặc pháp luật có quy định khác.',
       );
-
       addParagraph(
-        'Bên vi phạm nghĩa vụ dẫn đến việc chấm dứt hợp đồng phải chịu trách nhiệm bồi thường theo thỏa thuận giữa hai bên.',
+        '3. Bên vi phạm nghĩa vụ dẫn đến việc chấm dứt hợp đồng phải chịu trách nhiệm bồi thường thiệt hại theo thỏa thuận hợp pháp của hai bên và quy định pháp luật.',
       );
-
       addParagraph(
-        'Tiền đặt cọc được hoàn trả hoặc khấu trừ các khoản nghĩa vụ còn thiếu, hư hỏng tài sản hoặc các khoản chi phí khác theo thỏa thuận.',
+        '4. Tiền đặt cọc được hoàn trả hoặc khấu trừ các khoản nghĩa vụ còn thiếu, chi phí khắc phục hư hỏng do lỗi của Bên B và các khoản khác theo thỏa thuận hợp pháp của hai bên.',
       );
 
       // =====================================================
@@ -572,17 +584,68 @@ export class HopDongPublicPdfService {
       addSectionTitle('ĐIỀU 6. CAM KẾT CHUNG');
 
       addParagraph(
-        'Hai bên cam kết thực hiện đúng các điều khoản đã thỏa thuận trong hợp đồng.',
+        '1. Hai bên cam kết thực hiện đúng các điều khoản đã thỏa thuận trong hợp đồng.',
+      );
+      addParagraph(
+        '2. Mọi tranh chấp phát sinh trong quá trình thực hiện hợp đồng trước hết được hai bên ưu tiên giải quyết thông qua thương lượng.',
+      );
+      addParagraph(
+        '3. Trường hợp thương lượng không thành công, tranh chấp được giải quyết tại Tòa án nhân dân có thẩm quyền theo quy định pháp luật.',
+      );
+      // =====================================================
+      // ĐIỀU 7
+      // =====================================================
+      addSectionTitle(
+        'ĐIỀU 7. CAM KẾT VỀ TÍNH CHÍNH XÁC CỦA THÔNG TIN, DỮ LIỆU',
       );
 
       addParagraph(
-        'Mọi tranh chấp phát sinh trong quá trình thực hiện hợp đồng trước hết sẽ được hai bên ưu tiên giải quyết bằng thương lượng.',
+        '1. Bên B cam kết các thông tin, dữ liệu, giấy tờ và tài liệu do mình cung cấp để lập, xác nhận và thực hiện hợp đồng, bao gồm nhưng không giới hạn ở họ tên, ngày tháng năm sinh, số định danh cá nhân hoặc căn cước công dân, địa chỉ, số điện thoại, email và các thông tin liên quan khác, là đầy đủ, chính xác, trung thực và thuộc quyền cung cấp, sử dụng hợp pháp của Bên B.',
       );
+      addParagraph(
+        '2. Bên B chịu trách nhiệm về tính chính xác, trung thực và hợp pháp của các thông tin, dữ liệu do mình cung cấp; có trách nhiệm thông báo và phối hợp cập nhật kịp thời khi phát hiện thông tin sai lệch, thiếu sót hoặc có thay đổi ảnh hưởng đến việc thực hiện hợp đồng.',
+      );
+      addParagraph(
+        '3. Trường hợp Bên B cung cấp thông tin sai sự thật, giả mạo giấy tờ, sử dụng thông tin của người khác trái phép hoặc có hành vi gian dối làm ảnh hưởng đến quyền, lợi ích hợp pháp của Bên A hoặc bên thứ ba, Bên B phải chịu trách nhiệm đối với hành vi của mình và bồi thường thiệt hại thực tế phát sinh theo quy định pháp luật. Việc xử lý vi phạm hoặc chấm dứt hợp đồng phải tuân thủ các điều khoản hợp đồng và quy định pháp luật có liên quan.',
+      );
+      addParagraph(
+        '4. Bên A có trách nhiệm sử dụng, lưu trữ và bảo vệ thông tin, dữ liệu cá nhân của Bên B theo mục đích hợp pháp, phạm vi cần thiết để lập, quản lý và thực hiện hợp đồng, đồng thời tuân thủ quy định pháp luật về bảo vệ dữ liệu cá nhân. Việc cung cấp thông tin cho bên thứ ba chỉ được thực hiện khi có căn cứ pháp luật hoặc sự đồng ý hợp lệ của chủ thể dữ liệu, tùy từng trường hợp.',
+      );
+
+      // =====================================================
+      // ĐIỀU 8
+      // =====================================================
+      addSectionTitle('ĐIỀU 8. HIỆU LỰC PHÁP LÝ CỦA HỢP ĐỒNG ĐIỆN TỬ');
 
       addParagraph(
-        'Trường hợp thương lượng không thành công, tranh chấp sẽ được giải quyết tại Tòa án nhân dân có thẩm quyền.',
+        '1. Hai bên thống nhất xác lập và xác nhận hợp đồng thông qua hệ thống điện tử của nền tảng quản lý nhà trọ. Hợp đồng cùng các dữ liệu điện tử ghi nhận quá trình tạo lập, hiển thị, xác nhận và lưu trữ hợp đồng được sử dụng làm căn cứ xác định nội dung thỏa thuận và việc xác nhận của các bên theo quy định pháp luật.',
       );
+      addParagraph(
+        '2. Bên A xác nhận việc đồng ý giao kết hợp đồng thông qua thao tác xác nhận điện tử hoặc phương thức xác nhận được hệ thống ghi nhận. Bên B xác nhận đã đọc, hiểu, có cơ hội xem xét nội dung hợp đồng, tự nguyện đồng ý với toàn bộ điều khoản và thực hiện thao tác xác nhận điện tử theo hướng dẫn của hệ thống.',
+      );
+      addParagraph(
+        '3. Các bên thống nhất rằng việc xác nhận điện tử có thể được sử dụng làm căn cứ chứng minh ý chí giao kết hợp đồng. Giá trị pháp lý của hợp đồng điện tử, dữ liệu điện tử và phương thức xác nhận được xác định theo quy định pháp luật hiện hành; việc xác nhận điện tử không mặc nhiên thay thế chữ ký hoặc hình thức bắt buộc khác trong trường hợp pháp luật yêu cầu.',
+      );
+      addParagraph(
+        '4. Hợp đồng có hiệu lực kể từ thời điểm hai bên hoàn tất việc xác nhận giao kết theo phương thức đã thỏa thuận, trừ khi hai bên có thỏa thuận khác hoặc pháp luật có quy định khác. Hợp đồng chấm dứt theo Điều 5 của hợp đồng và các quy định pháp luật có liên quan.',
+      );
+      addParagraph(
+        '5. Hệ thống có thể lưu trữ các thông tin phục vụ việc chứng minh giao kết hợp đồng như nội dung hợp đồng tại thời điểm xác nhận, thời gian xác nhận, tài khoản thực hiện và lịch sử thao tác liên quan. Việc thu thập, lưu trữ và sử dụng các thông tin này phải tuân thủ quy định pháp luật về bảo vệ dữ liệu cá nhân và các quy định pháp luật có liên quan.',
+      );
+      addParagraph(
+        '6. Hợp đồng điện tử được lưu trữ trên hệ thống để các bên có thể xem lại và đối chiếu khi cần thiết. Mỗi bên có trách nhiệm giữ gìn thông tin đăng nhập và không để người khác sử dụng tài khoản của mình để xác nhận hợp đồng trái phép.',
+      );
+      // =====================================================
+      // ĐIỀU 9
+      // =====================================================
+      addSectionTitle('ĐIỀU 9. ĐIỀU KHOẢN CUỐI CÙNG');
 
+      addParagraph(
+        'Hai bên xác nhận đã đọc, hiểu và tự nguyện đồng ý với toàn bộ nội dung hợp đồng. Những vấn đề chưa được quy định trong hợp đồng này được thực hiện theo thỏa thuận hợp pháp của hai bên và quy định pháp luật hiện hành.',
+      );
+      addParagraph(
+        'Hợp đồng được lập và lưu trữ dưới dạng điện tử trên hệ thống. Dữ liệu xác nhận của các bên được lưu giữ cùng hợp đồng nhằm phục vụ việc tra cứu, đối chiếu và giải quyết tranh chấp khi cần thiết.',
+      );
       // =====================================================
       // XÁC NHẬN
       // =====================================================
