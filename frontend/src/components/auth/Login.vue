@@ -8,6 +8,10 @@ const password = ref("");
 const errorMessage = ref("");
 const loading = ref(false);
 
+const props = defineProps<{
+  hideSecondaryActions?: boolean;
+}>();
+
 const emit = defineEmits<{
   loginSuccess: [data: any];
   register: [];
@@ -92,16 +96,20 @@ async function login() {
       <button class="auth-button" :disabled="loading" @click="login">
         {{ loading ? "Đang đăng nhập..." : "Đăng nhập" }}
       </button>
-      <div class="auth-forgot-password">
-        <button type="button" @click="emit('forgotPassword')">
-          Quên mật khẩu?
-        </button>
-      </div>
-      <div class="auth-register">
-        Chưa có tài khoản?
 
-        <button type="button" @click="emit('register')">Đăng ký</button>
-      </div>
+      <template v-if="!props.hideSecondaryActions">
+        <div class="auth-forgot-password">
+          <button type="button" @click="emit('forgotPassword')">
+            Quên mật khẩu?
+          </button>
+        </div>
+
+        <div class="auth-register">
+          Chưa có tài khoản?
+
+          <button type="button" @click="emit('register')">Đăng ký</button>
+        </div>
+      </template>
     </div>
   </div>
 </template>

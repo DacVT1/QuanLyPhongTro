@@ -80,7 +80,7 @@ export async function seedDatabase(dataSource: DataSource) {
     passwordHash: 'hashed-password',
     tenHienThi: 'Quản trị viên',
     email: 'admin@nhatro.vn',
-    role: 'admin',
+    role: 'user',
     tenant,
   });
 
