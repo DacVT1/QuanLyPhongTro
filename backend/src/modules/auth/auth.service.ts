@@ -286,6 +286,153 @@ export class AuthService {
   }
 
   /**
+   * Gửi email thông báo tài khoản mới đến các tài khoản admin.
+   */
+  private async sendNewAccountNotificationToAdmins(account: TaiKhoan) {
+    const apiKey = process.env.RESEND_API_KEY;
+    const mailFrom = process.env.MAIL_FROM;
+
+    if (!apiKey) {
+      throw new Error('Thiếu biến môi trường RESEND_API_KEY');
+    }
+
+    if (!mailFrom) {
+      throw new Error('Thiếu biến môi trường MAIL_FROM');
+    }
+
+    // Lấy danh sách tài khoản có quyền admin.
+    const admins = await this.taiKhoanRepository.find({
+      where: {
+        role: 'admin',
+      },
+      select: {
+        id: true,
+        username: true,
+        email: true,
+      },
+    });
+
+    // Email nhận thông báo: ưu tiên email, nếu chưa có thì dùng username.
+    const adminEmails = [
+      ...new Set(
+        admins
+          .map((admin) =>
+            (admin.email || admin.username || '').trim().toLowerCase(),
+          )
+          .filter((email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)),
+      ),
+    ];
+
+    if (adminEmails.length === 0) {
+      console.warn(
+        'Không tìm thấy email hợp lệ của tài khoản admin để gửi thông báo đăng ký.',
+      );
+      return;
+    }
+
+    // Chuyển dữ liệu do người dùng nhập thành văn bản an toàn trong HTML.
+    const escapeHtml = (value: unknown) =>
+      String(value ?? '').replace(/[&<>"']/g, (char) => {
+        const entities: Record<string, string> = {
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          '"': '&quot;',
+          "'": '&#39;',
+        };
+        return entities[char];
+      });
+
+    const tenHienThi = escapeHtml(account.tenHienThi);
+    const username = escapeHtml(account.username);
+    const email = escapeHtml(account.email || account.username);
+    const createdAt = new Date(account.createdAt).toLocaleString('vi-VN', {
+      timeZone: 'Asia/Ho_Chi_Minh',
+    });
+
+    // Gửi riêng từng email để không tiết lộ địa chỉ của các admin khác.
+    for (const adminEmail of adminEmails) {
+      const response = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: mailFrom,
+          to: [adminEmail],
+          subject: '[Quản lý phòng trọ] Có tài khoản mới đăng ký',
+          html: `
+          <!DOCTYPE html>
+          <html lang="vi">
+            <head>
+              <meta charset="UTF-8" />
+              <title>Thông báo tài khoản mới</title>
+            </head>
+            <body style="font-family: Arial, sans-serif; color: #1f2937;">
+              <div style="max-width: 600px; margin: 24px auto; padding: 24px;
+                          border: 1px solid #e5e7eb; border-radius: 12px;">
+                <h2>Thông báo đăng ký tài khoản mới</h2>
+                <p>Một người dùng vừa đăng ký tài khoản và xác thực email thành công.</p>
+                <table style="width: 100%; border-collapse: collapse;">
+                  <tr>
+                    <td style="padding: 10px; border-bottom: 1px solid #e5e7eb;">
+                      Tên hiển thị
+                    </td>
+                    <td style="padding: 10px; border-bottom: 1px solid #e5e7eb;">
+                      <strong>${tenHienThi}</strong>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 10px; border-bottom: 1px solid #e5e7eb;">
+                      Tên đăng nhập
+                    </td>
+                    <td style="padding: 10px; border-bottom: 1px solid #e5e7eb;">
+                      ${username}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 10px; border-bottom: 1px solid #e5e7eb;">
+                      Email
+                    </td>
+                    <td style="padding: 10px; border-bottom: 1px solid #e5e7eb;">
+                      ${email}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 10px; border-bottom: 1px solid #e5e7eb;">
+                      Vai trò
+                    </td>
+                    <td style="padding: 10px; border-bottom: 1px solid #e5e7eb;">
+                      user
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 10px;">Thời gian đăng ký</td>
+                    <td style="padding: 10px;">${escapeHtml(createdAt)}</td>
+                  </tr>
+                </table>
+                <p style="color: #64748b; font-size: 13px; margin-top: 24px;">
+                  Email tự động từ hệ thống Quản lý phòng trọ.
+                </p>
+              </div>
+            </body>
+          </html>
+        `,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(
+          `Không gửi được email đến admin ${adminEmail}: ` +
+            `${response.status} ${errorText}`,
+        );
+      }
+    }
+  }
+
+  /**
    * Xác thực OTP đăng ký.
    *
    * Đúng OTP:
@@ -401,6 +548,15 @@ export class AuthService {
     });
 
     const saved = await this.taiKhoanRepository.save(taiKhoan);
+
+    try {
+      await this.sendNewAccountNotificationToAdmins(saved);
+    } catch (error) {
+      console.error(
+        'Gửi email thông báo tài khoản mới cho admin thất bại:',
+        error,
+      );
+    }
 
     // =====================================================
     // 5. XÓA OTP
