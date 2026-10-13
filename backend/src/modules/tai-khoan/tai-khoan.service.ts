@@ -5,7 +5,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { TaiKhoan } from '../../entities/tai-khoan.entity';
 import * as bcrypt from 'bcrypt';
 import { Tenant } from 'src/entities/tenant.entity';
@@ -18,6 +18,8 @@ export class TaiKhoanService {
 
     @InjectRepository(Tenant)
     private readonly tenantRepository: Repository<Tenant>,
+
+    private readonly dataSource: DataSource,
   ) {}
 
   async findAll(tenantId: string) {
@@ -72,44 +74,86 @@ export class TaiKhoanService {
   }
 
   async removeUserForAdmin(adminId: string, userId: string) {
-    // Kiểm tra quyền admin trực tiếp từ database.
-    const admin = await this.repository.findOne({
-      where: { id: adminId },
-      select: {
-        id: true,
-        role: true,
-      },
+    return this.dataSource.transaction(async (manager) => {
+      const taiKhoanRepo = manager.getRepository(TaiKhoan);
+
+      // 1. Kiểm tra quyền admin trực tiếp từ database.
+      const admin = await taiKhoanRepo.findOne({
+        where: { id: adminId },
+        select: {
+          id: true,
+          role: true,
+        },
+      });
+
+      if (!admin || admin.role !== 'admin') {
+        throw new ForbiddenException('Bạn không có quyền xóa tài khoản.');
+      }
+
+      // 2. Tìm tài khoản cần xóa và tenant liên quan.
+      const targetUser = await taiKhoanRepo.findOne({
+        where: { id: userId },
+        relations: {
+          tenant: true,
+        },
+      });
+
+      if (!targetUser) {
+        throw new NotFoundException('Không tìm thấy tài khoản cần xóa.');
+      }
+
+      // Không cho phép admin xóa tài khoản admin khác.
+      if (targetUser.role !== 'user') {
+        throw new ForbiddenException(
+          'Chỉ được phép xóa tài khoản có quyền user.',
+        );
+      }
+
+      const tenantId = targetUser.tenant?.id;
+
+      if (!tenantId) {
+        throw new BadRequestException(
+          'Tài khoản không có tenant liên kết. Không thể xóa dữ liệu an toàn.',
+        );
+      }
+
+      // 3. Xóa OTP đặt lại mật khẩu của email tài khoản (nếu có).
+      if (targetUser.email) {
+        await manager.query(
+          `DELETE FROM "password_reset_otp" WHERE "email" = $1`,
+          [targetUser.email],
+        );
+      }
+
+      // 4. Xóa dữ liệu theo thứ tự tránh vi phạm khóa ngoại.
+      // Chỉ xóa các bản ghi thuộc tenant đang được xử lý.
+      const tables = [
+        'hoa_don',
+        'hop_dong',
+        'giuong',
+        'phong',
+        'nha_tro',
+        'nguoi_thue',
+        'subscription',
+        'tai_khoan',
+      ];
+
+      for (const table of tables) {
+        await manager.query(`DELETE FROM "${table}" WHERE "tenant_id" = $1`, [
+          tenantId,
+        ]);
+      }
+
+      // 5. Xóa tenant sau khi dữ liệu liên quan đã được xóa.
+      await manager.query(`DELETE FROM "tenant" WHERE "id" = $1`, [tenantId]);
+
+      return {
+        message:
+          'Đã xóa tài khoản, tenant và toàn bộ dữ liệu thuộc tenant thành công.',
+        id: userId,
+        tenantId,
+      };
     });
-
-    if (!admin || admin.role !== 'admin') {
-      throw new ForbiddenException('Bạn không có quyền xóa tài khoản.');
-    }
-
-    // Chỉ cho phép xóa tài khoản có role user.
-    const targetUser = await this.repository.findOne({
-      where: { id: userId },
-      select: {
-        id: true,
-        role: true,
-      },
-    });
-
-    if (!targetUser) {
-      throw new NotFoundException('Không tìm thấy tài khoản cần xóa.');
-    }
-
-    if (targetUser.role !== 'user') {
-      throw new ForbiddenException(
-        'Chỉ được phép xóa tài khoản có quyền user.',
-      );
-    }
-
-    await this.repository.remove(targetUser);
-
-    return {
-      message: 'Xóa tài khoản thành công.',
-      id: targetUser.id,
-    };
   }
 
   async findOne(id: string, tenantId: string) {

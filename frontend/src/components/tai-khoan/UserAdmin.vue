@@ -67,7 +67,13 @@ async function loadUsers() {
 
 async function deleteUser(account: UserAccount) {
   const confirmed = window.confirm(
-    `Bạn có chắc chắn muốn xóa tài khoản "${account.email || account.username}" không?`,
+    `CẢNH BÁO: Bạn có chắc chắn muốn xóa tài khoản "${
+      account.email || account.username
+    }" không?\n\n` +
+      "Thao tác này sẽ xóa tenant và toàn bộ dữ liệu liên quan, " +
+      "bao gồm nhà trọ, phòng, giường, người thuê, hợp đồng, hóa đơn " +
+      "và các gói đăng ký dịch vụ. Dữ liệu đã xóa không thể khôi phục " +
+      "nếu không có bản sao lưu.",
   );
 
   if (!confirmed) return;
