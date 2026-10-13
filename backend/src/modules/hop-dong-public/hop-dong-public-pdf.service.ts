@@ -140,9 +140,10 @@ export class HopDongPublicPdfService {
             .font('Vietnamese')
             .fontSize(8)
             .fillColor('#666666')
-            .text(`Trang ${pageIndex + 1}/${range.count}`, 50, 810, {
+            .text(`Trang ${pageIndex + 1}/${range.count}`, 50, 780, {
               width: 495,
               align: 'center',
+              lineBreak: false,
             });
         }
 
