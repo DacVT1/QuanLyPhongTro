@@ -647,16 +647,6 @@ export class HopDongPublicPdfService {
         'Hợp đồng được lập và lưu trữ dưới dạng điện tử trên hệ thống. Dữ liệu xác nhận của các bên được lưu giữ cùng hợp đồng nhằm phục vụ việc tra cứu, đối chiếu và giải quyết tranh chấp khi cần thiết.',
       );
       // =====================================================
-      // XÁC NHẬN
-      // =====================================================
-
-      doc.moveDown(0.5);
-
-      addParagraph(
-        'Nội dung bên trên sẽ được coi như một bản hợp đồng giữa hai bên. Bên A mặc định đã ký. Bên B xác nhận đã đọc, hiểu và đồng ý với toàn bộ nội dung hợp đồng.',
-      );
-
-      // =====================================================
       // CHỮ KÝ
       // =====================================================
 

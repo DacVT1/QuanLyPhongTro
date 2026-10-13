@@ -1613,12 +1613,6 @@ onMounted(() => {
         ================================================== -->
 
         <section class="signature-section">
-          <p class="signature-intro">
-            Nội dung bên trên sẽ được coi như một bản hợp đồng giữa hai bên. Bên
-            A mặc định đã ký. Nếu Bên B đồng ý ký hợp đồng, vui lòng tích vào ô
-            xác nhận tương ứng.
-          </p>
-
           <div class="signature-grid">
             <!-- BÊN A -->
 
