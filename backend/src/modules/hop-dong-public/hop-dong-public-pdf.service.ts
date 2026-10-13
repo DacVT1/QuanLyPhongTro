@@ -195,6 +195,7 @@ export class HopDongPublicPdfService {
       };
 
       // Hiển thị nhiều trường trên cùng một dòng để giảm chiều dài PDF.
+
       const addInlineFields = (
         fields: Array<{
           label: string;
@@ -203,11 +204,11 @@ export class HopDongPublicPdfService {
       ) => {
         const line = fields
           .map(({ label, value }) => `${label}: ${value ?? ''}`)
-          .join('   |   ');
+          .join('       ');
 
-        doc.font('Vietnamese').fontSize(9.5).text(line, {
+        doc.font('Vietnamese').fontSize(11).text(line, {
           width: 495,
-          lineGap: 2,
+          lineGap: 3,
           align: 'left',
         });
 
