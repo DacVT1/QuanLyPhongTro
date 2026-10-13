@@ -65,6 +65,27 @@ async function loadUsers() {
   }
 }
 
+async function deleteUser(account: UserAccount) {
+  const confirmed = window.confirm(
+    `Bạn có chắc chắn muốn xóa tài khoản "${account.email || account.username}" không?`,
+  );
+
+  if (!confirmed) return;
+
+  errorMessage.value = "";
+
+  try {
+    await api.delete(`/tai-khoan/admin/users/${account.id}`);
+
+    // Cập nhật danh sách sau khi xóa thành công.
+    accounts.value = accounts.value.filter((item) => item.id !== account.id);
+  } catch (error: any) {
+    errorMessage.value =
+      error?.response?.data?.message ??
+      "Không thể xóa tài khoản. Vui lòng thử lại.";
+  }
+}
+
 function logout() {
   localStorage.removeItem("accessToken");
   localStorage.removeItem("currentUser");
@@ -115,21 +136,31 @@ function logout() {
               <th>STT</th>
               <th>Tên hiển thị</th>
               <th>Email / Username</th>
+              <th>Mật khẩu</th>
               <th>Role</th>
               <th>Ngày tạo</th>
+              <th>Thao tác</th>
             </tr>
           </thead>
 
           <tbody>
             <tr v-for="(account, index) in accounts" :key="account.id">
               <td>{{ index + 1 }}</td>
+
               <td>{{ account.tenHienThi || "—" }}</td>
+
               <td>{{ account.email || account.username }}</td>
+
+              <td>
+                <span class="password-status">Đã mã hóa</span>
+              </td>
+
               <td>
                 <span class="role-badge">
                   {{ account.role }}
                 </span>
               </td>
+
               <td>
                 {{
                   account.createdAt
@@ -137,10 +168,16 @@ function logout() {
                     : "—"
                 }}
               </td>
+
+              <td>
+                <button class="delete-button" @click="deleteUser(account)">
+                  Xóa
+                </button>
+              </td>
             </tr>
 
             <tr v-if="accounts.length === 0">
-              <td colspan="5" class="empty-state">
+              <td colspan="7" class="empty-state">
                 Chưa có tài khoản user nào.
               </td>
             </tr>
@@ -276,5 +313,28 @@ th {
   .admin-container {
     padding: 20px 12px;
   }
+}
+
+.password-status {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 13px;
+}
+
+.delete-button {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 6px;
+  background: #dc2626;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.delete-button:hover {
+  background: #b91c1c;
 }
 </style>

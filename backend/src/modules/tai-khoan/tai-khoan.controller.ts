@@ -87,6 +87,11 @@ export class TaiKhoanController {
     return this.taiKhoanService.findAllUsersForAdmin(user.sub);
   }
 
+  @Delete('admin/users/:id')
+  removeUserForAdmin(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
+    return this.taiKhoanService.removeUserForAdmin(user.sub, id);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
     return this.taiKhoanService.findOne(id, user.tenantId);

@@ -71,6 +71,47 @@ export class TaiKhoanService {
     });
   }
 
+  async removeUserForAdmin(adminId: string, userId: string) {
+    // Kiểm tra quyền admin trực tiếp từ database.
+    const admin = await this.repository.findOne({
+      where: { id: adminId },
+      select: {
+        id: true,
+        role: true,
+      },
+    });
+
+    if (!admin || admin.role !== 'admin') {
+      throw new ForbiddenException('Bạn không có quyền xóa tài khoản.');
+    }
+
+    // Chỉ cho phép xóa tài khoản có role user.
+    const targetUser = await this.repository.findOne({
+      where: { id: userId },
+      select: {
+        id: true,
+        role: true,
+      },
+    });
+
+    if (!targetUser) {
+      throw new NotFoundException('Không tìm thấy tài khoản cần xóa.');
+    }
+
+    if (targetUser.role !== 'user') {
+      throw new ForbiddenException(
+        'Chỉ được phép xóa tài khoản có quyền user.',
+      );
+    }
+
+    await this.repository.remove(targetUser);
+
+    return {
+      message: 'Xóa tài khoản thành công.',
+      id: targetUser.id,
+    };
+  }
+
   async findOne(id: string, tenantId: string) {
     return this.repository.findOne({
       where: {
