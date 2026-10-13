@@ -79,7 +79,7 @@ function logout() {
   <div class="user-admin-page">
     <!-- Chưa đăng nhập với quyền admin -->
     <div v-if="!isAdmin">
-      <Login @login-success="handleLogin" />
+      <Login :hide-secondary-actions="true" @login-success="handleLogin" />
 
       <p v-if="errorMessage" class="error-message">
         {{ errorMessage }}
