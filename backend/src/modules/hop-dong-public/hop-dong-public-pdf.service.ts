@@ -194,6 +194,26 @@ export class HopDongPublicPdfService {
         doc.moveDown(0.2);
       };
 
+      // Hiển thị nhiều trường trên cùng một dòng để giảm chiều dài PDF.
+      const addInlineFields = (
+        fields: Array<{
+          label: string;
+          value: string | number | undefined | null;
+        }>,
+      ) => {
+        const line = fields
+          .map(({ label, value }) => `${label}: ${value ?? ''}`)
+          .join('   |   ');
+
+        doc.font('Vietnamese').fontSize(9.5).text(line, {
+          width: 495,
+          lineGap: 2,
+          align: 'left',
+        });
+
+        doc.moveDown(0.2);
+      };
+
       // =====================================================
       // HEADER
       // =====================================================
@@ -240,19 +260,19 @@ export class HopDongPublicPdfService {
 
       addLabelValue('Họ và tên', data.benA.hoTen);
 
-      addLabelValue('CCCD số', data.benA.cccd);
-
-      addLabelValue('Ngày cấp', formatDate(data.benA.ngayCap));
-
-      addLabelValue('Nơi cấp', data.benA.noiCap);
+      addInlineFields([
+        { label: 'CCCD số', value: data.benA.cccd },
+        { label: 'Ngày cấp', value: formatDate(data.benA.ngayCap) },
+        { label: 'Nơi cấp', value: data.benA.noiCap },
+      ]);
 
       addLabelValue('Điện thoại', data.benA.sdt);
 
-      addLabelValue('Ngân hàng', data.benA.nganHang);
-
-      addLabelValue('Số tài khoản', data.benA.soTaiKhoan);
-
-      addLabelValue('Chủ tài khoản', data.benA.chuTaiKhoan);
+      addInlineFields([
+        { label: 'Ngân hàng', value: data.benA.nganHang },
+        { label: 'Số tài khoản', value: data.benA.soTaiKhoan },
+        { label: 'Chủ tài khoản', value: data.benA.chuTaiKhoan },
+      ]);
 
       addLabelValue('Địa chỉ thường trú', data.benA.diaChi);
 
@@ -306,13 +326,14 @@ export class HopDongPublicPdfService {
 
       addLabelValue('Họ và tên', data.hoTen);
 
-      addLabelValue('CCCD số', data.cccd);
+      addInlineFields([{ label: 'CCCD số', value: data.cccd }]);
 
       addLabelValue('Ngày sinh', formatDate(data.ngaySinh));
 
-      addLabelValue('Điện thoại', data.sdt);
-
-      addLabelValue('Email', data.email);
+      addInlineFields([
+        { label: 'Điện thoại', value: data.sdt },
+        { label: 'Email', value: data.email },
+      ]);
 
       addLabelValue('Địa chỉ', data.diaChi);
 
