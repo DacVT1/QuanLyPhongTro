@@ -154,7 +154,7 @@ export class HopDongPublicPdfService {
           align: 'left',
         });
 
-        doc.moveDown(0.5);
+        doc.moveDown(0.3);
 
         doc.font('Vietnamese').fontSize(11);
       };
@@ -176,7 +176,7 @@ export class HopDongPublicPdfService {
             lineGap: 3,
           });
 
-        doc.moveDown(0.4);
+        doc.moveDown(0.2);
       };
 
       const addLabelValue = (
@@ -672,7 +672,7 @@ export class HopDongPublicPdfService {
       // CHỮ KÝ
       // =====================================================
 
-      doc.moveDown(1);
+      doc.moveDown(0.25);
 
       const signatureY = doc.y;
 
