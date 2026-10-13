@@ -110,17 +110,6 @@ async function login() {
           <button type="button" @click="emit('register')">Đăng ký</button>
         </div>
       </template>
-
-      <div class="auth-forgot-password">
-        <button type="button" @click="emit('forgotPassword')">
-          Quên mật khẩu?
-        </button>
-      </div>
-      <div class="auth-register">
-        Chưa có tài khoản?
-
-        <button type="button" @click="emit('register')">Đăng ký</button>
-      </div>
     </div>
   </div>
 </template>
