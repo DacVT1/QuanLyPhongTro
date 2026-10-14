@@ -305,9 +305,6 @@ export class DataTransferService {
             }
           }
 
-          // ID chưa tồn tại thì vẫn tiếp tục nhập dữ liệu.
-          row.tenant_id = tenantId;
-
           // 2. Dữ liệu thuộc tenant khác thì chuyển sang
           // tenant của người đang đăng nhập.
           row.tenant_id = tenantId;
@@ -330,7 +327,7 @@ export class DataTransferService {
           const insertedRows = await runner.query(
             `INSERT INTO "${table}" (${quotedColumns.join(', ')})
        VALUES (${placeholders.join(', ')})
-       ON CONFLICT DO NOTHING
+    
        RETURNING 1 AS inserted`,
             columns.map((column) => row[column]),
           );
