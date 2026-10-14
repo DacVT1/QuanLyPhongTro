@@ -48,12 +48,172 @@ export class DataTransferService {
         tenant: tenantRows[0],
       };
 
-      for (const table of tables) {
-        data[table] = await runner.query(
-          `SELECT * FROM "${table}" WHERE "tenant_id" = $1`,
-          [tenantId],
-        );
-      }
+      // Lấy tài khoản thuộc tenant được chọn.
+      data['tai_khoan'] = await runner.query(
+        `SELECT *
+         FROM "tai_khoan"
+         WHERE "tenant_id" = $1`,
+        [tenantId],
+      );
+
+      // Nhà trọ thuộc tenant hoặc được liên kết trực tiếp
+      // với tài khoản thuộc tenant đó.
+      data['nha_tro'] = await runner.query(
+        `SELECT *
+         FROM "nha_tro"
+         WHERE "tenant_id" = $1
+            OR "tai_khoan_id" IN (
+              SELECT "id"
+              FROM "tai_khoan"
+              WHERE "tenant_id" = $1
+            )`,
+        [tenantId],
+      );
+
+      // Phòng thuộc các nhà trọ vừa xác định.
+      data['phong'] = await runner.query(
+        `SELECT *
+         FROM "phong"
+         WHERE "tenant_id" = $1
+            OR "nha_tro_id" IN (
+              SELECT "id"
+              FROM "nha_tro"
+              WHERE "tenant_id" = $1
+                 OR "tai_khoan_id" IN (
+                   SELECT "id"
+                   FROM "tai_khoan"
+                   WHERE "tenant_id" = $1
+                 )
+            )`,
+        [tenantId],
+      );
+
+      // Giường thuộc các phòng của tenant.
+      data['giuong'] = await runner.query(
+        `SELECT *
+         FROM "giuong"
+         WHERE "tenant_id" = $1
+            OR "phong_id" IN (
+              SELECT "id"
+              FROM "phong"
+              WHERE "tenant_id" = $1
+                 OR "nha_tro_id" IN (
+                   SELECT "id"
+                   FROM "nha_tro"
+                   WHERE "tenant_id" = $1
+                      OR "tai_khoan_id" IN (
+                        SELECT "id"
+                        FROM "tai_khoan"
+                        WHERE "tenant_id" = $1
+                      )
+                 )
+            )`,
+        [tenantId],
+      );
+
+      // Hợp đồng thuộc tenant hoặc liên kết với giường
+      // thuộc tenant.
+      data['hop_dong'] = await runner.query(
+        `SELECT *
+         FROM "hop_dong"
+         WHERE "tenant_id" = $1
+            OR "giuong_id" IN (
+              SELECT "id"
+              FROM "giuong"
+              WHERE "tenant_id" = $1
+                 OR "phong_id" IN (
+                   SELECT "id"
+                   FROM "phong"
+                   WHERE "tenant_id" = $1
+                      OR "nha_tro_id" IN (
+                        SELECT "id"
+                        FROM "nha_tro"
+                        WHERE "tenant_id" = $1
+                           OR "tai_khoan_id" IN (
+                             SELECT "id"
+                             FROM "tai_khoan"
+                             WHERE "tenant_id" = $1
+                           )
+                      )
+                 )
+            )`,
+        [tenantId],
+      );
+
+      // Lấy người thuê thuộc tenant hoặc được tham chiếu
+      // bởi hợp đồng thuộc tenant.
+      data['nguoi_thue'] = await runner.query(
+        `SELECT *
+         FROM "nguoi_thue"
+         WHERE "tenant_id" = $1
+            OR "id" IN (
+              SELECT "nguoi_thue_id"
+              FROM "hop_dong"
+              WHERE "tenant_id" = $1
+                 OR "giuong_id" IN (
+                   SELECT "id"
+                   FROM "giuong"
+                   WHERE "tenant_id" = $1
+                      OR "phong_id" IN (
+                        SELECT "id"
+                        FROM "phong"
+                        WHERE "tenant_id" = $1
+                           OR "nha_tro_id" IN (
+                             SELECT "id"
+                             FROM "nha_tro"
+                             WHERE "tenant_id" = $1
+                                OR "tai_khoan_id" IN (
+                                  SELECT "id"
+                                  FROM "tai_khoan"
+                                  WHERE "tenant_id" = $1
+                                )
+                           )
+                      )
+                 )
+            )`,
+        [tenantId],
+      );
+
+      // Hóa đơn thuộc tenant hoặc hợp đồng của tenant.
+      data['hoa_don'] = await runner.query(
+        `SELECT *
+         FROM "hoa_don"
+         WHERE "tenant_id" = $1
+            OR "hop_dong_id" IN (
+              SELECT "id"
+              FROM "hop_dong"
+              WHERE "tenant_id" = $1
+                 OR "giuong_id" IN (
+                   SELECT "id"
+                   FROM "giuong"
+                   WHERE "tenant_id" = $1
+                      OR "phong_id" IN (
+                        SELECT "id"
+                        FROM "phong"
+                        WHERE "tenant_id" = $1
+                           OR "nha_tro_id" IN (
+                             SELECT "id"
+                             FROM "nha_tro"
+                             WHERE "tenant_id" = $1
+                                OR "tai_khoan_id" IN (
+                                  SELECT "id"
+                                  FROM "tai_khoan"
+                                  WHERE "tenant_id" = $1
+                                )
+                           )
+                      )
+                 )
+            )`,
+        [tenantId],
+      );
+
+      // Subscription vẫn chỉ lấy theo tenant.
+      data['subscription'] = await runner.query(
+        `SELECT *
+         FROM "subscription"
+         WHERE "tenant_id" = $1`,
+        [tenantId],
+      );
 
       // 2. Tìm các đường dẫn file trong dữ liệu database
       const referencedPaths = new Set<string>();
