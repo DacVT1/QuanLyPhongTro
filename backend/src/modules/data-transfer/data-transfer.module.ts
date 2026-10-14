@@ -9,5 +9,6 @@ import { DataTransferService } from './data-transfer.service';
   imports: [AuthModule, TypeOrmModule.forFeature([])],
   controllers: [DataTransferController],
   providers: [DataTransferService],
+  exports: [DataTransferService],
 })
 export class DataTransferModule {}
