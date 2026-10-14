@@ -189,7 +189,11 @@ export class DataTransferService {
   async importTenant(
     tenantId: string,
     buffer: Buffer,
-  ): Promise<{ message: string }> {
+  ): Promise<{
+    message: string;
+    importedCount: number;
+    skippedCount: number;
+  }> {
     const allowedTables = [
       'tai_khoan',
       'nha_tro',
@@ -266,6 +270,10 @@ export class DataTransferService {
       // }
 
       // Thứ tự bảng cha trước, bảng con sau.
+      let importedCount = 0;
+      let skippedCount = 0;
+
+      // Thứ tự bảng cha trước, bảng con sau.
       for (const table of allowedTables) {
         const rows: unknown[] = data[table] ?? [];
 
@@ -278,8 +286,15 @@ export class DataTransferService {
 
           const row = item as Record<string, unknown>;
 
-          // Luôn gán tenant_id theo người đang đăng nhập.
-          // Không sử dụng tenant_id từ file ZIP làm tenant đích.
+          // 1. Kiểm tra tenant_id GỐC trong file backup
+          // trước khi thay đổi tenant_id.
+          if (row.tenant_id === tenantId) {
+            skippedCount++;
+            continue;
+          }
+
+          // 2. Dữ liệu thuộc tenant khác thì chuyển sang
+          // tenant của người đang đăng nhập.
           row.tenant_id = tenantId;
 
           const columns = Object.keys(row);
@@ -296,18 +311,33 @@ export class DataTransferService {
           const quotedColumns = columns.map((column) => `"${column}"`);
           const placeholders = columns.map((_, i) => `$${i + 1}`);
 
-          await runner.query(
+          // 3. Đếm số bản ghi thực sự được thêm.
+          const insertedRows = await runner.query(
             `INSERT INTO "${table}" (${quotedColumns.join(', ')})
-   VALUES (${placeholders.join(', ')})
-   ON CONFLICT DO NOTHING`,
+       VALUES (${placeholders.join(', ')})
+       ON CONFLICT DO NOTHING
+       RETURNING 1 AS inserted`,
             columns.map((column) => row[column]),
           );
+
+          if (insertedRows.length > 0) {
+            importedCount++;
+          } else {
+            skippedCount++;
+          }
         }
       }
 
       await runner.commitTransaction();
 
-      return { message: 'Nhập dữ liệu thành công.' };
+      return {
+        message:
+          importedCount > 0
+            ? `Đã nhập ${importedCount} bản ghi; bỏ qua ${skippedCount} bản ghi do trùng tenant hoặc khóa dữ liệu.`
+            : `Không có bản ghi mới được nhập. Đã bỏ qua ${skippedCount} bản ghi do trùng tenant hoặc khóa dữ liệu.`,
+        importedCount,
+        skippedCount,
+      };
     } catch (error) {
       await runner.rollbackTransaction();
       throw error;

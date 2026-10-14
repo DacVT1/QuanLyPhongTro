@@ -77,11 +77,15 @@ async function handleImportFile(event: Event) {
     const formData = new FormData();
     formData.append("file", file);
 
-    await api.post("/data-transfer/import", formData, {
+    const response = await api.post("/data-transfer/import", formData, {
       timeout: 0,
     });
 
-    successMessage.value = "Đã khôi phục dữ liệu. Vui lòng tải lại trang.";
+    const result = response.data;
+
+    successMessage.value =
+      `${result?.message ?? "Đã xử lý nhập dữ liệu."} ` +
+      "Vui lòng tải lại trang để cập nhật giao diện.";
   } catch (error: any) {
     console.error("Lỗi nhập dữ liệu:", error);
 
