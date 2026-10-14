@@ -252,19 +252,19 @@ export class DataTransferService {
     await runner.startTransaction();
 
     try {
-      // Tránh nhập chồng lên dữ liệu hiện có hoặc tạo bản ghi trùng.
-      for (const table of allowedTables) {
-        const existing = await runner.query(
-          `SELECT 1 FROM "${table}" WHERE "tenant_id" = $1 LIMIT 1`,
-          [tenantId],
-        );
+      // // Tránh nhập chồng lên dữ liệu hiện có hoặc tạo bản ghi trùng.
+      // for (const table of allowedTables) {
+      //   const existing = await runner.query(
+      //     `SELECT 1 FROM "${table}" WHERE "tenant_id" = $1 LIMIT 1`,
+      //     [tenantId],
+      //   );
 
-        if (existing.length > 0) {
-          throw new BadRequestException(
-            `Tenant đã có dữ liệu trong bảng ${table}. Hãy nhập vào tenant trống.`,
-          );
-        }
-      }
+      //   if (existing.length > 0) {
+      //     throw new BadRequestException(
+      //       `Tenant đã có dữ liệu trong bảng ${table}. Hãy nhập vào tenant trống.`,
+      //     );
+      //   }
+      // }
 
       // Thứ tự bảng cha trước, bảng con sau.
       for (const table of allowedTables) {
@@ -301,7 +301,8 @@ export class DataTransferService {
 
           await runner.query(
             `INSERT INTO "${table}" (${quotedColumns.join(', ')})
-             VALUES (${placeholders.join(', ')})`,
+   VALUES (${placeholders.join(', ')})
+   ON CONFLICT DO NOTHING`,
             columns.map((column) => row[column]),
           );
         }
