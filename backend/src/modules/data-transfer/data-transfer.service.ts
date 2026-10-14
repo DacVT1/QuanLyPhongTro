@@ -287,11 +287,26 @@ export class DataTransferService {
           const row = item as Record<string, unknown>;
 
           // 1. Kiểm tra tenant_id GỐC trong file backup
-          // trước khi thay đổi tenant_id.
-          if (row.tenant_id === tenantId) {
-            skippedCount++;
-            continue;
+
+          if (
+            row.tenant_id === tenantId &&
+            row.id !== undefined &&
+            row.id !== null
+          ) {
+            const existingRows = await runner.query(
+              `SELECT 1 FROM "${table}" WHERE "id" = $1 LIMIT 1`,
+              [row.id],
+            );
+
+            // Chỉ bỏ qua khi ID của bản ghi đã tồn tại trong bảng đích.
+            if (existingRows.length > 0) {
+              skippedCount++;
+              continue;
+            }
           }
+
+          // ID chưa tồn tại thì vẫn tiếp tục nhập dữ liệu.
+          row.tenant_id = tenantId;
 
           // 2. Dữ liệu thuộc tenant khác thì chuyển sang
           // tenant của người đang đăng nhập.
