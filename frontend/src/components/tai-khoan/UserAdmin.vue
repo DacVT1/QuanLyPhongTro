@@ -65,30 +65,79 @@ async function loadUsers() {
   }
 }
 
+async function exportUserData(account: UserAccount): Promise<void> {
+  const response = await api.get(
+    `/tai-khoan/admin/users/${encodeURIComponent(account.id)}/export`,
+    {
+      responseType: "blob",
+    },
+  );
+
+  const blob = new Blob([response.data], {
+    type: "application/zip",
+  });
+
+  const downloadUrl = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+
+  link.href = downloadUrl;
+  link.download = `quan-ly-nha-tro-user-${account.id}-${new Date()
+    .toISOString()
+    .slice(0, 10)}.zip`;
+
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+
+  // Giải phóng URL tạm sau khi trình duyệt bắt đầu tải file.
+  window.setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000);
+}
+
 async function deleteUser(account: UserAccount) {
   const confirmed = window.confirm(
     `CẢNH BÁO: Bạn có chắc chắn muốn xóa tài khoản "${
       account.email || account.username
     }" không?\n\n` +
-      "Thao tác này sẽ xóa tenant và toàn bộ dữ liệu liên quan, " +
-      "bao gồm nhà trọ, phòng, giường, người thuê, hợp đồng, hóa đơn " +
-      "và các gói đăng ký dịch vụ. Dữ liệu đã xóa không thể khôi phục " +
-      "nếu không có bản sao lưu.",
+      "Hệ thống sẽ xuất file ZIP sao lưu dữ liệu trước khi xóa. " +
+      "Sau khi xuất thành công, tài khoản, tenant và toàn bộ dữ liệu " +
+      "liên quan sẽ bị xóa.",
   );
 
   if (!confirmed) return;
 
   errorMessage.value = "";
+  loading.value = true;
 
   try {
+    // BƯỚC 1: Xuất dữ liệu và tải file ZIP về máy.
+    await exportUserData(account);
+
+    // BƯỚC 2: Xác nhận lần cuối sau khi bắt đầu tải file.
+    const confirmDelete = window.confirm(
+      `Hệ thống đã yêu cầu tải file sao lưu cho tài khoản "${
+        account.email || account.username
+      }".\n\n` +
+        "Bạn hãy kiểm tra file ZIP trong thư mục tải xuống. " +
+        "Bạn có chắc chắn muốn tiếp tục xóa tài khoản này không?",
+    );
+
+    if (!confirmDelete) {
+      errorMessage.value = "Đã xuất dữ liệu. Tài khoản chưa bị xóa.";
+      return;
+    }
+
+    // BƯỚC 3: Chỉ xóa khi API xuất dữ liệu đã thành công.
     await api.delete(`/tai-khoan/admin/users/${account.id}`);
 
-    // Cập nhật danh sách sau khi xóa thành công.
+    // BƯỚC 4: Cập nhật danh sách sau khi xóa thành công.
     accounts.value = accounts.value.filter((item) => item.id !== account.id);
   } catch (error: any) {
     errorMessage.value =
       error?.response?.data?.message ??
-      "Không thể xóa tài khoản. Vui lòng thử lại.";
+      "Không thể xuất dữ liệu hoặc xóa tài khoản. " +
+        "Tài khoản sẽ không được xóa nếu bước xuất dữ liệu thất bại.";
+  } finally {
+    loading.value = false;
   }
 }
 
@@ -176,8 +225,12 @@ function logout() {
               </td>
 
               <td>
-                <button class="delete-button" @click="deleteUser(account)">
-                  Xóa
+                <button
+                  class="delete-button"
+                  :disabled="loading"
+                  @click="deleteUser(account)"
+                >
+                  {{ loading ? "Đang xử lý..." : "Xóa" }}
                 </button>
               </td>
             </tr>

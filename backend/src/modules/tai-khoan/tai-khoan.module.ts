@@ -5,14 +5,13 @@ import { TaiKhoanController } from './tai-khoan.controller';
 import { TaiKhoanService } from './tai-khoan.service';
 import { AuthModule } from '../auth/auth.module';
 import { Tenant } from '../../entities/tenant.entity';
+import { DataTransferModule } from '../data-transfer/data-transfer.module';
 
 @Module({
   imports: [
     AuthModule,
-    TypeOrmModule.forFeature([
-      TaiKhoan,
-      Tenant,
-    ]),
+    DataTransferModule,
+    TypeOrmModule.forFeature([TaiKhoan, Tenant]),
   ],
   controllers: [TaiKhoanController],
   providers: [TaiKhoanService],

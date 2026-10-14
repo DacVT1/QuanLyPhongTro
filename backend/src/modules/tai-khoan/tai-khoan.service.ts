@@ -73,6 +73,51 @@ export class TaiKhoanService {
     });
   }
 
+  async getTenantIdForAdmin(adminId: string, userId: string): Promise<string> {
+    // Kiểm tra quyền admin trực tiếp từ database.
+    const admin = await this.repository.findOne({
+      where: { id: adminId },
+      select: {
+        id: true,
+        role: true,
+      },
+    });
+
+    if (!admin || admin.role !== 'admin') {
+      throw new ForbiddenException(
+        'Bạn không có quyền xuất dữ liệu tài khoản.',
+      );
+    }
+
+    // Tìm đúng user được chọn và tenant của user đó.
+    const targetUser = await this.repository.findOne({
+      where: { id: userId },
+      relations: {
+        tenant: true,
+      },
+    });
+
+    if (!targetUser) {
+      throw new NotFoundException('Không tìm thấy tài khoản cần xuất dữ liệu.');
+    }
+
+    if (targetUser.role !== 'user') {
+      throw new ForbiddenException(
+        'Chỉ được phép xuất dữ liệu của tài khoản user.',
+      );
+    }
+
+    const tenantId = targetUser.tenant?.id;
+
+    if (!tenantId) {
+      throw new BadRequestException(
+        'Tài khoản không có tenant liên kết. Không thể xuất dữ liệu.',
+      );
+    }
+
+    return tenantId;
+  }
+
   async removeUserForAdmin(adminId: string, userId: string) {
     return this.dataSource.transaction(async (manager) => {
       const taiKhoanRepo = manager.getRepository(TaiKhoan);
