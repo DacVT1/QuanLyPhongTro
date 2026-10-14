@@ -14,6 +14,7 @@ async function exportData() {
   try {
     const response = await api.get("/data-transfer/export", {
       responseType: "blob",
+      timeout: 120000,
     });
 
     const url = URL.createObjectURL(response.data);
