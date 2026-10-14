@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import api from "../services/api";
-
+const importInput = ref<HTMLInputElement | null>(null);
 const loading = ref(false);
 const errorMessage = ref("");
 const successMessage = ref("");
@@ -29,9 +29,13 @@ async function exportData() {
     link.click();
     link.remove();
 
-    URL.revokeObjectURL(url);
+    // Không thu hồi URL ngay lập tức khi trình duyệt
+    // còn đang xử lý tải file.
+    window.setTimeout(() => {
+      URL.revokeObjectURL(url);
+    }, 1000);
 
-    successMessage.value = "Đã tạo yêu cầu xuất dữ liệu.";
+    successMessage.value = "Đã yêu cầu tải file sao lưu.";
   } catch (error) {
     console.error("Lỗi xuất dữ liệu:", error);
 
@@ -41,12 +45,64 @@ async function exportData() {
   }
 }
 
-async function importData() {
-  // Sẽ nối với API nhập ZIP ở bước 8.
+function importData() {
+  errorMessage.value = "";
+  successMessage.value = "";
+  importInput.value?.click();
+}
+
+async function handleImportFile(event: Event) {
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
+
+  if (!file) return;
+
+  try {
+    if (!file.name.toLowerCase().endsWith(".zip")) {
+      errorMessage.value = "Vui lòng chọn file ZIP sao lưu.";
+      return;
+    }
+
+    const confirmed = window.confirm(
+      "Nhập dữ liệu có thể thay thế dữ liệu hiện tại. " +
+        "Bạn đã sao lưu dữ liệu hiện tại và muốn tiếp tục chứ?",
+    );
+
+    if (!confirmed) return;
+
+    loading.value = true;
+    errorMessage.value = "";
+    successMessage.value = "";
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    await api.post("/data-transfer/import", formData, {
+      timeout: 0,
+    });
+
+    successMessage.value = "Đã khôi phục dữ liệu. Vui lòng tải lại trang.";
+  } catch (error: any) {
+    console.error("Lỗi nhập dữ liệu:", error);
+
+    errorMessage.value =
+      error?.response?.data?.message ||
+      "Không thể nhập dữ liệu. Vui lòng kiểm tra file sao lưu.";
+  } finally {
+    loading.value = false;
+    input.value = "";
+  }
 }
 </script>
 
 <template>
+  <input
+    ref="importInput"
+    type="file"
+    accept=".zip,application/zip"
+    hidden
+    @change="handleImportFile"
+  />
   <div class="transfer-page">
     <div class="transfer-card">
       <h2>Nhập/Xuất dữ liệu</h2>

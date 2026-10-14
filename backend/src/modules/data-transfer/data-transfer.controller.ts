@@ -46,4 +46,27 @@ export class DataTransferController {
   }
 
   // API nhập dữ liệu sẽ được bổ sung ở bước 8.
+  @Post('import')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: {
+        fileSize: 100 * 1024 * 1024,
+        files: 1,
+      },
+    }),
+  )
+  async importData(
+    @CurrentUser() user: JwtPayload,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    if (!user.tenantId) {
+      throw new BadRequestException('Không xác định được tenant đăng nhập.');
+    }
+
+    if (!file?.buffer?.length) {
+      throw new BadRequestException('Vui lòng chọn file ZIP hợp lệ.');
+    }
+
+    return this.service.importTenant(user.tenantId, file.buffer);
+  }
 }
