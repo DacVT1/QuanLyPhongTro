@@ -9,6 +9,7 @@ import { PassThrough } from 'stream';
 import { existsSync, statSync } from 'fs';
 import { join, resolve, sep } from 'path';
 import * as unzipper from 'unzipper';
+import { randomUUID } from 'crypto';
 
 @Injectable()
 export class DataTransferService {
@@ -195,14 +196,12 @@ export class DataTransferService {
     skippedCount: number;
   }> {
     const allowedTables = [
-      'tai_khoan',
       'nha_tro',
       'phong',
       'giuong',
       'nguoi_thue',
       'hop_dong',
       'hoa_don',
-      'subscription',
     ];
 
     let directory: unzipper.CentralDirectory;
@@ -270,11 +269,78 @@ export class DataTransferService {
       // }
 
       // Thứ tự bảng cha trước, bảng con sau.
-      let importedCount = 0;
+
+      const importedCountStart = 0;
+      let importedCount = importedCountStart;
       let skippedCount = 0;
 
-      // Thứ tự bảng cha trước, bảng con sau.
-      for (const table of allowedTables) {
+      const isSameTenant = manifest.tenantId === tenantId;
+
+      const tables = [
+        'nha_tro',
+        'phong',
+        'giuong',
+        'nguoi_thue',
+        'hop_dong',
+        'hoa_don',
+      ] as const;
+
+      type ImportTable = (typeof tables)[number];
+
+      // Lấy tài khoản hiện tại của tenant đích.
+      const accountRows = await runner.query(
+        `SELECT "id"
+   FROM "tai_khoan"
+   WHERE "tenant_id" = $1
+   ORDER BY "createdAt" ASC
+   LIMIT 1`,
+        [tenantId],
+      );
+
+      if (!accountRows.length) {
+        throw new BadRequestException(
+          'Không tìm thấy tài khoản của tenant hiện tại.',
+        );
+      }
+
+      const currentAccountId = accountRows[0].id;
+
+      // Tạo map ID riêng cho từng bảng để không nhầm ID giữa các bảng.
+      const idMaps: Record<ImportTable, Map<string, string>> = {
+        nha_tro: new Map(),
+        phong: new Map(),
+        giuong: new Map(),
+        nguoi_thue: new Map(),
+        hop_dong: new Map(),
+        hoa_don: new Map(),
+      };
+
+      // Khi nhập từ tenant khác, tạo ID mới cho tất cả bản ghi nguồn.
+      if (!isSameTenant) {
+        for (const table of tables) {
+          const rows: unknown[] = data[table] ?? [];
+
+          for (const item of rows) {
+            if (!item || typeof item !== 'object' || Array.isArray(item)) {
+              throw new BadRequestException(
+                `Bản ghi trong bảng ${table} không hợp lệ.`,
+              );
+            }
+
+            const row = item as Record<string, unknown>;
+
+            if (row.id === undefined || row.id === null) {
+              throw new BadRequestException(
+                `Bản ghi trong bảng ${table} thiếu id.`,
+              );
+            }
+
+            idMaps[table].set(String(row.id), randomUUID());
+          }
+        }
+      }
+
+      for (const table of tables) {
         const rows: unknown[] = data[table] ?? [];
 
         for (const item of rows) {
@@ -284,29 +350,90 @@ export class DataTransferService {
             );
           }
 
-          const row = item as Record<string, unknown>;
+          const row = {
+            ...(item as Record<string, unknown>),
+          };
 
-          // 1. Kiểm tra tenant_id GỐC trong file backup
+          const oldId = String(row.id);
 
-          if (
-            row.tenant_id === tenantId &&
-            row.id !== undefined &&
-            row.id !== null
-          ) {
+          if (isSameTenant) {
             const existingRows = await runner.query(
               `SELECT 1 FROM "${table}" WHERE "id" = $1 LIMIT 1`,
               [row.id],
             );
 
-            // Chỉ bỏ qua khi ID của bản ghi đã tồn tại trong bảng đích.
             if (existingRows.length > 0) {
               skippedCount++;
               continue;
             }
+          } else {
+            // Thay ID cũ bằng ID mới.
+            row.id = idMaps[table].get(oldId);
+
+            // Cập nhật khóa ngoại theo ID mới.
+            const remapForeignKey = (
+              column: string,
+              referencedTable: ImportTable,
+            ) => {
+              const oldForeignId = row[column];
+
+              if (oldForeignId === undefined || oldForeignId === null) {
+                return;
+              }
+
+              const newForeignId = idMaps[referencedTable].get(
+                String(oldForeignId),
+              );
+
+              if (!newForeignId) {
+                throw new BadRequestException(
+                  `Không tìm thấy ánh xạ khóa ngoại ${column} của bảng ${table}.`,
+                );
+              }
+
+              row[column] = newForeignId;
+            };
+
+            switch (table) {
+              case 'nha_tro':
+                // Nhà trọ mới thuộc tài khoản B.
+                row.tai_khoan_id = currentAccountId;
+
+                // Tránh trùng mã nhà trọ trong tenant đích.
+                if (row.maNhaTro) {
+                  row.maNhaTro = `${String(row.maNhaTro)}-IMP-${String(row.id).slice(0, 8)}`;
+                }
+                break;
+
+              case 'phong':
+                remapForeignKey('nha_tro_id', 'nha_tro');
+                break;
+
+              case 'giuong':
+                remapForeignKey('phong_id', 'phong');
+                break;
+
+              case 'hop_dong':
+                remapForeignKey('giuong_id', 'giuong');
+                remapForeignKey('nguoi_thue_id', 'nguoi_thue');
+
+                // maHopDong là unique toàn bảng.
+                row.maHopDong = `${String(row.maHopDong)}-IMP-${String(row.id).slice(0, 8)}`;
+                break;
+
+              case 'hoa_don':
+                remapForeignKey('hop_dong_id', 'hop_dong');
+
+                // maHoaDon là unique toàn bảng.
+                row.maHoaDon = `${String(row.maHoaDon)}-IMP-${String(row.id).slice(0, 8)}`;
+                break;
+
+              case 'nguoi_thue':
+                break;
+            }
           }
 
-          // 2. Dữ liệu thuộc tenant khác thì chuyển sang
-          // tenant của người đang đăng nhập.
+          // Mọi bản ghi được nhập đều thuộc tenant đang đăng nhập.
           row.tenant_id = tenantId;
 
           const columns = Object.keys(row);
@@ -321,22 +448,15 @@ export class DataTransferService {
           }
 
           const quotedColumns = columns.map((column) => `"${column}"`);
-          const placeholders = columns.map((_, i) => `$${i + 1}`);
+          const placeholders = columns.map((_, index) => `$${index + 1}`);
 
-          // 3. Đếm số bản ghi thực sự được thêm.
-          const insertedRows = await runner.query(
+          await runner.query(
             `INSERT INTO "${table}" (${quotedColumns.join(', ')})
-       VALUES (${placeholders.join(', ')})
-    
-       RETURNING 1 AS inserted`,
+       VALUES (${placeholders.join(', ')})`,
             columns.map((column) => row[column]),
           );
 
-          if (insertedRows.length > 0) {
-            importedCount++;
-          } else {
-            skippedCount++;
-          }
+          importedCount++;
         }
       }
 
