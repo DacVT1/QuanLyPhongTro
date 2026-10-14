@@ -232,13 +232,12 @@ export class DataTransferService {
 
     if (
       manifest?.formatVersion !== 1 ||
-      manifest?.tenantId !== tenantId ||
+      typeof manifest?.tenantId !== 'string' ||
       !data ||
-      typeof data !== 'object'
+      typeof data !== 'object' ||
+      Array.isArray(data)
     ) {
-      throw new BadRequestException(
-        'File sao lưu không hợp lệ hoặc không thuộc tenant hiện tại.',
-      );
+      throw new BadRequestException('File sao lưu không hợp lệ.');
     }
 
     for (const table of allowedTables) {
@@ -279,11 +278,9 @@ export class DataTransferService {
 
           const row = item as Record<string, unknown>;
 
-          if (row.tenant_id !== tenantId) {
-            throw new BadRequestException(
-              `Bản ghi trong bảng ${table} không thuộc tenant hiện tại.`,
-            );
-          }
+          // Luôn gán tenant_id theo người đang đăng nhập.
+          // Không sử dụng tenant_id từ file ZIP làm tenant đích.
+          row.tenant_id = tenantId;
 
           const columns = Object.keys(row);
 
