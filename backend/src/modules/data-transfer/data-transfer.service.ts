@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { DataSource } from 'typeorm';
-import archiver = require('archiver');
+import { ZipArchive } from 'archiver';
 import { PassThrough } from 'stream';
 import { existsSync, statSync } from 'fs';
 import { join, resolve, sep } from 'path';
@@ -124,7 +124,7 @@ export class DataTransferService {
       }
 
       // 3. Tạo file ZIP
-      const archive = archiver('zip', {
+      const archive = new ZipArchive({
         zlib: { level: 6 },
       });
 
