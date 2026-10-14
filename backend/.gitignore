@@ -24,3 +24,7 @@ coverage/
 # OS
 .DS_Store
 Thumbs.db
+
+
+# Không commit file upload của backend
+/backend/uploads/

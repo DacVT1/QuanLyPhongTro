@@ -9,6 +9,7 @@ import {
   UploadedFile,
   UseGuards,
   UseInterceptors,
+  Res,
 } from '@nestjs/common';
 
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -16,7 +17,8 @@ import { diskStorage } from 'multer';
 import { extname, join } from 'path';
 import { mkdirSync } from 'fs';
 import { randomUUID } from 'crypto';
-
+import type { Response } from 'express';
+import { DataTransferService } from '../data-transfer/data-transfer.service';
 import { TaiKhoanService } from './tai-khoan.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import type { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
@@ -31,8 +33,10 @@ mkdirSync(taiKhoanUploadDir, {
 @Controller('tai-khoan')
 @UseGuards(JwtAuthGuard)
 export class TaiKhoanController {
-  constructor(private readonly taiKhoanService: TaiKhoanService) {}
-
+  constructor(
+    private readonly taiKhoanService: TaiKhoanService,
+    private readonly dataTransferService: DataTransferService,
+  ) {}
   @Get('me')
   getMe(@CurrentUser() user: JwtPayload) {
     return this.taiKhoanService.getMe(user.sub, user.tenantId);
@@ -80,6 +84,40 @@ export class TaiKhoanController {
   @Get()
   findAll(@CurrentUser() user: JwtPayload) {
     return this.taiKhoanService.findAll(user.tenantId);
+  }
+
+  @Get('admin/users')
+  findAllUsersForAdmin(@CurrentUser() user: JwtPayload) {
+    return this.taiKhoanService.findAllUsersForAdmin(user.sub);
+  }
+
+  @Get('admin/users/:id/export')
+  async exportUserForAdmin(
+    @Param('id') id: string,
+    @CurrentUser() user: JwtPayload,
+    @Res() res: Response,
+  ) {
+    // Lấy tenant của user được chọn, đồng thời kiểm tra quyền admin.
+    const tenantId = await this.taiKhoanService.getTenantIdForAdmin(
+      user.sub,
+      id,
+    );
+
+    // Dùng lại hàm xuất dữ liệu đã có.
+    const buffer = await this.dataTransferService.exportTenant(tenantId);
+
+    const filename = `quan-ly-nha-tro-user-${id}-${new Date().toISOString().slice(0, 10)}.zip`;
+
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Content-Length', buffer.length);
+
+    return res.send(buffer);
+  }
+
+  @Delete('admin/users/:id')
+  removeUserForAdmin(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
+    return this.taiKhoanService.removeUserForAdmin(user.sub, id);
   }
 
   @Get(':id')

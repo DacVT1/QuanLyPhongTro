@@ -27,6 +27,7 @@ import { GoiDichVuModule } from './modules/goi-dich-vu/goi-dich-vu.module';
 import { HopDongPublicModule } from './modules/hop-dong-public/hop-dong-public.module';
 import { HopDongXacNhan } from './entities/hop-dong-xac-nhan.entity';
 import { PasswordResetOtp } from './entities/password-reset-otp.entity';
+import { DataTransferModule } from './modules/data-transfer/data-transfer.module';
 
 @Module({
   imports: [
@@ -65,6 +66,7 @@ import { PasswordResetOtp } from './entities/password-reset-otp.entity';
     DashboardModule,
     GoiDichVuModule,
     SubscriptionModule,
+    DataTransferModule,
   ],
   controllers: [AppController],
   providers: [AppService],

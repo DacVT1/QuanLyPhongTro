@@ -21,6 +21,7 @@ import AccountProfile from "./components/tai-khoan/AccountProfile.vue";
 import ForgotPassword from "./components/auth/ForgotPassword.vue";
 import ResetPassword from "./components/auth/ResetPassword.vue";
 import ForgotPasswordVerification from "./components/auth/ForgotPasswordVerification.vue";
+import ImportExport from "./components/ImportExport.vue";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 const cccdMatTruocPreviewUrl = ref("");
@@ -43,6 +44,7 @@ const tabs = [
   "nguoiThue",
   "hopDong",
   "hoaDon",
+  "importExport",
 ];
 const currentTab = ref("dashboard");
 const isMenuOpen = ref(false);
@@ -878,10 +880,11 @@ const filteredHoaDons = computed(() => {
   return hoaDons.value.filter((item: any) => {
     const hoTen = normalizeSearchText(item.hopDong?.nguoiThue?.hoTen ?? "");
 
-    const maHopDong = normalizeSearchText(item.hopDong?.maHopDong ?? "");
+    const maHoaDon = normalizeSearchText(item.maHoaDon ?? "");
 
+    // Tìm theo tên người thuê hoặc mã hóa đơn.
     const matchKeyword =
-      !keyword || hoTen.includes(keyword) || maHopDong.includes(keyword);
+      !keyword || hoTen.includes(keyword) || maHoaDon.includes(keyword);
 
     const matchStatus =
       statusFilter === "all" || item.trangThai === statusFilter;
@@ -3260,7 +3263,7 @@ onMounted(() => {
             <template v-else-if="tab === 'nguoiThue'"> ♙ </template>
 
             <template v-else-if="tab === 'hopDong'"> ▤ </template>
-
+            <template v-else-if="tab === 'importExport'"> ⇄ </template>
             <template v-else> ▣ </template>
           </span>
 
@@ -3278,7 +3281,9 @@ onMounted(() => {
                         ? "Người thuê"
                         : tab === "hopDong"
                           ? "Hợp đồng"
-                          : "Hóa đơn"
+                          : tab === "hoaDon"
+                            ? "Hóa đơn"
+                            : "Nhập/Xuất dữ liệu"
             }}
           </span>
         </button>
@@ -5207,6 +5212,13 @@ onMounted(() => {
               @update:current-page="goToHoaDonPage"
             />
           </div>
+        </section>
+        <!-- =====================================================
+     IMPORT/EXPORT
+     ===================================================== -->
+
+        <section v-else-if="currentTab === 'importExport'" class="panel-grid">
+          <ImportExport />
         </section>
       </main>
 
