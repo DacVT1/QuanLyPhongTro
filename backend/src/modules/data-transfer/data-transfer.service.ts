@@ -1,9 +1,14 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { ZipArchive } from 'archiver';
 import { PassThrough } from 'stream';
 import { existsSync, statSync } from 'fs';
 import { join, resolve, sep } from 'path';
+import * as unzipper from 'unzipper';
 
 @Injectable()
 export class DataTransferService {
@@ -176,6 +181,138 @@ export class DataTransferService {
       await archive.finalize();
 
       return await completed;
+    } finally {
+      await runner.release();
+    }
+  }
+
+  async importTenant(
+    tenantId: string,
+    buffer: Buffer,
+  ): Promise<{ message: string }> {
+    const allowedTables = [
+      'tai_khoan',
+      'nha_tro',
+      'phong',
+      'giuong',
+      'nguoi_thue',
+      'hop_dong',
+      'hoa_don',
+      'subscription',
+    ];
+
+    let directory: unzipper.CentralDirectory;
+
+    try {
+      directory = await unzipper.Open.buffer(buffer);
+    } catch {
+      throw new BadRequestException('File nhập không phải ZIP hợp lệ.');
+    }
+
+    const readEntry = async (name: string): Promise<string> => {
+      const entry = directory.files.find((f) => f.path === name);
+      if (!entry || entry.type === 'Directory') {
+        throw new BadRequestException(`File ZIP thiếu ${name}.`);
+      }
+
+      return (await entry.buffer()).toString('utf8');
+    };
+
+    let manifest: any;
+    let data: Record<string, any>;
+
+    try {
+      manifest = JSON.parse(await readEntry('manifest.json'));
+      data = JSON.parse(await readEntry('data.json'));
+    } catch {
+      throw new BadRequestException(
+        'Không đọc được manifest.json hoặc data.json trong file ZIP.',
+      );
+    }
+
+    if (
+      manifest?.formatVersion !== 1 ||
+      manifest?.tenantId !== tenantId ||
+      !data ||
+      typeof data !== 'object'
+    ) {
+      throw new BadRequestException(
+        'File sao lưu không hợp lệ hoặc không thuộc tenant hiện tại.',
+      );
+    }
+
+    for (const table of allowedTables) {
+      if (data[table] !== undefined && !Array.isArray(data[table])) {
+        throw new BadRequestException(`Dữ liệu bảng ${table} không hợp lệ.`);
+      }
+    }
+
+    const runner = this.dataSource.createQueryRunner();
+    await runner.connect();
+    await runner.startTransaction();
+
+    try {
+      // Tránh nhập chồng lên dữ liệu hiện có hoặc tạo bản ghi trùng.
+      for (const table of allowedTables) {
+        const existing = await runner.query(
+          `SELECT 1 FROM "${table}" WHERE "tenant_id" = $1 LIMIT 1`,
+          [tenantId],
+        );
+
+        if (existing.length > 0) {
+          throw new BadRequestException(
+            `Tenant đã có dữ liệu trong bảng ${table}. Hãy nhập vào tenant trống.`,
+          );
+        }
+      }
+
+      // Thứ tự bảng cha trước, bảng con sau.
+      for (const table of allowedTables) {
+        const rows: unknown[] = data[table] ?? [];
+
+        for (const item of rows) {
+          if (!item || typeof item !== 'object' || Array.isArray(item)) {
+            throw new BadRequestException(
+              `Bản ghi trong bảng ${table} không hợp lệ.`,
+            );
+          }
+
+          const row = item as Record<string, unknown>;
+
+          if (row.tenant_id !== tenantId) {
+            throw new BadRequestException(
+              `Bản ghi trong bảng ${table} không thuộc tenant hiện tại.`,
+            );
+          }
+
+          const columns = Object.keys(row);
+
+          if (
+            columns.length === 0 ||
+            columns.some((column) => !/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(column))
+          ) {
+            throw new BadRequestException(
+              `Tên cột trong bảng ${table} không hợp lệ.`,
+            );
+          }
+
+          const quotedColumns = columns.map((column) => `"${column}"`);
+          const placeholders = columns.map((_, i) => `$${i + 1}`);
+
+          await runner.query(
+            `INSERT INTO "${table}" (${quotedColumns.join(', ')})
+             VALUES (${placeholders.join(', ')})`,
+            columns.map((column) => row[column]),
+          );
+        }
+      }
+
+      await runner.commitTransaction();
+
+      return { message: 'Nhập dữ liệu thành công.' };
+    } catch (error) {
+      await runner.rollbackTransaction();
+      throw error;
     } finally {
       await runner.release();
     }
