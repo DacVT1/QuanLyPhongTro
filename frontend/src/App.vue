@@ -1285,6 +1285,8 @@ const giuongStatusFilter = ref("all");
 const giuongStatusFilterOpen = ref(false);
 const hopDongStatusFilter = ref("all");
 const hopDongStatusFilterOpen = ref(false);
+// Bộ lọc cột Cọc sớm
+const giuongDatCocFilter = ref("all");
 
 const editingNguoiThueId = ref<string | null>(null);
 
@@ -1456,20 +1458,17 @@ const deleteHopDongErrorMessage = ref("");
 const filteredGiuongs = computed(() => {
   const keyword = giuongSearch.value.trim().toLowerCase();
   const statusFilter = giuongStatusFilter.value;
+  const datCocFilter = giuongDatCocFilter.value;
 
   return giuongs.value.filter((giuong: any) => {
-    // ==============================
     // 1. Lọc theo mã giường
-    // ==============================
     const matchKeyword =
       !keyword ||
       String(giuong.maGiuong ?? "")
         .toLowerCase()
         .includes(keyword);
 
-    // ==============================
-    // 2. Lọc theo trạng thái
-    // ==============================
+    // 2. Lọc theo trạng thái thuê
     const trangThai = String(giuong.trangThai ?? "").toLowerCase();
 
     const normalizedTrangThai =
@@ -1482,7 +1481,16 @@ const filteredGiuongs = computed(() => {
     const matchStatus =
       statusFilter === "all" || normalizedTrangThai === statusFilter;
 
-    return matchKeyword && matchStatus;
+    // 3. Lọc theo Cọc sớm
+    const daDatCoc = Boolean(giuong.datCocSom);
+
+    const matchDatCoc =
+      datCocFilter === "all" ||
+      (datCocFilter === "deposited" && daDatCoc) ||
+      (datCocFilter === "not_deposited" && !daDatCoc);
+
+    // Chỉ hiển thị giường thỏa mãn tất cả điều kiện
+    return matchKeyword && matchStatus && matchDatCoc;
   });
 });
 
@@ -1548,7 +1556,7 @@ const {
   resetPage: resetHoaDonPage,
 } = usePagination(filteredHoaDons, PAGE_SIZE);
 
-watch([giuongSearch, giuongStatusFilter], () => {
+watch([giuongSearch, giuongStatusFilter, giuongDatCocFilter], () => {
   resetGiuongPage();
 });
 
@@ -3971,7 +3979,21 @@ onMounted(() => {
                   <!-- <th>Nhà trọ</th>
           <th>Phòng</th>
           <th>Giường số</th> -->
-                  <th class="dat-coc-header">Cọc sớm</th>
+
+                  <th class="dat-coc-header">
+                    <div class="dat-coc-filter">
+                      <span>Cọc sớm</span>
+
+                      <select
+                        v-model="giuongDatCocFilter"
+                        aria-label="Lọc theo trạng thái cọc sớm"
+                      >
+                        <option value="all">Tất cả</option>
+                        <option value="deposited">Đã cọc</option>
+                        <option value="not_deposited">Chưa cọc</option>
+                      </select>
+                    </div>
+                  </th>
                   <th>Giá giường</th>
                   <th class="giuong-status-header">
                     <div class="giuong-status-filter">
@@ -8805,5 +8827,25 @@ tbody tr:hover {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.dat-coc-filter {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.dat-coc-filter select {
+  max-width: 100%;
+  min-width: 95px;
+  padding: 4px 6px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background-color: #fff;
+  color: #374151;
+  font-size: 12px;
+  cursor: pointer;
 }
 </style>

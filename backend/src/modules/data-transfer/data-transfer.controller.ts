@@ -50,7 +50,7 @@ export class DataTransferController {
   @UseInterceptors(
     FileInterceptor('file', {
       limits: {
-        fileSize: 100 * 1024 * 1024,
+        fileSize: 300 * 1024 * 1024,
         files: 1,
       },
     }),
