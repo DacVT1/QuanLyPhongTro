@@ -4137,20 +4137,6 @@ onMounted(() => {
                     {{ getRowNumber(index, giuongCurrentPage, PAGE_SIZE) }}
                   </td>
                   <td>{{ item.maGiuong }}</td>
-
-                  <!-- <td>
-            {{ item.phong?.nhaTro?.maNhaTro }}
-            -
-            {{ item.phong?.nhaTro?.tenNhaTro }}
-          </td>
-
-          <td>
-            {{ item.phong?.maPhong }}
-          </td>
-   
-          <td>
-            {{ item.giuongSo }}
-          </td> -->
                   <td class="dat-coc-cell">
                     <input
                       type="checkbox"
