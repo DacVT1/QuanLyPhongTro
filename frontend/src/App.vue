@@ -1287,6 +1287,7 @@ const hopDongStatusFilter = ref("all");
 const hopDongStatusFilterOpen = ref(false);
 // Bộ lọc cột Cọc sớm
 const giuongDatCocFilter = ref("all");
+const giuongDatCocFilterOpen = ref(false);
 
 const editingNguoiThueId = ref<string | null>(null);
 
@@ -3981,17 +3982,77 @@ onMounted(() => {
           <th>Giường số</th> -->
 
                   <th class="dat-coc-header">
-                    <div class="dat-coc-filter">
+                    <div class="giuong-status-filter">
                       <span>Cọc sớm</span>
 
-                      <select
-                        v-model="giuongDatCocFilter"
-                        aria-label="Lọc theo trạng thái cọc sớm"
+                      <button
+                        type="button"
+                        class="giuong-filter-button"
+                        title="Lọc cọc sớm"
+                        aria-label="Lọc cọc sớm"
+                        @click.stop="
+                          giuongDatCocFilterOpen = !giuongDatCocFilterOpen
+                        "
                       >
-                        <option value="all">Tất cả</option>
-                        <option value="deposited">Đã cọc</option>
-                        <option value="not_deposited">Chưa cọc</option>
-                      </select>
+                        <svg
+                          class="giuong-filter-icon"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                          aria-hidden="true"
+                        >
+                          <path
+                            d="M4 5H20L14 12V18L10 20V12L4 5Z"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                          />
+                        </svg>
+                      </button>
+
+                      <div
+                        v-if="giuongDatCocFilterOpen"
+                        class="giuong-status-dropdown"
+                        @click.stop
+                      >
+                        <button
+                          type="button"
+                          :class="{ active: giuongDatCocFilter === 'all' }"
+                          @click="
+                            giuongDatCocFilter = 'all';
+                            giuongDatCocFilterOpen = false;
+                          "
+                        >
+                          Tất cả
+                        </button>
+
+                        <button
+                          type="button"
+                          :class="{
+                            active: giuongDatCocFilter === 'deposited',
+                          }"
+                          @click="
+                            giuongDatCocFilter = 'deposited';
+                            giuongDatCocFilterOpen = false;
+                          "
+                        >
+                          Đã cọc
+                        </button>
+
+                        <button
+                          type="button"
+                          :class="{
+                            active: giuongDatCocFilter === 'not_deposited',
+                          }"
+                          @click="
+                            giuongDatCocFilter = 'not_deposited';
+                            giuongDatCocFilterOpen = false;
+                          "
+                        >
+                          Chưa cọc
+                        </button>
+                      </div>
                     </div>
                   </th>
                   <th>Giá giường</th>
@@ -4076,20 +4137,6 @@ onMounted(() => {
                     {{ getRowNumber(index, giuongCurrentPage, PAGE_SIZE) }}
                   </td>
                   <td>{{ item.maGiuong }}</td>
-
-                  <!-- <td>
-            {{ item.phong?.nhaTro?.maNhaTro }}
-            -
-            {{ item.phong?.nhaTro?.tenNhaTro }}
-          </td>
-
-          <td>
-            {{ item.phong?.maPhong }}
-          </td>
-   
-          <td>
-            {{ item.giuongSo }}
-          </td> -->
                   <td class="dat-coc-cell">
                     <input
                       type="checkbox"
