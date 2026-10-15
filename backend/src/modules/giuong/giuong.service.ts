@@ -182,11 +182,21 @@ export class GiuongService {
       );
     }
 
+    const datCocSom = payload.datCocSom === true;
+    const tienDatCoc = datCocSom ? Number(payload.tienDatCoc) : 0;
+
+    if (datCocSom && (!Number.isInteger(tienDatCoc) || tienDatCoc <= 0)) {
+      throw new BadRequestException(
+        'Tiền cọc phải là số nguyên lớn hơn 0 khi chọn Đặt cọc sớm.',
+      );
+    }
+
     const giuong = this.repository.create({
       maGiuong,
       giuongSo,
       giaGiuong,
-      datCocSom: Boolean(payload.datCocSom),
+      datCocSom,
+      tienDatCoc,
       trangThai: 'trong',
 
       phong,
@@ -353,7 +363,28 @@ export class GiuongService {
       item.trangThai = payload.trangThai;
     }
     if (payload.datCocSom !== undefined) {
-      item.datCocSom = Boolean(payload.datCocSom);
+      item.datCocSom = payload.datCocSom === true;
+    }
+
+    if (payload.tienDatCoc !== undefined) {
+      const tienDatCoc = Number(payload.tienDatCoc);
+
+      if (
+        item.datCocSom &&
+        (!Number.isInteger(tienDatCoc) || tienDatCoc <= 0)
+      ) {
+        throw new BadRequestException(
+          'Tiền cọc phải là số nguyên lớn hơn 0 khi chọn Đặt cọc sớm.',
+        );
+      }
+
+      item.tienDatCoc = item.datCocSom ? tienDatCoc : 0;
+    } else if (!item.datCocSom) {
+      item.tienDatCoc = 0;
+    } else if (payload.datCocSom === true && item.tienDatCoc <= 0) {
+      throw new BadRequestException(
+        'Vui lòng nhập Tiền cọc lớn hơn 0 khi chọn Đặt cọc sớm.',
+      );
     }
     if (payload.giaGiuong !== undefined) {
       const giaGiuong = Number(payload.giaGiuong);

@@ -24,9 +24,12 @@ export class Giuong {
   giuongSo: number;
 
   @Column({
-  default: false,
-})
-datCocSom: boolean;
+    default: false,
+  })
+  datCocSom: boolean;
+
+  @Column({ type: 'integer', default: 0 })
+  tienDatCoc: number;
 
   @Column({ type: 'integer', default: 0 })
   giaGiuong: number;
@@ -48,6 +51,6 @@ datCocSom: boolean;
   hopDongs: HopDong[];
 
   @ManyToOne(() => Tenant, { nullable: false })
-@JoinColumn({ name: 'tenant_id' })
-tenant: Tenant;
+  @JoinColumn({ name: 'tenant_id' })
+  tenant: Tenant;
 }

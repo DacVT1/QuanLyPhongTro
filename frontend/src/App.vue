@@ -1136,7 +1136,11 @@ const giuongForm = ref({
   giaGiuong: 1500000,
   // trangThai: "trong",
   datCocSom: false,
+  tienDatCoc: 0,
 });
+
+// Giá trị tiền cọc dùng để hiển thị có dấu phân cách hàng nghìn.
+const tienDatCocGiuongDisplay = ref("");
 
 const giuongPhongOptions = computed(() => {
   const nhaTroId = giuongForm.value.nhaTroId;
@@ -1813,10 +1817,11 @@ function resetGiuongForm() {
     giaGiuong: 1500000,
     // trangThai: "trong",
     datCocSom: false,
+    tienDatCoc: 0,
   };
 
   giaGiuongDisplay.value = "1,500,000";
-
+  tienDatCocGiuongDisplay.value = "";
   editingGiuongId.value = null;
 }
 
@@ -1830,6 +1835,28 @@ function handleGiaGiuongInput(event: Event) {
   giaGiuongDisplay.value = rawValue
     ? Number(rawValue).toLocaleString("en-US")
     : "";
+}
+
+function handleTienDatCocGiuongInput(event: Event) {
+  const input = event.target as HTMLInputElement;
+
+  // Chỉ cho phép nhập chữ số.
+  const rawValue = input.value.replace(/\D/g, "");
+  const amount = Number(rawValue || 0);
+
+  giuongForm.value.tienDatCoc = amount;
+
+  tienDatCocGiuongDisplay.value = rawValue
+    ? amount.toLocaleString("en-US")
+    : "";
+}
+
+function handleDatCocSomChange() {
+  if (!giuongForm.value.datCocSom) {
+    // Bỏ tích đặt cọc sớm thì xóa số tiền cọc.
+    giuongForm.value.tienDatCoc = 0;
+    tienDatCocGiuongDisplay.value = "";
+  }
 }
 
 //Thêm hàm xử lý số tiền đặt cọc
@@ -2311,10 +2338,20 @@ async function handleThemNhieuGiuong() {
   }
 }
 async function saveGiuong() {
+  const datCocSom = Boolean(giuongForm.value.datCocSom);
+  const tienDatCoc = datCocSom ? Number(giuongForm.value.tienDatCoc) : 0;
+
+  // Nếu tích Đặt cọc sớm thì phải nhập số tiền cọc lớn hơn 0.
+  if (datCocSom && (!Number.isFinite(tienDatCoc) || tienDatCoc <= 0)) {
+    alert("Vui lòng nhập Tiền cọc lớn hơn 0.");
+    return;
+  }
+
   const payload = {
     giuongSo: Number(giuongForm.value.giuongSo),
     giaGiuong: Number(giuongForm.value.giaGiuong || 0),
-    datCocSom: Boolean(giuongForm.value.datCocSom),
+    datCocSom,
+    tienDatCoc,
     phong: {
       id: giuongForm.value.phongId,
     },
@@ -2883,6 +2920,7 @@ function editGiuong(item: any) {
     phongId: item.phong?.id ?? "",
     giuongSo: item.giuongSo != null ? String(item.giuongSo) : "",
     datCocSom: Boolean(item.datCocSom),
+    tienDatCoc: Number(item.tienDatCoc ?? 0),
     giaGiuong,
   };
 
@@ -3906,10 +3944,28 @@ onMounted(() => {
 
               <div class="form-group">
                 <label class="checkbox-label">
-                  <input v-model="giuongForm.datCocSom" type="checkbox" />
+                  <input
+                    v-model="giuongForm.datCocSom"
+                    type="checkbox"
+                    @change="handleDatCocSomChange"
+                  />
                   Đặt cọc sớm
                 </label>
               </div>
+
+              <!-- Chỉ hiển thị khi tích Đặt cọc sớm -->
+              <label v-if="giuongForm.datCocSom">
+                {{ requiredLabel("Tiền cọc") }}
+
+                <input
+                  :value="tienDatCocGiuongDisplay"
+                  @input="handleTienDatCocGiuongInput"
+                  type="text"
+                  inputmode="numeric"
+                  placeholder="Nhập số tiền cọc"
+                  required
+                />
+              </label>
 
               <label>
                 {{ requiredLabel("Giá giường") }}
@@ -4055,7 +4111,9 @@ onMounted(() => {
                       </div>
                     </div>
                   </th>
+                  <th>Tiền cọc</th>
                   <th>Giá giường</th>
+
                   <th class="giuong-status-header">
                     <div class="giuong-status-filter">
                       <span>Trạng thái</span>
@@ -4150,6 +4208,9 @@ onMounted(() => {
                     />
                   </td>
                   <td>
+                    {{ Number(item.tienDatCoc ?? 0).toLocaleString("vi-VN") }}
+                  </td>
+                  <td>
                     {{ Number(item.giaGiuong ?? 0).toLocaleString("vi-VN") }}
                   </td>
                   <td class="status-cell">
@@ -4185,7 +4246,7 @@ onMounted(() => {
                   </td>
                 </tr>
                 <tr v-if="filteredGiuongs.length === 0">
-                  <td colspan="4" class="empty-state">
+                  <td colspan="7" class="empty-state">
                     Không tìm thấy giường có mã phù hợp.
                   </td>
                 </tr>
